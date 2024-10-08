@@ -1,10 +1,10 @@
 [project]
-name = "cellcommunication-pf2"
+name = "cellcommunicationpf2"
 version = "0.1.0"
 description = "Cell cell communication implementation of PARAFAC2"
 authors = [{name = "Andrew Ramirez", email = "andramirez@ucla.edu" }]
 license = "MIT"
-requires-python = ">=3.12,<3.13"
+requires-python = ">= 3.11"
 
 dependencies = [
     "numpy>=1.26",
@@ -21,8 +21,8 @@ dependencies = [
 readme = "README.md"
 
 [project.scripts]
-fbuild = "cellcommunication-pf2.figures.common:genFigure"
-factor = "cellcommunication-pf2.imports:factorSave"
+fbuild = "cellcommunicationpf2.figures.common:genFigure"
+factor = "cellcommunicationpf2.imports:factorSave"
 
 [build-system]
 requires = ["hatchling"]
@@ -40,7 +40,7 @@ dev-dependencies = [
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["cellcommunication-pf2"]
+packages = ["cellcommunicationpf2"]
 
 [tool.ruff.lint]
 select = [
