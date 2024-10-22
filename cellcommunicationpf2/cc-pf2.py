@@ -25,7 +25,7 @@ def convert_4d_to_2d(X: list[np.ndarray]) -> np.ndarray:
         X_dim = int(np.sqrt(matrix.shape[1]))
 
         # Reshape to 4D and average
-        reshaped = matrix.reshape(b, b, X_dim, X_dim)
+        reshaped = matrix.reshape(b, b, X_dim, X_dim) # maybe redo this rehsape manually
         averaged = np.mean(reshaped, axis=(1, 3))
 
         result.append(averaged)
@@ -57,7 +57,7 @@ def project_tensor(mat, proj_matrix):
     C = proj_matrix.shape[1]
     LR = mat.shape[1] 
     
-    tensor = mat.reshape(C, C, LR)
+    tensor = mat.reshape(C, C, LR) # be wary of the reshaping here
 
     tensor = np.tensordot(tensor, proj_matrix.T, axes=(1, 0))  # C × CES × LR
 
@@ -81,6 +81,8 @@ def project_data(
         if isinstance(mat, np.ndarray):
             mat = cp.array(mat)
 
+        lhs = lhs.T
+        
         U, _, Vh = cp.linalg.svd(mat @ lhs - means @ lhs, full_matrices=False)
         proj = U @ Vh
         proj = convert_4d_to_2d(
@@ -142,7 +144,7 @@ def parafac2_nd(
 
     # X_list = anndata_to_list(X_in)
 
-    # if "means" in X_in.var:
+    # if "means" in X_in.var: ####-> add in a placeholder for the means
     #     means = np.array(X_in.var["means"].to_numpy())
     # else:
     #     means = np.zeros((1, factors[2].shape[0]))
