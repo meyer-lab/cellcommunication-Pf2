@@ -23,37 +23,74 @@ def convert_4d_to_2d(X: list[np.ndarray]) -> np.ndarray:
     for matrix in X:
         b = int(np.sqrt(matrix.shape[0]))
         X_dim = int(np.sqrt(matrix.shape[1]))
-        
+
         # Reshape to 4D and average
         reshaped = matrix.reshape(b, b, X_dim, X_dim)
         averaged = np.mean(reshaped, axis=(1, 3))
-        
+
         result.append(averaged)
-    
+
     return np.array(result)
+
+
+def reconstruct_4d_tensor(A, B, C, D):
+    """
+    Does an outer product of the columns of each matrix to reconstruct a 4D tensor.
+    """
+    I, R = A.shape
+    tensor = np.zeros((I, B.shape[0], C.shape[0], D.shape[0]))
+
+    # For each rank
+    for r in range(R):
+        # Outer product of the r-th columns of each matrix
+        tensor += np.einsum(
+            "i,j,k,l->ijkl", A[:, r], B[:, r], C[:, r], D[:, r]
+        )
+
+    return tensor
+
+
+def project_tensor(mat, proj_matrix):
+    """
+    Reshapes mat into a 3D tensor and projects it using proj_matrix.
+    """
+    C = proj_matrix.shape[1]
+    LR = mat.shape[1] 
+    
+    tensor = mat.reshape(C, C, LR)
+
+    tensor = np.tensordot(tensor, proj_matrix.T, axes=(1, 0))  # C × CES × LR
+
+    tensor = np.tensordot(proj_matrix, tensor, axes=(1, 0))  # CES × CES × LR
+
+    return tensor
+
 
 def project_data(
     X_list: list, means: np.ndarray, factors: list[np.ndarray]
 ) -> tuple[list[np.ndarray], np.ndarray]:
-    A, B, C = factors
+    A, B, C, D = factors
 
     projections: list[np.ndarray] = []
-    projected_X = cp.empty((A.shape[0], B.shape[0], C.shape[0])) # Having trouble understanding how to manipulate this for the 4th dimension
+    projected_X = cp.empty((A.shape[0], B.shape[0], C.shape[0], D.shape[0])) # Having trouble understanding how to manipulate this for the 4th dimension
     means = cp.array(means)
 
-    for i, mat in enumerate(X_list):
+    recon_list = convert_4d_to_list(reconstruct_4d_tensor(A, B, C, D))
+
+    for i, (mat, lhs) in enumerate(zip(X_list, recon_list)):
         if isinstance(mat, np.ndarray):
             mat = cp.array(mat)
 
-        lhs = cp.array((A[i] * C) @ B.T, copy=False)
         U, _, Vh = cp.linalg.svd(mat @ lhs - means @ lhs, full_matrices=False)
         proj = U @ Vh
+        proj = convert_4d_to_2d(
+            cp.asnumpy(proj)
+        )  # Perform the conversion here since we expect that
+        projections.append(proj) 
 
-        projections.append(convert_4d_to_2d(cp.asnumpy(proj))) # Perform the conversion here since we expect that
-
-        # Account for centering
+        # Account for centering (currently not completed)
         centering = cp.outer(cp.sum(proj, axis=0), means)
-        projected_X[i, :, :] = proj.T @ mat - centering
+        projected_X[i, :, :, :] = project_tensor(mat, proj) #- centering # unflatten mat and then store projectedX with an extra dimension to store the full tensor
 
     return projections, cp.asnumpy(projected_X)
 
