@@ -3,61 +3,33 @@ import numpy as np
 import cupy as cp
 import tensorly as tl
 
-def convert_4d_to_list(X: np.ndarray) -> list[np.ndarray]:
-    """
-    Converts a 4D sc x rc x LR x obs tensor to a list of sc*rc x LR matrices
-    where each matrix is a different observation.
-    """
-    result = []
-    for i in range(X.shape[3]):
-        result.append(X[:, :, :, i].reshape(-1, X.shape[2]))
-    return result
 
-def convert_4d_to_2d(X: list[np.ndarray]) -> np.ndarray:
+def convert_4d_to_2d(matrix: np.ndarray) -> np.ndarray:
     """
-    Converts a list of b^2 x X^2 matrices to a list of b x X matrices.
-    Essentially reshapes each b^2 x X^2 matrix into a 4D b x b x X x X tensor
-    and then averages over one of the b dimensions and one of the X dimensions.
+    Converts a b^2 x X^2 matrix to a b x X matrix.
     """
-    result = []
-    for matrix in X:
-        b = int(np.sqrt(matrix.shape[0]))
-        X_dim = int(np.sqrt(matrix.shape[1]))
+    b = int(np.sqrt(matrix.shape[0]))
+    X_dim = int(np.sqrt(matrix.shape[1]))
 
-        # Reshape to 4D and average
-        reshaped = matrix.reshape(b, b, X_dim, X_dim) # maybe redo this rehsape manually
-        averaged = np.mean(reshaped, axis=(1, 3))
-
-        result.append(averaged)
-
-    return np.array(result)
+    # Reshape to 4D and average
+    reshaped = matrix.reshape(b, b, X_dim, X_dim) # maybe redo this rehsape manually
+    return np.mean(reshaped, axis=(1, 3))
 
 
 def reconstruct_4d_tensor(A, B, C, D):
     """
     Does an outer product of the columns of each matrix to reconstruct a 4D tensor.
     """
-    I, R = A.shape
-    tensor = np.zeros((I, B.shape[0], C.shape[0], D.shape[0]))
-
-    # For each rank
-    for r in range(R):
-        # Outer product of the r-th columns of each matrix
-        tensor += np.einsum(
-            "i,j,k,l->ijkl", A[:, r], B[:, r], C[:, r], D[:, r]
-        )
-
-    return tensor
-
-
-def project_tensor(mat, proj_matrix):
-    """
-    Reshapes mat into a 3D tensor and projects it using proj_matrix.
-    """
-    C = proj_matrix.shape[1]
-    LR = mat.shape[1] 
+        # Reconstruct the 3D tensor (BxCxD) from the 4D factor matrices
+    tensor_4d = tl.cp_tensor.cp_to_tensor([A, B, C, D])
     
-    tensor = mat.reshape(C, C, LR) # be wary of the reshaping here
+    return tensor_4d
+
+
+def project_tensor(tensor, proj_matrix):
+    """
+    projects the 3D tensor using proj_matrix.
+    """
 
     tensor = np.tensordot(tensor, proj_matrix.T, axes=(1, 0))  # C × CES × LR
 
@@ -74,16 +46,19 @@ def project_data(
     projections: list[np.ndarray] = []
     projected_X = cp.empty((A.shape[0], B.shape[0], C.shape[0], D.shape[0])) # Having trouble understanding how to manipulate this for the 4th dimension
     means = cp.array(means)
+    
+    full_tensor = reconstruct_4d_tensor(A, B, C, D)
 
-    recon_list = convert_4d_to_list(reconstruct_4d_tensor(A, B, C, D))
 
-    for i, (mat, lhs) in enumerate(zip(X_list, recon_list)):
+    for i, mat in enumerate(X_list):
         if isinstance(mat, np.ndarray):
             mat = cp.array(mat)
 
+        lhs = full_tensor[i, :, :, :]
+        lhs = lhs.reshape(lhs.shape[0] * lhs.shape[1], lhs.shape[2])
         lhs = lhs.T
-        
-        U, _, Vh = cp.linalg.svd(mat @ lhs - means @ lhs, full_matrices=False)
+
+        U, _, Vh = cp.linalg.svd(mat.reshape(mat.shape[0] * mat.shape[1], mat.shape[2]) @ lhs - means @ lhs, full_matrices=False)
         proj = U @ Vh
         proj = convert_4d_to_2d(
             cp.asnumpy(proj)
@@ -95,122 +70,3 @@ def project_data(
         projected_X[i, :, :, :] = project_tensor(mat, proj) #- centering # unflatten mat and then store projectedX with an extra dimension to store the full tensor
 
     return projections, cp.asnumpy(projected_X)
-
-
-def parafac2_init(
-    X_in: anndata.AnnData,
-    rank: int,
-    random_state: Optional[int] = None,
-) -> tuple[list[np.ndarray], float]:
-    pass
-    # Index dataset to a list of conditions
-    # n_cond = len(X_in.obs["condition_unique_idxs"].cat.categories)
-    # means = X_in.var["means"].to_numpy()
-
-    # lmult = X_in.X @ means
-    # if isinstance(X_in.X, np.ndarray):
-    #     norm_tensor = float(np.linalg.norm(X_in.X) ** 2.0 - 2 * np.sum(lmult))
-    # else:
-    #     norm_tensor = float(norm(X_in.X) ** 2.0 - 2 * np.sum(lmult))
-
-    # _, _, C = randomized_svd(X_in.X, rank, random_state=random_state)  # type: ignore
-
-    # factors = [np.ones((n_cond, rank)), np.eye(rank), C.T]
-    # return factors, norm_tensor
-
-
-def parafac2_nd(
-    X_in: anndata.AnnData,
-    rank: int,
-    n_iter_max: int = 100,
-    tol: float = 1e-6,
-    random_state: Optional[int] = None,
-    SECSI_solver=False,
-    callback: Optional[Callable[[int, float, list, list], None]] = None,
-) -> tuple[tuple, float]:
-    r"""The same interface as regular PARAFAC2."""
-    pass
-    # Verbose if this is not an automated build
-    # verbose = "CI" not in os.environ
-
-    # gamma = 1.1
-    # gamma_bar = 1.03
-    # eta = 1.5
-    # beta_i = 0.05
-    # beta_i_bar = 1.0
-
-    # factors, norm_tensor = parafac2_init(X_in, rank, random_state)
-    # factors_old = deepcopy(factors)
-
-    # X_list = anndata_to_list(X_in)
-
-    # if "means" in X_in.var: ####-> add in a placeholder for the means
-    #     means = np.array(X_in.var["means"].to_numpy())
-    # else:
-    #     means = np.zeros((1, factors[2].shape[0]))
-
-    # projections, projected_X = project_data(X_list, means, factors)
-    # err = reconstruction_error(factors, projections, projected_X, norm_tensor)
-    # errs = [err]
-
-    # if SECSI_solver:
-    #     SECSerror, factorOuts = SECSI(projected_X, rank, verbose=False)
-    #     factors = factorOuts[np.argmin(SECSerror)].factors
-
-    # print("")
-    # tq = tqdm(range(n_iter_max), disable=(not verbose))
-    # for iteration in tq:
-    #     jump = beta_i + 1.0
-
-    #     # Estimate error with line search
-    #     factors_ls = [
-    #         factors_old[ii] + (factors[ii] - factors_old[ii]) * jump for ii in range(3)
-    #     ]
-
-    #     projections_ls, projected_X_ls = project_data(X_list, means, factors)
-    #     err_ls = reconstruction_error(
-    #         factors_ls, projections_ls, projected_X_ls, norm_tensor
-    #     )
-
-    #     if err_ls < errs[-1] * norm_tensor:
-    #         err = err_ls
-    #         projections = projections_ls
-    #         projected_X = projected_X_ls
-    #         factors = factors_ls
-
-    #         beta_i = min(beta_i_bar, gamma * beta_i)
-    #         beta_i_bar = max(1.0, gamma_bar * beta_i_bar)
-    #     else:
-    #         beta_i_bar = beta_i
-    #         beta_i = beta_i / eta
-
-    #         projections, projected_X = project_data(X_list, means, factors)
-    #         err = reconstruction_error(factors, projections, projected_X, norm_tensor)
-
-    #     errs.append(err / norm_tensor)
-
-    #     tl.set_backend("cupy")
-    #     factors_old = deepcopy(factors)
-    #     _, factors = parafac(
-    #         cp.array(projected_X),  # type: ignore
-    #         rank,
-    #         n_iter_max=20,
-    #         init=(None, [cp.array(f) for f in factors]),  # type: ignore
-    #         tol=None,  # type: ignore
-    #         normalize_factors=False,
-    #     )
-    #     tl.set_backend("numpy")
-    #     factors = [cp.asnumpy(f) for f in factors]
-
-    #     delta = errs[-2] - errs[-1]
-    #     tq.set_postfix(
-    #         error=errs[-1], R2X=1.0 - errs[-1], Δ=delta, jump=jump, refresh=False
-    #     )
-    #     if callback is not None:
-    #         callback(iteration, errs[-1], factors, projections)
-
-    #     if delta < tol:
-    #         break
-
-    # R2X = 1 - errs[-1]
-    # return standardize_pf2(factors, projections), R2X
