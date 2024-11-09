@@ -16,19 +16,10 @@ def convert_4d_to_2d(matrix: np.ndarray) -> np.ndarray:
     return np.mean(reshaped, axis=(1, 3))
 
 
-def reconstruct_4d_tensor(A, B, C, D):
+def project_tensor(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
     """
-    Does an outer product of the columns of each matrix to reconstruct a 4D tensor.
-    """
-        # Reconstruct the 3D tensor (BxCxD) from the 4D factor matrices
-    tensor_4d = tl.cp_tensor.cp_to_tensor([A, B, C, D])
-    
-    return tensor_4d
-
-
-def project_tensor(tensor, proj_matrix):
-    """
-    projects the 3D tensor using proj_matrix.
+    Projects a 3D tensor of C x C x LR with a projection matrix of C x CES
+    along both C dimensions to form a resulting tensor of CES x CES x LR.
     """
 
     tensor = np.tensordot(tensor, proj_matrix.T, axes=(1, 0))  # C × CES × LR
@@ -41,14 +32,22 @@ def project_tensor(tensor, proj_matrix):
 def project_data(
     X_list: list, means: np.ndarray, factors: list[np.ndarray]
 ) -> tuple[list[np.ndarray], np.ndarray]:
+    """
+    Takes a list of 3D tensors of C x C x LR, a means matrix, factors of
+    A: obs x rank
+    B: C x rank
+    C: C x rank
+    D: LR x rank
+    and solves for the projection matrices for each tensor as well as
+    reconstruct the data based on the projection matrices.
+    """
     A, B, C, D = factors
 
     projections: list[np.ndarray] = []
     projected_X = cp.empty((A.shape[0], B.shape[0], C.shape[0], D.shape[0])) # Having trouble understanding how to manipulate this for the 4th dimension
     means = cp.array(means)
-    
-    full_tensor = reconstruct_4d_tensor(A, B, C, D)
 
+    full_tensor = tl.cp_tensor.cp_to_tensor([A, B, C, D])
 
     for i, mat in enumerate(X_list):
         if isinstance(mat, np.ndarray):
