@@ -2,7 +2,7 @@ import anndata
 import numpy as np
 import cupy as cp
 import tensorly as tl
-
+import unittest
 
 def convert_4d_to_2d(matrix: np.ndarray) -> np.ndarray:
     """
@@ -12,7 +12,7 @@ def convert_4d_to_2d(matrix: np.ndarray) -> np.ndarray:
     X_dim = int(np.sqrt(matrix.shape[1]))
 
     # Reshape to 4D and average
-    reshaped = matrix.reshape(b, b, X_dim, X_dim) # maybe redo this rehsape manually
+    reshaped = matrix.reshape(b, b, X_dim, X_dim) # maybe redo this reshape manually
     return np.mean(reshaped, axis=(1, 3))
 
 
@@ -21,7 +21,6 @@ def project_tensor(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
     Projects a 3D tensor of C x C x LR with a projection matrix of C x CES
     along both C dimensions to form a resulting tensor of CES x CES x LR.
     """
-
     tensor = np.tensordot(tensor, proj_matrix.T, axes=(1, 0))  # C × CES × LR
 
     tensor = np.tensordot(proj_matrix, tensor, axes=(1, 0))  # CES × CES × LR
@@ -47,7 +46,9 @@ def project_data(
     projected_X = cp.empty((A.shape[0], B.shape[0], C.shape[0], D.shape[0])) # Having trouble understanding how to manipulate this for the 4th dimension
     means = cp.array(means)
 
-    full_tensor = tl.cp_tensor.cp_to_tensor([A, B, C, D])
+    rank = A.shape[1]
+    weights = np.ones(rank)
+    full_tensor = tl.cp_tensor.cp_to_tensor((weights, [A, B, C, D]))
 
     for i, mat in enumerate(X_list):
         if isinstance(mat, np.ndarray):
@@ -69,3 +70,41 @@ def project_data(
         projected_X[i, :, :, :] = project_tensor(mat, proj) #- centering # unflatten mat and then store projectedX with an extra dimension to store the full tensor
 
     return projections, cp.asnumpy(projected_X)
+
+class TestProjectData(unittest.TestCase):
+    def test_project_data(self):
+        # Define dimensions
+        num_tensors = 3
+        cells = 400
+        LR = 50
+        obs = 10
+        rank = 10
+
+        # Generate random X_list
+        X_list = [np.random.rand(cells, cells, LR) for _ in range(num_tensors)]
+
+        # Generate random means matrix
+        means = np.random.rand(cells)
+
+        # Generate random factors: A (obs x rank), B (C x rank), C (C x rank), D (LR x rank)
+        A = np.random.rand(obs, rank)
+        B = np.random.rand(rank, rank)
+        C = np.random.rand(rank, rank)
+        D = np.random.rand(LR, rank)
+        factors = [A, B, C, D]
+
+        # Call the project_data method
+        projections, projected_X = project_data(X_list, means, factors)
+
+        # Assertions
+        self.assertEqual(len(projections), num_tensors)
+        for proj in projections:
+            self.assertEqual(proj.shape, (cells, rank))
+
+        self.assertEqual(projected_X.shape, (obs, rank, rank, LR))
+
+        # Check that projected_X contains finite numbers
+        self.assertTrue(np.all(np.isfinite(projected_X)))
+
+if __name__ == "__main__":
+    unittest.main()
