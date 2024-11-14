@@ -21,9 +21,12 @@ def project_tensor(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
     Projects a 3D tensor of C x C x LR with a projection matrix of C x CES
     along both C dimensions to form a resulting tensor of CES x CES x LR.
     """
-    tensor = np.tensordot(tensor, proj_matrix.T, axes=(1, 0))  # C × CES × LR
+    proj_matrix = cp.asarray(proj_matrix)
 
-    tensor = np.tensordot(proj_matrix, tensor, axes=(1, 0))  # CES × CES × LR
+    tensor = np.tensordot(tensor, proj_matrix, axes=([1], [0]))  # C × LR × CES
+    tensor = np.transpose(tensor, (0, 2, 1))
+
+    tensor = np.tensordot(proj_matrix.T, tensor, axes=([1], [0]))  # CES × CES × LR
 
     return tensor
 
@@ -55,10 +58,14 @@ def project_data(
             mat = cp.array(mat)
 
         lhs = full_tensor[i, :, :, :]
+        # print(lhs.shape)
         lhs = lhs.reshape(lhs.shape[0] * lhs.shape[1], lhs.shape[2])
         lhs = lhs.T
 
-        U, _, Vh = cp.linalg.svd(mat.reshape(mat.shape[0] * mat.shape[1], mat.shape[2]) @ lhs - means @ lhs, full_matrices=False)
+        mat = cp.asarray(mat)
+        lhs = cp.asarray(lhs)
+        # print(mat.shape, lhs.shape, means.shape)
+        U, _, Vh = cp.linalg.svd(mat.reshape(mat.shape[0] * mat.shape[1], mat.shape[2]) @ lhs, full_matrices=False)
         proj = U @ Vh
         proj = convert_4d_to_2d(
             cp.asnumpy(proj)
@@ -66,7 +73,7 @@ def project_data(
         projections.append(proj) 
 
         # Account for centering (currently not completed)
-        centering = cp.outer(cp.sum(proj, axis=0), means)
+        # centering = cp.outer(cp.sum(proj, axis=0), means)
         projected_X[i, :, :, :] = project_tensor(mat, proj) #- centering # unflatten mat and then store projectedX with an extra dimension to store the full tensor
 
     return projections, cp.asnumpy(projected_X)
