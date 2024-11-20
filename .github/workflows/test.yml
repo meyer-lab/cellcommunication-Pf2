@@ -14,7 +14,8 @@ jobs:
         with:
           enable-cache: true
           version: '0.39.0'
-          cache-prefix: ${{ steps.dependencies-cache-key.outputs.hash }}
+      - name: Setup environment
+        run: make .venv
       - name: Run test.py
         run: python cellcommunicationpf2/test.py
       - name: Run tests
