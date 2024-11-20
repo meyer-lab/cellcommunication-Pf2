@@ -1,4 +1,7 @@
 import unittest
+import numpy as np
+import cupy as cp
+from cc_pf2 import project_data, project_tensor
 
 
 class TestProjectData(unittest.TestCase):
