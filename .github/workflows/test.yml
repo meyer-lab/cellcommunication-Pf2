@@ -16,7 +16,7 @@ jobs:
           version: '0.39.0'
           cache-prefix: ${{ steps.dependencies-cache-key.outputs.hash }}
       - name: Run test.py
-        run: python test.py
+        run: python cellcommunicationpf2/test.py
       - name: Run tests
         run: make coverage.xml
       - name: Upload coverage to Codecov
