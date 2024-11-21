@@ -17,7 +17,7 @@ jobs:
       - name: Setup environment
         run: make .venv
       - name: Run test.py
-        run: python cellcommunicationpf2/test.py
+        run: pytest cellcommunicationpf2/test.py
       - name: Run tests
         run: make coverage.xml
       - name: Upload coverage to Codecov
