@@ -1,11 +1,11 @@
 import anndata
 import numpy as np
-import cupy as cp
 import tensorly as tl
 from pymanopt.manifolds import Stiefel
 from pymanopt import Problem
 from pymanopt.optimizers import TrustRegions, ConjugateGradient
 import pymanopt
+import autograd.numpy as anp
 
 def convert_4d_to_2d(matrix: np.ndarray) -> np.ndarray:
     """
@@ -23,11 +23,11 @@ def project_tensor(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
     Projects a 3D tensor of C x C x LR with a projection matrix of C x CES
     along both C dimensions to form a resulting tensor of CES x CES x LR.
     """
-    
-    B = cp.zeros((proj_matrix.shape[1], proj_matrix.shape[1], tensor.shape[2]))
+
+    B = np.zeros((proj_matrix.shape[1], proj_matrix.shape[1], tensor.shape[2]))
     for i in range(tensor.shape[2]):
         B[:,:,i] = proj_matrix.T @ tensor[:,:,i] @ proj_matrix
-    
+
     return B
 
 
@@ -46,8 +46,7 @@ def project_data(
     A, B, C, D = factors
 
     projections: list[np.ndarray] = []
-    projected_X = cp.empty((A.shape[0], B.shape[0], C.shape[0], D.shape[0]))
-    means = cp.array(means)
+    projected_X = np.empty((A.shape[0], B.shape[0], C.shape[0], D.shape[0]))
 
     if full_tensor is None:    
         weights = np.ones(A.shape[1]) if weights is None else weights
@@ -55,21 +54,27 @@ def project_data(
 
     for i, mat in enumerate(X_list):
         lhs = full_tensor[i, :, :, :]
-        mat = cp.asarray(mat)
-        lhs = cp.asarray(lhs)
         cells = mat.shape[0]
         ces = lhs.shape[0]
 
         manifold = Stiefel(cells, ces)
+        a_mat = anp.asarray(mat)
+        a_lhs = anp.asarray(lhs)
 
-        @pymanopt.function.numpy(manifold)
+        @pymanopt.function.autograd(manifold)
         def objective_function(proj):
-            return np.linalg.norm(mat - project_tensor(lhs, cp.asarray(proj.T)), 'fro')
+            a_mat_recon = anp.zeros_like(a_mat)
+            for j in range(a_lhs.shape[2]):
+                slice = anp.dot(anp.dot(proj, a_lhs[:, :, j]), proj.T)
+                a_mat_recon = anp.add(a_mat_recon, anp.expand_dims(anp.expand_dims(slice, axis=2), axis=2))
+
+            dif = a_mat - a_mat_recon
+            return anp.linalg.norm(dif) ** 2
 
         problem = Problem(manifold=manifold, cost=objective_function)
 
         # Solve the problem
-        solver = TrustRegions()
+        solver = ConjugateGradient(verbosity=2)
         proj = solver.run(problem).point
 
         # flatenned_mat = mat.reshape(mat.shape[0] * mat.shape[1], mat.shape[2])
@@ -84,6 +89,6 @@ def project_data(
 
         # Account for centering (currently not completed)
         # centering = cp.outer(cp.sum(proj, axis=0), means)
-        projected_X[i, :, :, :] = project_tensor(mat, cp.asarray(proj)) #- centering # unflatten mat and then store projectedX with an extra dimension to store the full tensor
+        projected_X[i, :, :, :] = project_tensor(mat, proj) #- centering # unflatten mat and then store projectedX with an extra dimension to store the full tensor
 
-    return projections, cp.asnumpy(projected_X)
+    return projections, projected_X

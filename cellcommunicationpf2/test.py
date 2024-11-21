@@ -1,5 +1,4 @@
 import numpy as np
-import cupy as cp
 from cc_pf2 import project_data, project_tensor
 import pytest
 
@@ -13,10 +12,10 @@ class TestProjectData:
 
         # Define dimensions
         num_tensors = 3
-        cells = 400
-        LR = 50
-        obs = 10
-        rank = 10
+        cells = 20
+        LR = 10
+        obs = 5
+        rank = 5
 
         # Generate random X_list
         X_list = [np.random.rand(cells, cells, LR) for _ in range(num_tensors)]
@@ -41,17 +40,17 @@ class TestProjectData:
 
         assert projected_X.shape == (obs, rank, rank, LR)
 
-    @pytest.mark.skip(reason="The project method hasn't been completed yet")
+    # @pytest.mark.skip(reason="The project method hasn't been completed yet")
     def test_project_data_output(self):
         """
         Tests that the project data method is actually able to solve for the correct optimal projection matrix.
         """
         # Define dimensions
         num_tensors = 3
-        cells = 400
-        LR = 50
-        obs = 10
-        rank = 10
+        cells = 20
+        LR = 10
+        obs = 5
+        rank = 5
         # Generate a random projected tensor
         projected_X = np.random.rand(obs, rank, rank, LR)
 
@@ -63,8 +62,8 @@ class TestProjectData:
         # Recreate the original tensor using the projection matrices and projected tensor
         recreated_tensors = []
         for i in range(num_tensors):
-            Q = cp.asarray(projections[i])
-            A = cp.asarray(projected_X[i, :, :, :])
+            Q = projections[i]
+            A = projected_X[i, :, :, :]
             B = project_tensor(A, Q.T)
             recreated_tensors.append(B)
 
