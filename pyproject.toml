@@ -16,6 +16,7 @@ dependencies = [
     "scikit-learn>=1.4.2",
     "pacmap>=0.7.2",
     "tlviz>=0.1.1",
+    "pymanopt>=2.2.1",
 ]
 
 readme = "README.md"

@@ -63,6 +63,7 @@ numpy==2.0.2
     # via pacmap
     # via pandas
     # via patsy
+    # via pymanopt
     # via scikit-learn
     # via scipy
     # via statsmodels
@@ -88,6 +89,8 @@ pillow==10.4.0
     # via matplotlib
 pluggy==1.5.0
     # via pytest
+pymanopt==2.2.1
+    # via cellcommunicationpf2
 pyparsing==3.1.4
     # via matplotlib
 pyright==1.1.383
@@ -107,6 +110,7 @@ scikit-learn==1.5.2
 scipy==1.14.1
     # via anndata
     # via cellcommunicationpf2
+    # via pymanopt
     # via scikit-learn
     # via statsmodels
     # via tensorly

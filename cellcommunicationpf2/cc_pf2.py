@@ -2,6 +2,10 @@ import anndata
 import numpy as np
 import cupy as cp
 import tensorly as tl
+from pymanopt.manifolds import Stiefel
+from pymanopt import Problem
+from pymanopt.optimizers import TrustRegions, ConjugateGradient
+import pymanopt
 
 def convert_4d_to_2d(matrix: np.ndarray) -> np.ndarray:
     """
@@ -33,8 +37,8 @@ def project_data(
     """
     Takes a list of 3D tensors of C x C x LR, a means matrix, factors of
     A: obs x rank
-    B: C x rank
-    C: C x rank
+    B: CES x rank
+    C: CES x rank
     D: LR x rank
     and solves for the projection matrices for each tensor as well as
     reconstruct the data based on the projection matrices.
@@ -53,15 +57,29 @@ def project_data(
         lhs = full_tensor[i, :, :, :]
         mat = cp.asarray(mat)
         lhs = cp.asarray(lhs)
-        
-        flatenned_mat = mat.reshape(mat.shape[0] * mat.shape[1], mat.shape[2])
-        flattened_lhs = lhs.reshape(lhs.shape[0] * lhs.shape[1],  lhs.shape[2])
+        cells = mat.shape[0]
+        ces = lhs.shape[0]
 
-        U, _, Vh = cp.linalg.svd(flatenned_mat @ flattened_lhs.T, full_matrices=False)
-        proj = U @ Vh
-        proj = convert_4d_to_2d(
-            cp.asnumpy(proj)
-        )  # Perform the conversion here since we expect that
+        manifold = Stiefel(cells, ces)
+
+        @pymanopt.function.numpy(manifold)
+        def objective_function(proj):
+            return np.linalg.norm(mat - project_tensor(lhs, cp.asarray(proj.T)), 'fro')
+
+        problem = Problem(manifold=manifold, cost=objective_function)
+
+        # Solve the problem
+        solver = TrustRegions()
+        proj = solver.run(problem).point
+
+        # flatenned_mat = mat.reshape(mat.shape[0] * mat.shape[1], mat.shape[2])
+        # flattened_lhs = lhs.reshape(lhs.shape[0] * lhs.shape[1],  lhs.shape[2])
+
+        # U, _, Vh = cp.linalg.svd(flatenned_mat @ flattened_lhs.T, full_matrices=False)
+        # proj = U @ Vh
+        # proj = convert_4d_to_2d(
+        #     cp.asnumpy(proj)
+        # )  # Perform the conversion here since we expect that
         projections.append(proj) 
 
         # Account for centering (currently not completed)
@@ -69,4 +87,3 @@ def project_data(
         projected_X[i, :, :, :] = project_tensor(mat, cp.asarray(proj)) #- centering # unflatten mat and then store projectedX with an extra dimension to store the full tensor
 
     return projections, cp.asnumpy(projected_X)
-
