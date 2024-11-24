@@ -7,17 +7,6 @@ from pymanopt.optimizers import TrustRegions, ConjugateGradient
 import pymanopt
 import autograd.numpy as anp
 
-def convert_4d_to_2d(matrix: np.ndarray) -> np.ndarray:
-    """
-    Converts a b^2 x X^2 matrix to a b x X matrix.
-    """
-    b = int(np.sqrt(matrix.shape[0]))
-    X_dim = int(np.sqrt(matrix.shape[1]))
-
-    reshaped = matrix.reshape(b, b, X_dim, X_dim)  # maybe redo this reshape manually
-    return np.mean(reshaped, axis=(1, 3))
-
-
 def project_tensor(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
     """
     Projects a 3D tensor of C x C x LR with a projection matrix of C x CES
@@ -66,10 +55,16 @@ def project_data(
             a_mat_recon = anp.zeros_like(a_mat)
             for j in range(a_lhs.shape[2]):
                 slice = anp.dot(anp.dot(proj, a_lhs[:, :, j]), proj.T)
-                a_mat_recon = anp.add(a_mat_recon, anp.expand_dims(anp.expand_dims(slice, axis=2), axis=2))
+                tensor = np.zeros((*slice.shape, a_lhs.shape[2]))
+                # Create a mask of zeros with 1 at index j along last axis
+                mask = np.zeros(a_lhs.shape[2])
+                mask[j] = 1
+    
+                # Broadcast the mask and multiply with the expanded matrix
+                a_mat_recon = anp.add(a_mat_recon, np.expand_dims(slice, axis=-1) * mask)
 
             dif = a_mat - a_mat_recon
-            return anp.linalg.norm(dif) ** 2
+            return anp.sum(anp.abs(dif))
 
         problem = Problem(manifold=manifold, cost=objective_function)
 
@@ -77,18 +72,8 @@ def project_data(
         solver = ConjugateGradient(verbosity=2)
         proj = solver.run(problem).point
 
-        # flatenned_mat = mat.reshape(mat.shape[0] * mat.shape[1], mat.shape[2])
-        # flattened_lhs = lhs.reshape(lhs.shape[0] * lhs.shape[1],  lhs.shape[2])
-
-        # U, _, Vh = cp.linalg.svd(flatenned_mat @ flattened_lhs.T, full_matrices=False)
-        # proj = U @ Vh
-        # proj = convert_4d_to_2d(
-        #     cp.asnumpy(proj)
-        # )  # Perform the conversion here since we expect that
         projections.append(proj) 
 
-        # Account for centering (currently not completed)
-        # centering = cp.outer(cp.sum(proj, axis=0), means)
-        projected_X[i, :, :, :] = project_tensor(mat, proj) #- centering # unflatten mat and then store projectedX with an extra dimension to store the full tensor
+        projected_X[i, :, :, :] = project_tensor(mat, proj) 
 
     return projections, projected_X
