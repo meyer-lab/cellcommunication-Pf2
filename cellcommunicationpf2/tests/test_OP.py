@@ -1,43 +1,32 @@
 import numpy as np
-from ..cc_pf2 import project_data, project_tensor
+from ..cc_pf2 import project_data, solve_projections
 import pytest
 
 
-@pytest.mark.skip(reason="The project method hasn't been completed yet")
 def test_project_data():
     """
     Tests that the dimensions are correct and that the method is able to run without errors.
     """
 
     # Define dimensions
-    num_tensors = 3
     cells = 20
     LR = 10
     obs = 5
     rank = 5
 
     # Generate random X_list
-    X_list = [np.random.rand(cells, cells, LR) for _ in range(num_tensors)]
+    X_mat = np.random.rand(cells, cells, LR)
 
-    # Generate random factors: A (obs x rank), B (C x rank), C (C x rank), D (LR x rank)
-    A = np.random.rand(obs, rank)
-    B = np.random.rand(rank, rank)
-    C = np.random.rand(rank, rank)
-    D = np.random.rand(LR, rank)
-    factors = [A, B, C, D]
+    # Projection matrix
+    proj_matrix = np.linalg.qr(np.random.rand(cells, rank))[0]
 
     # Call the project_data method
-    projections, projected_X = project_data(X_list, factors)
-
-    # Assertions
-    assert len(projections) == num_tensors
-    for proj in projections:
-        assert proj.shape == (cells, rank)
+    projected_X = project_data(X_mat, proj_matrix)
 
     assert projected_X.shape == (obs, rank, rank, LR)
 
 
-@pytest.mark.skip(reason="The project method hasn't been completed yet")
+@pytest.mark.xfail(reason="The project method hasn't been completed yet")
 def test_project_data_output():
     """
     Tests that the project data method is actually able to solve for the correct optimal projection matrix.
@@ -61,11 +50,11 @@ def test_project_data_output():
     for i in range(num_tensors):
         Q = projections[i]
         A = projected_X[i, :, :, :]
-        B = project_tensor(A, Q.T)
+        B = project_data(A, Q.T)
         recreated_tensors.append(B)
 
     # Call the project_data method using the recreated tensors to get the projected_X that gets solved by our method
-    projections_recreated, _ = project_data(
+    projections_recreated = solve_projections(
         recreated_tensors,
         [
             np.zeros((obs, rank)),
@@ -73,7 +62,6 @@ def test_project_data_output():
             np.zeros((rank, rank)),
             np.zeros((LR, rank)),
         ],
-        full_tensor=projected_X,
     )
 
     # Assert that the projections are the same
