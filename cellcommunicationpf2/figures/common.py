@@ -125,6 +125,3 @@ def get_canvas(points: np.ndarray) -> ds.Canvas:
     )
 
     return canvas
-
-
-  

@@ -7,6 +7,7 @@ from pymanopt.optimizers import TrustRegions, ConjugateGradient
 import pymanopt
 import autograd.numpy as anp
 
+
 def project_tensor(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
     """
     Projects a 3D tensor of C x C x LR with a projection matrix of C x CES
@@ -15,13 +16,17 @@ def project_tensor(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
 
     B = np.zeros((proj_matrix.shape[1], proj_matrix.shape[1], tensor.shape[2]))
     for i in range(tensor.shape[2]):
-        B[:,:,i] = proj_matrix.T @ tensor[:,:,i] @ proj_matrix
+        B[:, :, i] = proj_matrix.T @ tensor[:, :, i] @ proj_matrix
 
     return B
 
 
 def project_data(
-    X_list: list, means: np.ndarray, factors: list[np.ndarray], weights: np.ndarray = None, full_tensor: np.ndarray = None
+    X_list: list,
+    means: np.ndarray,
+    factors: list[np.ndarray],
+    weights: np.ndarray = None,
+    full_tensor: np.ndarray = None,
 ) -> tuple[list[np.ndarray], np.ndarray]:
     """
     Takes a list of 3D tensors of C x C x LR, a means matrix, factors of
@@ -37,7 +42,7 @@ def project_data(
     projections: list[np.ndarray] = []
     projected_X = np.empty((A.shape[0], B.shape[0], C.shape[0], D.shape[0]))
 
-    if full_tensor is None:    
+    if full_tensor is None:
         weights = np.ones(A.shape[1]) if weights is None else weights
         full_tensor = tl.cp_tensor.cp_to_tensor((weights, [A, B, C, D]))
 
@@ -59,9 +64,11 @@ def project_data(
                 # Create a mask of zeros with 1 at index j along last axis
                 mask = np.zeros(a_lhs.shape[2])
                 mask[j] = 1
-    
+
                 # Broadcast the mask and multiply with the expanded matrix
-                a_mat_recon = anp.add(a_mat_recon, np.expand_dims(slice, axis=-1) * mask)
+                a_mat_recon = anp.add(
+                    a_mat_recon, np.expand_dims(slice, axis=-1) * mask
+                )
 
             dif = a_mat - a_mat_recon
             return anp.sum(anp.abs(dif))
@@ -72,8 +79,8 @@ def project_data(
         solver = ConjugateGradient(verbosity=2)
         proj = solver.run(problem).point
 
-        projections.append(proj) 
+        projections.append(proj)
 
-        projected_X[i, :, :, :] = project_tensor(mat, proj) 
+        projected_X[i, :, :, :] = project_tensor(mat, proj)
 
     return projections, projected_X
