@@ -2,7 +2,6 @@
 Figure 1: XX
 """
 
-import anndata
 import pandas as pd
 from .common import getSetup, subplotLabel
 
