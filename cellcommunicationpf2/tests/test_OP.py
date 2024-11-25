@@ -19,9 +19,6 @@ def test_project_data():
     # Generate random X_list
     X_list = [np.random.rand(cells, cells, LR) for _ in range(num_tensors)]
 
-    # Generate random means matrix
-    means = np.random.rand(cells)
-
     # Generate random factors: A (obs x rank), B (C x rank), C (C x rank), D (LR x rank)
     A = np.random.rand(obs, rank)
     B = np.random.rand(rank, rank)
@@ -30,7 +27,7 @@ def test_project_data():
     factors = [A, B, C, D]
 
     # Call the project_data method
-    projections, projected_X = project_data(X_list, means, factors)
+    projections, projected_X = project_data(X_list, factors)
 
     # Assertions
     assert len(projections) == num_tensors
@@ -70,7 +67,6 @@ def test_project_data_output():
     # Call the project_data method using the recreated tensors to get the projected_X that gets solved by our method
     projections_recreated, _ = project_data(
         recreated_tensors,
-        np.zeros(cells),
         [
             np.zeros((obs, rank)),
             np.zeros((rank, rank)),

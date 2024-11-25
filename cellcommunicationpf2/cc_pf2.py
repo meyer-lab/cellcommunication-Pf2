@@ -22,7 +22,6 @@ def project_tensor(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
 
 def project_data(
     X_list: list,
-    means: np.ndarray,
     factors: list[np.ndarray],
     weights: np.ndarray = None,
     full_tensor: np.ndarray = None,
