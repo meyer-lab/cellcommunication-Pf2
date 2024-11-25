@@ -17,8 +17,7 @@ def project_data(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
 
 def solve_projections(
     X_list: list,
-    factors: list[np.ndarray],
-    weights: np.ndarray = None,
+    full_tensor: np.ndarray,
 ) -> list[np.ndarray]:
     """
     Takes a list of 3D tensors of C x C x LR, a means matrix, factors of
@@ -29,10 +28,7 @@ def solve_projections(
     and solves for the projection matrices for each tensor as well as
     reconstruct the data based on the projection matrices.
     """
-    A, B, C, D = factors
-
     projections: list[np.ndarray] = []
-    full_tensor = tl.cp_tensor.cp_to_tensor((weights, [A, B, C, D]))
 
     for i, mat in enumerate(X_list):
         manifold = Stiefel(mat.shape[0], full_tensor.shape[1])
