@@ -16,8 +16,6 @@ jobs:
           version: '0.39.0'
       - name: Setup environment
         run: make .venv
-      - name: Run test.py
-        run: ./.venv/bin/pytest cellcommunicationpf2/test.py
       - name: Run tests
         run: make coverage.xml
       - name: Upload coverage to Codecov
