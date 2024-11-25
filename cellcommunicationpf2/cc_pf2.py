@@ -1,9 +1,8 @@
-import anndata
 import numpy as np
 import tensorly as tl
 from pymanopt.manifolds import Stiefel
 from pymanopt import Problem
-from pymanopt.optimizers import TrustRegions, ConjugateGradient
+from pymanopt.optimizers import ConjugateGradient
 import pymanopt
 import autograd.numpy as anp
 

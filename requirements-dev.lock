@@ -10,12 +10,8 @@
 #   universal: false
 
 -e file:.
-anndata==0.11.1
-    # via cellcommunicationpf2
 annoy==1.17.3
     # via pacmap
-array-api-compat==1.9
-    # via anndata
 autograd==1.7.0
     # via cellcommunicationpf2
 certifi==2024.8.30
@@ -34,8 +30,6 @@ fastrlock==0.8.2
     # via cupy-cuda12x
 fonttools==4.54.1
     # via matplotlib
-h5py==3.12.1
-    # via anndata
 idna==3.10
     # via requests
 iniconfig==2.0.0
@@ -48,19 +42,15 @@ llvmlite==0.43.0
     # via numba
 matplotlib==3.9.2
     # via tlviz
-natsort==8.4.0
-    # via anndata
 nodeenv==1.9.1
     # via pyright
 numba==0.60.0
     # via pacmap
 numpy==2.0.2
-    # via anndata
     # via autograd
     # via cellcommunicationpf2
     # via contourpy
     # via cupy-cuda12x
-    # via h5py
     # via matplotlib
     # via numba
     # via pacmap
@@ -74,7 +64,6 @@ numpy==2.0.2
     # via tlviz
     # via xarray
 packaging==24.1
-    # via anndata
     # via matplotlib
     # via pytest
     # via statsmodels
@@ -82,7 +71,6 @@ packaging==24.1
 pacmap==0.7.3
     # via cellcommunicationpf2
 pandas==2.2.3
-    # via anndata
     # via statsmodels
     # via tlviz
     # via xarray
@@ -111,7 +99,6 @@ scikit-learn==1.5.2
     # via cellcommunicationpf2
     # via pacmap
 scipy==1.14.1
-    # via anndata
     # via cellcommunicationpf2
     # via pymanopt
     # via scikit-learn
