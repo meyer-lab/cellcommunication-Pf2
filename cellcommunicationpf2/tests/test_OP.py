@@ -3,7 +3,6 @@ from ..cc_pf2 import project_data, solve_projections
 import pytest
 
 
-@pytest.mark.xfail(reason="The project method hasn't been completed yet")
 def test_project_data():
     """
     Tests that the dimensions are correct and that the method is able to run without errors.
@@ -22,9 +21,10 @@ def test_project_data():
     proj_matrix = np.linalg.qr(np.random.rand(cells, rank))[0]
 
     # Call the project_data method
+    print(proj_matrix.shape)
     projected_X = project_data(X_mat, proj_matrix)
 
-    assert projected_X.shape == (obs, rank, rank, LR)
+    assert projected_X.shape == (rank, rank, LR)
 
 
 @pytest.mark.xfail(reason="The project method hasn't been completed yet")
@@ -64,6 +64,6 @@ def test_project_data_output():
     for i in range(num_tensors):
         difference_sum = np.sum(np.abs(projections[i] - projections_recreated[i]))
         print(
-            f"Projection {i} difference sum: {difference_sum}. Sum of projections in absolute: {np.sum(np.abs(projections[i]))}. Sum of projections_recreated in absolute: {np.sum(np.abs(projections_recreated[i]))}"
+            f"Projection {i} difference sum: {difference_sum}. Sum of projections in absolute: {np.sum(np.abs(projections[i]))}"
         )
         assert np.allclose(projections[i], projections_recreated[i])

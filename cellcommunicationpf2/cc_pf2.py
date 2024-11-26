@@ -12,7 +12,7 @@ def project_data(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
     Projects a 3D tensor of C x C x LR with a projection matrix of C x CES
     along both C dimensions to form a resulting tensor of CES x CES x LR.
     """
-    return np.einsum("ab,cd,bdg->acg", proj_matrix, proj_matrix, tensor)
+    return np.einsum("ab,cd,acg->bdg", proj_matrix, proj_matrix, tensor)
 
 
 def solve_projections(
@@ -37,7 +37,7 @@ def solve_projections(
 
         @pymanopt.function.autograd(manifold)
         def objective_function(proj):
-            a_mat_recon = anp.einsum("ab,cd,bdg->acg", proj, proj, a_lhs)
+            a_mat_recon = anp.einsum("ab,cd,acg->bdg", proj.T, proj.T, a_lhs)
             return anp.sum(anp.square(a_mat - a_mat_recon))
 
         problem = Problem(manifold=manifold, cost=objective_function)
