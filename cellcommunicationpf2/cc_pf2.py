@@ -46,6 +46,10 @@ def solve_projections(
         solver = ConjugateGradient(verbosity=1)
         proj = solver.run(problem).point
 
+        U, _, Vt = np.linalg.svd(proj, full_matrices=False)
+
+        proj = U @ Vt
+
         projections.append(proj)
 
     return projections
