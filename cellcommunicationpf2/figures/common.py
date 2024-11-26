@@ -4,18 +4,13 @@ This file contains functions that are used in multiple figures.
 
 import sys
 import time
+from string import ascii_letters
 
-import datashader as ds
-import datashader.transfer_functions as tf
 import matplotlib
-import numpy as np
 import seaborn as sns
 from matplotlib import gridspec
 from matplotlib import pyplot as plt
-from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from string import ascii_letters
-from ..tensor import reorder_table
 
 matplotlib.use("AGG")
 
@@ -89,38 +84,3 @@ def genFigure():
         )
 
     print(f"Figure {sys.argv[1]} is done after {time.time() - start} seconds.\n")
-
-
-def ds_show(result: tf.Image, ax: plt.Axes):
-    """Show datashader results."""
-    result = tf.dynspread(result, threshold=0.95, max_px=5)
-    result = tf.set_background(result, "white")
-    img_rev = result.data[::-1]
-    mpl_img = np.dstack(
-        [
-            img_rev & 0x0000FF,
-            (img_rev & 0x00FF00) >> 8,
-            (img_rev & 0xFF0000) >> 16,
-        ]
-    )
-
-    ax.imshow(mpl_img)
-
-
-def get_canvas(points: np.ndarray) -> ds.Canvas:
-    """Compute bounds on a space with appropriate padding"""
-    min_xy = np.nanmin(points, axis=0)
-    assert min_xy.size == 2
-    max_xy = np.nanmax(points, axis=0)
-
-    mins = np.round(min_xy - 0.05 * (max_xy - min_xy))
-    maxs = np.round(max_xy + 0.05 * (max_xy - min_xy))
-
-    canvas = ds.Canvas(
-        plot_width=900,
-        plot_height=900,
-        x_range=(mins[0], maxs[0]),
-        y_range=(mins[1], maxs[1]),
-    )
-
-    return canvas

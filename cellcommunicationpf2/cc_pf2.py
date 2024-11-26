@@ -1,9 +1,9 @@
-import numpy as np
-from pymanopt.manifolds import Stiefel
-from pymanopt import Problem
-from pymanopt.optimizers import ConjugateGradient
-import pymanopt
 import autograd.numpy as anp
+import numpy as np
+import pymanopt
+from pymanopt import Problem
+from pymanopt.manifolds import Stiefel
+from pymanopt.optimizers import ConjugateGradient
 
 
 def project_data(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
@@ -42,7 +42,9 @@ def solve_projections(
         problem = Problem(manifold=manifold, cost=objective_function)
 
         # Solve the problem
-        solver = ConjugateGradient(verbosity=1, min_gradient_norm=1e-9, min_step_size=1e-12)
+        solver = ConjugateGradient(
+            verbosity=1, min_gradient_norm=1e-9, min_step_size=1e-12
+        )
         proj = solver.run(problem).point
 
         U, _, Vt = np.linalg.svd(proj, full_matrices=False)
