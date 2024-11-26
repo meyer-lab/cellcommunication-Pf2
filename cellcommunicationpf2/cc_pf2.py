@@ -1,5 +1,4 @@
 import numpy as np
-import tensorly as tl
 from pymanopt.manifolds import Stiefel
 from pymanopt import Problem
 from pymanopt.optimizers import ConjugateGradient
@@ -37,13 +36,13 @@ def solve_projections(
 
         @pymanopt.function.autograd(manifold)
         def objective_function(proj):
-            a_mat_recon = anp.einsum("ab,cd,acg->bdg", proj.T, proj.T, a_lhs)
+            a_mat_recon = anp.einsum("ba,dc,acg->bdg", proj, proj, a_lhs)
             return anp.sum(anp.square(a_mat - a_mat_recon))
 
         problem = Problem(manifold=manifold, cost=objective_function)
 
         # Solve the problem
-        solver = ConjugateGradient(verbosity=1)
+        solver = ConjugateGradient(verbosity=1, min_gradient_norm=1e-9, min_step_size=1e-12)
         proj = solver.run(problem).point
 
         U, _, Vt = np.linalg.svd(proj, full_matrices=False)
