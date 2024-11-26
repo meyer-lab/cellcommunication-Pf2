@@ -5,7 +5,6 @@ This file contains functions that are used in multiple figures.
 import sys
 import time
 
-from anndata import AnnData
 import datashader as ds
 import datashader.transfer_functions as tf
 import matplotlib
