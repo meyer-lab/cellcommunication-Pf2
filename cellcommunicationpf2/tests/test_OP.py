@@ -83,11 +83,6 @@ def test_project_data_output_proj_matrix():
         np.linalg.qr(np.random.rand(cells, rank))[0] for _ in range(num_tensors)
     ]
 
-    for i in range(len(projections)):
-        proj = projections[i]  
-        U, _, Vt = np.linalg.svd(proj, full_matrices=False)
-        projections[i] = U @ Vt
-
     # Recreate the original tensor using the projection matrices and projected tensor
     recreated_tensors = []
     for i in range(num_tensors):
