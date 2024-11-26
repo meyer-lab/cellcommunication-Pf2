@@ -12,6 +12,8 @@
 -e file:.
 annoy==1.17.3
     # via pacmap
+autograd==1.7.0
+    # via cellcommunicationpf2
 certifi==2024.8.30
     # via requests
 charset-normalizer==3.3.2
@@ -39,6 +41,7 @@ matplotlib==3.9.2
 numba==0.60.0
     # via pacmap
 numpy==2.0.2
+    # via autograd
     # via cellcommunicationpf2
     # via contourpy
     # via cupy-cuda12x
@@ -47,6 +50,7 @@ numpy==2.0.2
     # via pacmap
     # via pandas
     # via patsy
+    # via pymanopt
     # via scikit-learn
     # via scipy
     # via statsmodels
@@ -67,6 +71,8 @@ patsy==0.5.6
     # via statsmodels
 pillow==10.4.0
     # via matplotlib
+pymanopt==2.2.1
+    # via cellcommunicationpf2
 pyparsing==3.1.4
     # via matplotlib
 python-dateutil==2.9.0.post0
@@ -81,6 +87,7 @@ scikit-learn==1.5.2
     # via pacmap
 scipy==1.14.1
     # via cellcommunicationpf2
+    # via pymanopt
     # via scikit-learn
     # via statsmodels
     # via tensorly
@@ -90,7 +97,7 @@ six==1.16.0
     # via python-dateutil
 statsmodels==0.14.4
     # via tlviz
-tensorly==0.8.1
+tensorly==0.9.0
     # via cellcommunicationpf2
 threadpoolctl==3.5.0
     # via scikit-learn

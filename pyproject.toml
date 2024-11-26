@@ -7,14 +7,16 @@ license = "MIT"
 requires-python = ">= 3.11"
 
 dependencies = [
-    "numpy>=1.26",
+    "numpy>=1.21,<2.1",
     "scipy>=1.12",
-    "tensorly>=0.8.1",
+    "tensorly~=0.9.0",
     "tqdm>=4.66",
     "cupy-cuda12x>=13.0",
     "scikit-learn>=1.4.2",
     "pacmap>=0.7.2",
     "tlviz>=0.1.1",
+    "pymanopt>=2.2.1",
+    "autograd>=1.7.0",
 ]
 
 readme = "README.md"
