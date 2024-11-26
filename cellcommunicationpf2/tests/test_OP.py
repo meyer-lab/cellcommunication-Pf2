@@ -11,7 +11,6 @@ def test_project_data():
     # Define dimensions
     cells = 20
     LR = 10
-    obs = 5
     rank = 5
 
     # Generate random X_list
