@@ -34,7 +34,7 @@ def init(
     data_matrix = flatten_tensor_list(X_list)
     
     _, _, C = randomized_svd(data_matrix, rank, random_state=random_state)
-    factors = [np.ones((X_list[0].shape[0], rank)), np.eye(rank), np.eye(rank), C.T]
+    factors = [np.ones((len(X_list), rank)), np.eye(rank), np.eye(rank), C.T]
     return factors
 
 

@@ -9,17 +9,18 @@ def test_init():
     """
 
     # Define dimensions
+    obs = 3
     cells = 20
     LR = 10
     rank = 5
 
     # Generate random X_list
-    X_list = [np.random.rand(cells, cells, LR) for _ in range(3)]
+    X_list = [np.random.rand(cells, cells, LR) for _ in range(obs)]
 
     # Call the init method
     factors = init(X_list, rank)
 
-    assert factors[0].shape == (cells, rank)
+    assert factors[0].shape == (obs, rank)
     assert factors[1].shape == (rank, rank)
     assert factors[2].shape == (rank, rank)
     assert factors[3].shape == (LR, rank)
