@@ -12,13 +12,21 @@
 -e file:.
 autograd==1.7.0
     # via cellcommunicationpf2
+joblib==1.4.2
+    # via scikit-learn
 numpy==2.0.2
     # via autograd
     # via cellcommunicationpf2
     # via pymanopt
+    # via scikit-learn
     # via scipy
 pymanopt==2.2.1
+    # via cellcommunicationpf2
+scikit-learn==1.5.2
     # via cellcommunicationpf2
 scipy==1.14.1
     # via cellcommunicationpf2
     # via pymanopt
+    # via scikit-learn
+threadpoolctl==3.5.0
+    # via scikit-learn
