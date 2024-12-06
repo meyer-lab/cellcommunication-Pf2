@@ -1,6 +1,29 @@
 import numpy as np
 
-from ..cc_pf2 import project_data, solve_projections
+from ..cc_pf2 import project_data, solve_projections, init
+
+
+def test_init():
+    """
+    Tests that the dimensions are correct and that the method is able to run without errors.
+    """
+
+    # Define dimensions
+    obs = 3
+    cells = 20
+    LR = 10
+    rank = 5
+
+    # Generate random X_list
+    X_list = [np.random.rand(cells, cells, LR) for _ in range(obs)]
+
+    # Call the init method
+    factors = init(X_list, rank)
+
+    assert factors[0].shape == (obs, rank)
+    assert factors[1].shape == (rank, rank)
+    assert factors[2].shape == (rank, rank)
+    assert factors[3].shape == (LR, rank)
 
 
 def test_project_data():
