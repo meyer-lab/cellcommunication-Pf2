@@ -20,6 +20,7 @@ numpy==2.0.2
     # via pymanopt
     # via scikit-learn
     # via scipy
+    # via tensorly
 pymanopt==2.2.1
     # via cellcommunicationpf2
 scikit-learn==1.5.2
@@ -28,5 +29,10 @@ scipy==1.14.1
     # via cellcommunicationpf2
     # via pymanopt
     # via scikit-learn
+    # via tensorly
+tensorly==0.9.0
+    # via cellcommunicationpf2
 threadpoolctl==3.5.0
     # via scikit-learn
+tqdm==4.67.1
+    # via cellcommunicationpf2
