@@ -8,6 +8,26 @@ from typing import Optional
 from sklearn.utils.extmath import randomized_svd
 
 
+def factors_to_tensor(factors: list[np.ndarray]) -> np.ndarray:
+    """
+    Reconstructs a tensor from a list of factors
+    """
+
+    return np.einsum('ar,br,cr,dr->abcd', factors[0], factors[1], factors[2], factors[3])
+
+
+def reconstruction_error(
+    factors: list[np.ndarray],
+    projected_X: np.ndarray
+) -> float:
+    """
+    Compute the reconstruction error of the CP decomposition
+    """
+    
+    full_tensor = factors_to_tensor(factors)
+    return np.linalg.norm(full_tensor - projected_X) ** 2
+
+
 def flatten_tensor_list(tensor_list: list):
     """
     Flatten a list of 3D tensors from A x B x B x C to a matrix of (A*B*B) x C
