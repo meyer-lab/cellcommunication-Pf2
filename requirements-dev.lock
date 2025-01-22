@@ -5,50 +5,25 @@
 #   pre: false
 #   features: []
 #   all-features: false
-#   with-sources: false
-#   generate-hashes: false
-#   universal: false
 
 -e file:.
 autograd==1.7.0
-    # via cellcommunicationpf2
 coverage==7.6.1
-    # via pytest-cov
+cupy-cuda12x==13.3.0
+fastrlock==0.8.3
 iniconfig==2.0.0
-    # via pytest
 joblib==1.4.2
-    # via scikit-learn
 nodeenv==1.9.1
-    # via pyright
 numpy==2.0.2
-    # via autograd
-    # via cellcommunicationpf2
-    # via pymanopt
-    # via scikit-learn
-    # via scipy
-    # via tensorly
 packaging==24.1
-    # via pytest
 pluggy==1.5.0
-    # via pytest
 pymanopt==2.2.1
-    # via cellcommunicationpf2
 pyright==1.1.383
 pytest==8.3.3
-    # via pytest-cov
 pytest-cov==6.0.0
 scikit-learn==1.5.2
-    # via cellcommunicationpf2
 scipy==1.14.1
-    # via cellcommunicationpf2
-    # via pymanopt
-    # via scikit-learn
-    # via tensorly
 tensorly==0.9.0
-    # via cellcommunicationpf2
 threadpoolctl==3.5.0
-    # via scikit-learn
 tqdm==4.67.1
-    # via cellcommunicationpf2
 typing-extensions==4.12.2
-    # via pyright

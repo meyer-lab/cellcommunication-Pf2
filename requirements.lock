@@ -5,34 +5,16 @@
 #   pre: false
 #   features: []
 #   all-features: false
-#   with-sources: false
-#   generate-hashes: false
-#   universal: false
 
 -e file:.
 autograd==1.7.0
-    # via cellcommunicationpf2
+cupy-cuda12x==13.3.0
+fastrlock==0.8.3
 joblib==1.4.2
-    # via scikit-learn
 numpy==2.0.2
-    # via autograd
-    # via cellcommunicationpf2
-    # via pymanopt
-    # via scikit-learn
-    # via scipy
-    # via tensorly
 pymanopt==2.2.1
-    # via cellcommunicationpf2
 scikit-learn==1.5.2
-    # via cellcommunicationpf2
 scipy==1.14.1
-    # via cellcommunicationpf2
-    # via pymanopt
-    # via scikit-learn
-    # via tensorly
 tensorly==0.9.0
-    # via cellcommunicationpf2
 threadpoolctl==3.5.0
-    # via scikit-learn
 tqdm==4.67.1
-    # via cellcommunicationpf2
