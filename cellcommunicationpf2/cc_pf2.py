@@ -6,6 +6,7 @@ from pymanopt.manifolds import Stiefel
 from pymanopt.optimizers import TrustRegions
 from typing import Optional
 from sklearn.utils.extmath import randomized_svd
+from tensorly.cp_tensor import cp_to_tensor
 
 
 def factors_to_tensor(factors: list[np.ndarray]) -> np.ndarray:
@@ -13,19 +14,23 @@ def factors_to_tensor(factors: list[np.ndarray]) -> np.ndarray:
     Reconstructs a tensor from a list of factors
     """
 
-    return np.einsum('ar,br,cr,dr->abcd', factors[0], factors[1], factors[2], factors[3])
+    return cp_to_tensor((None, factors))
 
 
 def reconstruction_error(
     factors: list[np.ndarray],
-    projected_X: np.ndarray
+    original_X: np.ndarray,
+    projections: list[np.ndarray]
 ) -> float:
     """
     Compute the reconstruction error of the CP decomposition
     """
-    
-    full_tensor = factors_to_tensor(factors)
-    return np.linalg.norm(full_tensor - projected_X) ** 2
+    reconstructed_X = factors_to_tensor(factors)
+
+    for i, proj in enumerate(projections):
+        reconstructed_X[i] = proj @ reconstructed_X[i]
+
+    return np.sum((original_X - reconstructed_X) ** 2)
 
 
 def flatten_tensor_list(tensor_list: list):
