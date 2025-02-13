@@ -1,6 +1,7 @@
 import numpy as np
+from tensorly.cp_tensor import cp_to_tensor
 
-from ..cc_pf2 import project_data, solve_projections, init
+from ..cc_pf2 import project_data, solve_projections, init, reconstruction_error
 
 
 def test_init():
@@ -88,3 +89,30 @@ def test_project_data_output_proj_matrix():
         np.testing.assert_allclose(
             projections[i], projections_recreated[i] * sign_correct, atol=1e-9
         )
+
+
+def test_reconstruction_error():
+    """
+    Tests that the reconstruction error function is able to run without errors. ie. the dimensions are correct.
+    """
+    
+    # Define dimensions
+    cells = 20
+    LR = 10
+    rank = 5
+    obs = 3
+
+    # Generate random X_list
+    X_list = [np.random.rand(cells, cells, LR) for _ in range(obs)]
+
+    # Generate random factors
+    factors = [np.random.rand(obs, rank), np.random.rand(rank, rank), np.random.rand(rank, rank), np.random.rand(LR, rank)]
+    
+    # Generate random projections
+    projections = [np.random.rand(cells, rank) for _ in range(obs)]
+
+    # Call the reconstruction_error method
+    error = reconstruction_error(factors, X_list, projections)
+
+    assert error >= 0
+    

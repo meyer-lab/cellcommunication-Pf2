@@ -9,14 +9,6 @@ from sklearn.utils.extmath import randomized_svd
 from tensorly.cp_tensor import cp_to_tensor
 
 
-def factors_to_tensor(factors: list[np.ndarray]) -> np.ndarray:
-    """
-    Reconstructs a tensor from a list of factors
-    """
-
-    return cp_to_tensor((None, factors))
-
-
 def reconstruction_error(
     factors: list[np.ndarray],
     original_X: np.ndarray,
@@ -25,12 +17,16 @@ def reconstruction_error(
     """
     Compute the reconstruction error of the CP decomposition
     """
-    reconstructed_X = factors_to_tensor(factors)
+    reconstructed_X = cp_to_tensor((None, factors))
+    
+    projected_X = np.zeros_like(original_X)
 
     for i, proj in enumerate(projections):
-        reconstructed_X[i] = proj @ reconstructed_X[i]
+        print(reconstructed_X[i, :, :, :].shape)
+        print(proj.T.shape)
+        projected_X[i, :, :, :] = project_data(reconstructed_X[i, :, :, :], proj.T)
 
-    return np.sum((original_X - reconstructed_X) ** 2)
+    return np.linalg.norm(original_X - projected_X) ** 2
 
 
 def flatten_tensor_list(tensor_list: list):
