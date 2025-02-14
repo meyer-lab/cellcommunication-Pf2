@@ -18,15 +18,14 @@ def reconstruction_error(
     Compute the reconstruction error of the CP decomposition
     """
     reconstructed_X = cp_to_tensor((None, factors))
-    
-    projected_X = np.zeros_like(original_X)
+
+    recon_err = 0.0
 
     for i, proj in enumerate(projections):
-        print(reconstructed_X[i, :, :, :].shape)
-        print(proj.T.shape)
-        projected_X[i, :, :, :] = project_data(reconstructed_X[i, :, :, :], proj.T)
+        projected_X = project_data(reconstructed_X[i, :, :, :], proj.T)
+        recon_err += np.linalg.norm(original_X[i] - projected_X) ** 2
 
-    return np.linalg.norm(original_X - projected_X) ** 2
+    return recon_err
 
 
 def flatten_tensor_list(tensor_list: list):
