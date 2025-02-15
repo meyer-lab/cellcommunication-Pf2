@@ -1,4 +1,6 @@
-from scanpy.readwrite import read
+import urllib.request
+import os
+import anndata
 
 
 # The below code is taken directly from https://github.com/earmingol/cell2cell/blob/master/cell2cell/datasets/anndata.py
@@ -27,10 +29,14 @@ def balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"):
         Annotated data matrix.
     """
     url = "https://zenodo.org/record/7535867/files/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
-    adata = read(filename, backup_url=url)
+    if not os.path.exists(filename):
+        print("Downloading data from Zenodo...")
+        urllib.request.urlretrieve(url, filename)
+    else:
+        print("File already exists. Loading data...")
+    adata = anndata.read_h5ad(filename)
     return adata
 
 
-# Run this file to import the BALF COVID-19 dataset
 if __name__ == "__main__":
     balf_covid()
