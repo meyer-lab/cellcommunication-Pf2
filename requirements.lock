@@ -31,10 +31,7 @@ numpy==2.0.2
     # via pymanopt
     # via scikit-learn
     # via scipy
-packaging==24.2
-    # via anndata
-pandas==2.2.3
-    # via anndata
+    # via tensorly
 pymanopt==2.2.1
     # via cellcommunicationpf2
 python-dateutil==2.9.0.post0
@@ -48,8 +45,9 @@ scipy==1.14.1
     # via cellcommunicationpf2
     # via pymanopt
     # via scikit-learn
-six==1.17.0
-    # via python-dateutil
+    # via tensorly
+tensorly==0.9.0
+    # via cellcommunicationpf2
 threadpoolctl==3.5.0
     # via scikit-learn
 tzdata==2025.1

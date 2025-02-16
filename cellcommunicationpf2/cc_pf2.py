@@ -6,6 +6,26 @@ from pymanopt.manifolds import Stiefel
 from pymanopt.optimizers import TrustRegions
 from typing import Optional
 from sklearn.utils.extmath import randomized_svd
+from tensorly.cp_tensor import cp_to_tensor
+
+
+def reconstruction_error(
+    factors: list[np.ndarray],
+    original_X: np.ndarray,
+    projections: list[np.ndarray]
+) -> float:
+    """
+    Compute the reconstruction error of the CP decomposition
+    """
+    reconstructed_X = cp_to_tensor((None, factors))
+
+    recon_err = 0.0
+
+    for i, proj in enumerate(projections):
+        projected_X = project_data(reconstructed_X[i, :, :, :], proj.T)
+        recon_err += np.linalg.norm(original_X[i] - projected_X) ** 2
+
+    return recon_err
 
 
 def flatten_tensor_list(tensor_list: list):
