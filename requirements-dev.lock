@@ -10,25 +10,39 @@
 #   universal: false
 
 -e file:.
+anndata==0.11.3
+    # via cellcommunicationpf2
+array-api-compat==1.10.0
+    # via anndata
 autograd==1.7.0
     # via cellcommunicationpf2
 coverage==7.6.1
     # via pytest-cov
+h5py==3.12.1
+    # via anndata
 iniconfig==2.0.0
     # via pytest
 joblib==1.4.2
     # via scikit-learn
+natsort==8.4.0
+    # via anndata
 nodeenv==1.9.1
     # via pyright
 numpy==2.0.2
+    # via anndata
     # via autograd
     # via cellcommunicationpf2
+    # via h5py
+    # via pandas
     # via pymanopt
     # via scikit-learn
     # via scipy
     # via tensorly
 packaging==24.1
+    # via anndata
     # via pytest
+pandas==2.2.3
+    # via anndata
 pluggy==1.5.0
     # via pytest
 pymanopt==2.2.1
@@ -37,16 +51,25 @@ pyright==1.1.383
 pytest==8.3.3
     # via pytest-cov
 pytest-cov==6.0.0
+python-dateutil==2.9.0.post0
+    # via pandas
+pytz==2025.1
+    # via pandas
 scikit-learn==1.5.2
     # via cellcommunicationpf2
 scipy==1.14.1
+    # via anndata
     # via cellcommunicationpf2
     # via pymanopt
     # via scikit-learn
     # via tensorly
+six==1.17.0
+    # via python-dateutil
 tensorly==0.9.0
     # via cellcommunicationpf2
 threadpoolctl==3.5.0
     # via scikit-learn
 typing-extensions==4.12.2
     # via pyright
+tzdata==2025.1
+    # via pandas
