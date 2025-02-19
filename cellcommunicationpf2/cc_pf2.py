@@ -92,11 +92,11 @@ def solve_projections(
         a_lhs = anp.asarray(full_tensor[i, :, :, :])
 
         @pymanopt.function.autograd(manifold)
-        def objective_function(proj):
+        def projection_loss_function(proj):
             a_mat_recon = anp.einsum("ba,dc,acg->bdg", proj, proj, a_lhs)
             return anp.sum(anp.square(a_mat - a_mat_recon))
 
-        problem = Problem(manifold=manifold, cost=objective_function)
+        problem = Problem(manifold=manifold, cost=projection_loss_function)
 
         # Solve the problem
         solver = TrustRegions(
