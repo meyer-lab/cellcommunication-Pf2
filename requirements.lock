@@ -16,6 +16,10 @@ array-api-compat==1.10.0
     # via anndata
 autograd==1.7.0
     # via cellcommunicationpf2
+cupy==13.3.0
+    # via cellcommunicationpf2
+fastrlock==0.8.3
+    # via cupy
 h5py==3.12.1
     # via anndata
 joblib==1.4.2
@@ -26,6 +30,7 @@ numpy==2.0.2
     # via anndata
     # via autograd
     # via cellcommunicationpf2
+    # via cupy
     # via h5py
     # via pandas
     # via pymanopt

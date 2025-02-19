@@ -7,6 +7,7 @@ from pymanopt.optimizers import TrustRegions
 from typing import Optional
 from sklearn.utils.extmath import randomized_svd
 from tensorly.cp_tensor import cp_to_tensor
+from tensorly.decomposition import parafac
 
 
 def reconstruction_error(
@@ -28,7 +29,9 @@ def reconstruction_error(
     return recon_err
 
 
-def flatten_tensor_list(tensor_list: list):
+def flatten_tensor_list(
+    tensor_list: list
+) -> np.ndarray:
     """
     Flatten a list of 3D tensors from A x B x B x C to a matrix of (A*B*B) x C
     """
@@ -58,7 +61,9 @@ def init(
     return factors
 
 
-def project_data(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
+def project_data(
+    tensor: np.ndarray, proj_matrix: np.ndarray
+) -> np.ndarray:
     """
     Projects a 3D tensor of C x C x LR with a projection matrix of C x CES
     along both C dimensions to form a resulting tensor of CES x CES x LR.
@@ -105,3 +110,53 @@ def solve_projections(
         projections.append(proj)
 
     return projections
+
+
+def fit_factors(
+    X_list: list,
+    rank: int,
+    n_iter_max: int,
+    tol: float,
+    random_state: Optional[int] = None
+) -> tuple[tuple, float]:
+    """
+    Fits the factors of the CP decomposition for a list of 3D tensors
+    """
+    factors = init(X_list, rank, random_state=random_state)
+    full_tensor = cp_to_tensor((None, factors))
+    projections = solve_projections(X_list, full_tensor)
+    err = reconstruction_error(factors, X_list, projections)
+    errs = [err]
+
+    # Assemble new projected tensor from X_list and projections
+    projected_X = [project_data(X_list[i], proj) for i, proj in enumerate(projections)]
+    _, factors = parafac(
+        np.array(projected_X),
+        rank,
+        n_iter_max=20,
+        init=(None, [np.array(f) for f in factors]),
+        tol=None,
+        normalize_factors=False,
+    )
+
+    for i in range(n_iter_max):
+        full_tensor = cp_to_tensor((None, factors))
+        projections = solve_projections(X_list, full_tensor)
+        err = reconstruction_error(factors, X_list, projections)
+        errs.append(err)
+
+        projected_X = [project_data(X_list[i], proj) for i, proj in enumerate(projections)]
+        _, factors = parafac(
+            np.array(projected_X),
+            rank,
+            n_iter_max=20,
+            init=(None, [np.array(f) for f in factors]),
+            tol=None,
+            normalize_factors=False,
+        )
+
+        if errs[-2] - errs[-1] < tol:
+            break
+
+    R2X = 1 - errs[-1]
+    return (factors, projections), R2X
