@@ -112,7 +112,7 @@ def solve_projections(
     return projections
 
 
-def fit_factors(
+def fit_pf2(
     X_list: list,
     rank: int,
     n_iter_max: int,
@@ -158,5 +158,5 @@ def fit_factors(
         if errs[-2] - errs[-1] < tol:
             break
 
-    R2X = 1 - errs[-1]
-    return (factors, projections), R2X
+    final_err = errs[-1]
+    return (factors, projections), final_err
