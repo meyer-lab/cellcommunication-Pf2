@@ -123,21 +123,7 @@ def fit_pf2(
     Fits the factors of the CP decomposition for a list of 3D tensors
     """
     factors = init(X_list, rank, random_state=random_state)
-    full_tensor = cp_to_tensor((None, factors))
-    projections = solve_projections(X_list, full_tensor)
-    err = reconstruction_error(factors, X_list, projections)
-    errs = [err]
-
-    # Assemble new projected tensor from X_list and projections
-    projected_X = [project_data(X_list[i], proj) for i, proj in enumerate(projections)]
-    _, factors = parafac(
-        np.array(projected_X),
-        rank,
-        n_iter_max=20,
-        init=(None, [np.array(f) for f in factors]),
-        tol=None,
-        normalize_factors=False,
-    )
+    errs = []
 
     for i in range(n_iter_max):
         full_tensor = cp_to_tensor((None, factors))
@@ -154,8 +140,13 @@ def fit_pf2(
             tol=None,
             normalize_factors=False,
         )
+        
+        delta = errs[-2] - errs[-1] if i > 0 else tol + 1
+        
+        print(f"Iteration {i}, Error: {err}, Delta: {delta}")
 
-        if errs[-2] - errs[-1] < tol:
+        if abs(delta) < tol:
+            print("Converged")
             break
 
     final_err = errs[-1]

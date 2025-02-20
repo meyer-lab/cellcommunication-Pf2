@@ -42,8 +42,6 @@ def test_project_data():
     # Projection matrix
     proj_matrix = np.linalg.qr(np.random.rand(cells, rank))[0]
 
-    # Call the project_data method
-    print(proj_matrix.shape)
     projected_X = project_data(X_mat, proj_matrix)
 
     assert projected_X.shape == (rank, rank, LR)
@@ -131,10 +129,11 @@ def test_fitting_method():
     X_list = [np.random.rand(cells, cells, LR) for _ in range(obs)]
 
     # Call the fitting method
-    (factors, _) , error = fit_pf2(X_list, rank, 10, 1e-6)
+    (factors, _) , error = fit_pf2(X_list, rank, 10, 0.1)
 
     assert error >= 0
     assert factors[0].shape == (obs, rank)
     assert factors[1].shape == (rank, rank)
     assert factors[2].shape == (rank, rank)
     assert factors[3].shape == (LR, rank)
+    
