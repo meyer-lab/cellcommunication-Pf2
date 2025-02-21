@@ -11,9 +11,7 @@ from tensorly.decomposition import parafac
 
 
 def reconstruction_error(
-    factors: list[np.ndarray],
-    original_X: np.ndarray,
-    projections: list[np.ndarray]
+    factors: list[np.ndarray], original_X: np.ndarray, projections: list[np.ndarray]
 ) -> float:
     """
     Compute the reconstruction error of the CP decomposition
@@ -29,9 +27,7 @@ def reconstruction_error(
     return recon_err
 
 
-def flatten_tensor_list(
-    tensor_list: list
-) -> np.ndarray:
+def flatten_tensor_list(tensor_list: list) -> np.ndarray:
     """
     Flatten a list of 3D tensors from A x B x B x C to a matrix of (A*B*B) x C
     """
@@ -55,15 +51,13 @@ def init(
     Initializes the factors for the CP decomposition of a list of 3D tensors
     """
     data_matrix = flatten_tensor_list(X_list)
-    
+
     _, _, C = randomized_svd(data_matrix, rank, random_state=random_state)
     factors = [np.ones((len(X_list), rank)), np.eye(rank), np.eye(rank), C.T]
     return factors
 
 
-def project_data(
-    tensor: np.ndarray, proj_matrix: np.ndarray
-) -> np.ndarray:
+def project_data(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
     """
     Projects a 3D tensor of C x C x LR with a projection matrix of C x CES
     along both C dimensions to form a resulting tensor of CES x CES x LR.
@@ -99,9 +93,7 @@ def solve_projections(
         problem = Problem(manifold=manifold, cost=projection_loss_function)
 
         # Solve the problem
-        solver = TrustRegions(
-            verbosity=0, min_gradient_norm=1e-9, min_step_size=1e-12
-        )
+        solver = TrustRegions(verbosity=0, min_gradient_norm=1e-9, min_step_size=1e-12)
         proj = solver.run(problem).point
 
         U, _, Vt = np.linalg.svd(proj, full_matrices=False)
@@ -117,7 +109,7 @@ def fit_pf2(
     rank: int,
     n_iter_max: int,
     tol: float,
-    random_state: Optional[int] = None
+    random_state: Optional[int] = None,
 ) -> tuple[tuple, float]:
     """
     Fits the factors of the CP decomposition for a list of 3D tensors
@@ -131,7 +123,9 @@ def fit_pf2(
         err = reconstruction_error(factors, X_list, projections)
         errs.append(err)
 
-        projected_X = [project_data(X_list[i], proj) for i, proj in enumerate(projections)]
+        projected_X = [
+            project_data(X_list[i], proj) for i, proj in enumerate(projections)
+        ]
         _, factors = parafac(
             np.array(projected_X),
             rank,
@@ -140,12 +134,12 @@ def fit_pf2(
             tol=None,
             normalize_factors=False,
         )
-        
-        delta = errs[-2] - errs[-1] if i > 0 else tol + 1
-        
+
+        delta = abs(errs[-2] - errs[-1]) if i > 0 else tol + 1
+
         print(f"Iteration {i}, Error: {err}, Delta: {delta}")
 
-        if abs(delta) < tol:
+        if delta < tol:
             print("Converged")
             break
 
