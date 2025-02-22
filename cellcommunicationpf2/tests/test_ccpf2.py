@@ -1,7 +1,12 @@
 import numpy as np
-from tensorly.cp_tensor import cp_to_tensor
 
-from ..cc_pf2 import project_data, solve_projections, init, reconstruction_error
+from ..cc_pf2 import (
+    project_data,
+    solve_projections,
+    init,
+    reconstruction_error,
+    fit_pf2,
+)
 
 
 def test_init():
@@ -43,8 +48,6 @@ def test_project_data():
     # Projection matrix
     proj_matrix = np.linalg.qr(np.random.rand(cells, rank))[0]
 
-    # Call the project_data method
-    print(proj_matrix.shape)
     projected_X = project_data(X_mat, proj_matrix)
 
     assert projected_X.shape == (rank, rank, LR)
@@ -95,7 +98,7 @@ def test_reconstruction_error():
     """
     Tests that the reconstruction error function is able to run without errors. ie. the dimensions are correct.
     """
-    
+
     # Define dimensions
     cells = 20
     LR = 10
@@ -106,8 +109,13 @@ def test_reconstruction_error():
     X_list = [np.random.rand(cells, cells, LR) for _ in range(obs)]
 
     # Generate random factors
-    factors = [np.random.rand(obs, rank), np.random.rand(rank, rank), np.random.rand(rank, rank), np.random.rand(LR, rank)]
-    
+    factors = [
+        np.random.rand(obs, rank),
+        np.random.rand(rank, rank),
+        np.random.rand(rank, rank),
+        np.random.rand(LR, rank),
+    ]
+
     # Generate random projections
     projections = [np.random.rand(cells, rank) for _ in range(obs)]
 
@@ -115,4 +123,27 @@ def test_reconstruction_error():
     error = reconstruction_error(factors, X_list, projections)
 
     assert error >= 0
-    
+
+
+def test_fitting_method():
+    """
+    Tests the fitting method to ensure that it is able to run without errors ie. the dimensions are correct.
+    """
+
+    # Define dimensions
+    cells = 20
+    LR = 10
+    rank = 5
+    obs = 3
+
+    # Generate random X_list
+    X_list = [np.random.rand(cells, cells, LR) for _ in range(obs)]
+
+    # Call the fitting method
+    (factors, _), error = fit_pf2(X_list, rank, 10, 0.1)
+
+    assert error >= 0
+    assert factors[0].shape == (obs, rank)
+    assert factors[1].shape == (rank, rank)
+    assert factors[2].shape == (rank, rank)
+    assert factors[3].shape == (LR, rank)
