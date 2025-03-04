@@ -29,6 +29,7 @@ def balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"):
         Annotated data matrix.
     """
     url = "https://zenodo.org/record/7535867/files/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
     if not os.path.exists(filename):
         print("Downloading data from Zenodo...")
         urllib.request.urlretrieve(url, filename)
@@ -40,3 +41,5 @@ def balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"):
 
 if __name__ == "__main__":
     balf_covid()
+
+

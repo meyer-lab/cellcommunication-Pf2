@@ -72,7 +72,7 @@ def genFigure():
     start = time.time()
     nameOut = "figure" + sys.argv[1]
 
-    exec(f"from pf2.figures.{nameOut} import makeFigure", globals())
+    exec(f"from cellcommunicationpf2.figures.{nameOut} import makeFigure", globals())
     ff = makeFigure()
 
     if ff is not None:
