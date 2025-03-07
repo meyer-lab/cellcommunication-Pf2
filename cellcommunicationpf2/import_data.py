@@ -3,7 +3,7 @@ import os
 import anndata
 
 
-# The below code is taken directly from https://github.com/earmingol/cell2cell/blob/master/cell2cell/datasets/anndata.py
+# The below code is taken and modified from https://github.com/earmingol/cell2cell/blob/master/cell2cell/datasets/anndata.py
 def balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"):
     """BALF samples from COVID-19 patients
     The data consists in 63k immune and epithelial cells in lungs
