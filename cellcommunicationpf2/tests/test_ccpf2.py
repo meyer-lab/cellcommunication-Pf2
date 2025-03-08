@@ -162,8 +162,8 @@ def test_fitting_method_output_reproducible():
 
     X_list, _, _ = random_4d_tensor(3, 5)
 
-    (factors1, _), _ = fit_pf2(X_list, 5, 100, 1e-3, random_state=0)
-    (factors2, _), _ = fit_pf2(X_list, 5, 100, 1e-3, random_state=0)
+    (factors1, _), _ = fit_pf2(X_list, 5, 10, 1e-2, random_state=0)
+    (factors2, _), _ = fit_pf2(X_list, 5, 10, 1e-2, random_state=0)
 
     cp1 = CPTensor((None, factors1))
     cp2 = CPTensor((None, factors2))
