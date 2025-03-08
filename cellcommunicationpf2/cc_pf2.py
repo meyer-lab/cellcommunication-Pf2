@@ -114,6 +114,11 @@ def fit_pf2(
     """
     Fits the factors of the CP decomposition for a list of 3D tensors
     """
+    # Set random seed for numpy globally
+    if random_state is not None:
+        np.random.seed(random_state)
+        anp.random.seed(random_state)
+        
     factors = init(X_list, rank, random_state=random_state)
     errs = []
 

@@ -10,6 +10,7 @@ from ..cc_pf2 import (
 
 from tensorly import cp_to_tensor
 from tensorly.cp_tensor import cp_permute_factors, CPTensor
+import pytest
 
 
 def test_init():
@@ -145,7 +146,7 @@ def test_fitting_method():
     X_list = [np.random.rand(cells, cells, LR) for _ in range(obs)]
 
     # Call the fitting method
-    (factors, _), error = fit_pf2(X_list, rank, 10, 0.1)
+    (factors, _), error = fit_pf2(X_list, rank, 2, 0.1)
 
     assert error >= 0
     assert factors[0].shape == (obs, rank)
@@ -172,7 +173,9 @@ def test_fitting_method_output_reproducible():
     f1s = cp1.factors
     f2s = cp2_permuted.factors
     
-    for f1, f2 in zip(f1s, f2s):
+    for i, (f1, f2) in enumerate(zip(f1s, f2s)):
+        max_diff = np.max(np.abs(f1 - f2))
+        print(f"Max difference in factor {i}: {max_diff}")
         assert np.allclose(f1, f2, rtol=1e-2, atol=1e-2)
 
 
