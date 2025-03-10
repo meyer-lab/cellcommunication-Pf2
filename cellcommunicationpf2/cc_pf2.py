@@ -116,7 +116,6 @@ def fit_pf2(
     """
     # Set random seed for numpy globally
     if random_state is not None:
-        np.random.seed(random_state)
         anp.random.seed(random_state)
         
     factors = init(X_list, rank, random_state=random_state)
