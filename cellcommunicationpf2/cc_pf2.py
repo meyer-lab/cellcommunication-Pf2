@@ -68,6 +68,7 @@ def project_data(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
 def solve_projections(
     X_list: list,
     full_tensor: np.ndarray,
+    random_seed: Optional[int] = None,
 ) -> list[np.ndarray]:
     """
     Takes a list of 3D tensors of C x C x LR, a means matrix, factors of
@@ -79,22 +80,38 @@ def solve_projections(
     reconstruct the data based on the projection matrices.
     """
     projections: list[np.ndarray] = []
+    
+    if random_seed is not None:
+        rng = np.random.RandomState(random_seed)
 
     for i, mat in enumerate(X_list):
         manifold = Stiefel(mat.shape[0], full_tensor.shape[1])
         a_mat = anp.asarray(mat)
         a_lhs = anp.asarray(full_tensor[i, :, :, :])
 
+        if random_seed is not None:
+            # Generate a reproducible initial point on the Stiefel manifold
+            X = rng.randn(mat.shape[0], full_tensor.shape[1])
+            # Use QR factorization to get a point on the Stiefel manifold
+            Q, _ = np.linalg.qr(X)
+            initial_point = Q
+        
         @pymanopt.function.autograd(manifold)
         def projection_loss_function(proj):
             a_mat_recon = anp.einsum("ba,dc,acg->bdg", proj, proj, a_lhs)
             return anp.sum(anp.square(a_mat - a_mat_recon))
 
-        problem = Problem(manifold=manifold, cost=projection_loss_function)
+        problem = Problem(
+            manifold=manifold,
+            cost=projection_loss_function,
+        )
 
         # Solve the problem
         solver = TrustRegions(verbosity=0, min_gradient_norm=1e-9, min_step_size=1e-12)
-        proj = solver.run(problem).point
+        if random_seed is not None:
+            proj = solver.run(problem, initial_point=initial_point).point
+        else:
+            proj = solver.run(problem).point
 
         U, _, Vt = np.linalg.svd(proj, full_matrices=False)
         proj = U @ Vt
@@ -114,16 +131,13 @@ def fit_pf2(
     """
     Fits the factors of the CP decomposition for a list of 3D tensors
     """
-    # Set random seed for numpy globally
-    if random_state is not None:
-        anp.random.seed(random_state)
         
     factors = init(X_list, rank, random_state=random_state)
     errs = []
 
     for i in range(n_iter_max):
         full_tensor = cp_to_tensor((None, factors))
-        projections = solve_projections(X_list, full_tensor)
+        projections = solve_projections(X_list, full_tensor, random_seed=random_state)
         err = reconstruction_error(factors, X_list, projections)
         errs.append(err)
 
