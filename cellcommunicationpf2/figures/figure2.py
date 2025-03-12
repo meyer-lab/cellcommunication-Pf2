@@ -15,13 +15,22 @@ import scipy.sparse as sp
 def makeFigure():
     ax, f = getSetup((12, 12), (3, 3))
     subplotLabel(ax)
-    
+    X = import_balf_covid()
     df_lrp = import_ligand_receptor_pairs()
     df_lrp = df_lrp[["ligand", "receptor"]]
-    lr_genes = set(df_lrp['ligand'].unique()) | set(df_lrp['receptor'].unique())
+    
+    # Filter df_lrp to only include genes present in the data
+    valid_mask = (df_lrp['ligand'].isin(X.var_names)) & (df_lrp['receptor'].isin(X.var_names))
+    print(valid_mask)
+    df_lrp = df_lrp[valid_mask].copy().reset_index(drop=True)
 
-    X = import_balf_covid()
-    X = X[::50, :10000]
+    
+    # Get genes to keep
+    genes_to_keep = list(set(df_lrp['ligand']) | set(df_lrp['receptor']))
+    
+    X = X[::200]
+    X = X[:, genes_to_keep]
+    # X = X[:, :20]
     print(X)
   
             
@@ -30,8 +39,8 @@ def makeFigure():
     
 
     
-    XX = calculate_communication_scores_simple(X, df_lrp)
-    print(XX)
+    XX = calculate_communication_scores_simple(X, df_lrp.iloc[:20, :])
+    print(XX.obs_names)
 
     
     
@@ -50,89 +59,68 @@ import anndata
 
 def calculate_communication_scores_simple(adata, df_lrp, min_expr=0.0, same_cell=False):
     """
-    Simplified version to calculate cell-cell communication scores.
+    Calculate cell-cell communication scores for specific L-R pairs.
     
     Parameters:
-    - adata: AnnData object
-    - df_lrp: DataFrame with ligand-receptor pairs
+    - adata: AnnData object with filtered genes
+    - df_lrp: DataFrame with filtered ligand-receptor pairs
     - min_expr: Minimum expression threshold (default 0.0)
     - same_cell: Whether to include same-cell interactions (default False)
     """
-    # Gene matching statistics
-    matched_ligands = sum(lig in adata.var_names for lig in df_lrp['ligand'].unique())
-    matched_receptors = sum(rec in adata.var_names for rec in df_lrp['receptor'].unique())
-    
-    print(f"Matched ligands: {matched_ligands}/{len(df_lrp['ligand'].unique())}")
-    print(f"Matched receptors: {matched_receptors}/{len(df_lrp['receptor'].unique())}")
-    
     results = []
+    print(f"Processing {len(df_lrp)} L-R pairs")
     
-    for sample in adata.obs["sample"].unique():
-        sample_data = adata[adata.obs["sample"] == sample]
+    for sample in np.unique(adata.obs["sample_new"]):
+        print(f"\nProcessing sample: {sample}")
+        sample_data = adata[adata.obs["sample_new"] == sample]
         X_sparse = sample_data.X if sp.issparse(sample_data.X) else sp.csr_matrix(sample_data.X)
         
-        # Find expressed genes
-        expressed_genes = sample_data.var_names[(X_sparse > min_expr).sum(axis=0).A1 > 0]
-        valid_pairs = [(lig, rec) for lig, rec in df_lrp[['ligand', 'receptor']].values 
-                       if lig in expressed_genes and rec in expressed_genes]
-        
-        if not valid_pairs:
-            print(f"No valid pairs in sample {sample}")
-            continue
-        
         # Generate cell pairs
-        cell_pairs = [(s, r) for s in range(sample_data.shape[0]) for r in range(sample_data.shape[0]) 
+        cell_pairs = [(s, r) for s in range(sample_data.shape[0]) 
+                      for r in range(sample_data.shape[0]) 
                       if s != r or same_cell]
+        print(f"Processing {len(cell_pairs)} cell pairs")
         
         # Calculate scores
-        scores = sp.lil_matrix((len(cell_pairs), len(valid_pairs)))
-        for idx, (lig, rec) in enumerate(valid_pairs):
-            lig_idx = sample_data.var_names.get_loc(lig)
-            rec_idx = sample_data.var_names.get_loc(rec)
+        scores = sp.lil_matrix((len(cell_pairs), len(df_lrp)))
+        for idx, (_, row) in enumerate(df_lrp.iterrows()):
+            lig_idx = sample_data.var_names.get_loc(row['ligand'])
+            rec_idx = sample_data.var_names.get_loc(row['receptor'])
             
-            # Get expression values as dense arrays
+            # Get expression vectors
             lig_vec = X_sparse[:, lig_idx].toarray().flatten()
             rec_vec = X_sparse[:, rec_idx].toarray().flatten()
             
-            for pair_idx, (s, r) in enumerate(cell_pairs):
-                if lig_vec[s] > min_expr and rec_vec[r] > min_expr:
-                    scores[pair_idx, idx] = float(lig_vec[s] * rec_vec[r])
+            # Calculate scores for all cell pairs at once using broadcasting
+            sender_expr = lig_vec[np.array([s for s, _ in cell_pairs])]
+            receiver_expr = rec_vec[np.array([r for _, r in cell_pairs])]
+            pair_scores = sender_expr * receiver_expr
+            
+            # Store scores
+            scores[:, idx] = pair_scores
         
-        # Prepare results
+        # Store results
         for pair_idx, (s, r) in enumerate(cell_pairs):
             pair_scores = scores[pair_idx, :].toarray().flatten()
-            if pair_scores.sum() > 0:
-                results.append({
-                    'sample': sample,
-                    'sender': sample_data.obs.index[s],
-                    'receiver': sample_data.obs.index[r],
-                    **{f'score_{lig}_{rec}': score for (lig, rec), score in zip(valid_pairs, pair_scores) if score > 0}
-                })
-    
-    if not results:
-        print("No interactions found")
-        return None
-    
-    # Convert to DataFrame
-    results_df = pd.DataFrame(results)
-    
-    # Ensure all ligand-receptor pairs are included in the var DataFrame
-    all_pairs = [f"{lig}_{rec}" for lig, rec in df_lrp[['ligand', 'receptor']].values]
-    var_df = pd.DataFrame(index=all_pairs)
-    
-    # Create scores matrix with consistent columns
-    score_columns = [f"score_{lig}_{rec}" for lig, rec in df_lrp[['ligand', 'receptor']].values]
-    scores_matrix = np.zeros((len(results_df), len(score_columns)))
-    
-    for idx, col in enumerate(score_columns):
-        if col in results_df.columns:
-            scores_matrix[:, idx] = results_df[col].fillna(0).values
+            results.append({
+                'sample': sample,
+                'sender': sample_data.obs.index[s],
+                'receiver': sample_data.obs.index[r],
+                'interaction_id': f"{sample_data.obs.index[s]}_{sample_data.obs.index[r]}_{sample}",
+                'sender_type': sample_data.obs['celltype'].iloc[s],
+                'receiver_type': sample_data.obs['celltype'].iloc[r],
+                **{f'{row.ligand}_{row.receptor}': score 
+                   for score, (_, row) in zip(pair_scores, df_lrp.iterrows())}
+            })
     
     # Create AnnData object
+    results_df = pd.DataFrame(results)
+    score_columns = [f'{row.ligand}_{row.receptor}' for _, row in df_lrp.iterrows()]
+    
     results_adata = anndata.AnnData(
-        X=sp.csr_matrix(scores_matrix),
-        obs=results_df.drop(columns=results_df.filter(like='score_').columns),
-        var=var_df
+        X=sp.csr_matrix(results_df[score_columns].values),
+        obs=results_df.drop(columns=score_columns).set_index('interaction_id'),
+        var=pd.DataFrame(index=score_columns)
     )
     
     return results_adata
