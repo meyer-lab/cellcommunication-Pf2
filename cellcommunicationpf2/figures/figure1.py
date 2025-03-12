@@ -1,5 +1,5 @@
 """
-Figure 1: XX
+Figure 1
 """
 
 from .common import getSetup, subplotLabel
