@@ -9,7 +9,8 @@ import numpy as np
 import pandas as pd
 import anndata
 import scipy.sparse as sp
-
+import sparse
+from sklearn.utils.sparsefuncs import mean_variance_axis
 
 
 def makeFigure():
@@ -40,7 +41,11 @@ def makeFigure():
 
     
     XX = calculate_communication_scores_simple(X, df_lrp.iloc[:20, :])
-    print(XX.obs_names)
+    XXX = prepare_dataset(XX, 'sample')
+    print(XXX)
+    
+    fourD = anndata_to_communication_tensors(XXX)
+    print(fourD[0])
 
     
     
@@ -127,225 +132,73 @@ def calculate_communication_scores_simple(adata, df_lrp, min_expr=0.0, same_cell
 
 
 
-# def prepare_dataset(
-#     X: anndata.AnnData, condition_name: str, geneThreshold: float
-# ) -> anndata.AnnData:
-#     assert isinstance(X.X, csc_matrix | csr_matrix)
-#     assert np.amin(X.X.data) >= 0.0
+def prepare_dataset(
+    X: anndata.AnnData, condition_name: str,) -> anndata.AnnData:
+    # Get the indices for subsetting the data
+    _, sgIndex = np.unique(X.obs_vector(condition_name), return_inverse=True)
+    X.obs["condition_unique_idxs"] = sgIndex
 
-#     # Filter out genes with too few reads
-#     readmean, _ = mean_variance_axis(X.X, axis=0)  # type: ignore
-#     X = X[:, readmean > geneThreshold]
+    # Pre-calculate gene means
+    means, _ = mean_variance_axis(X.X, axis=0)  # type: ignore
+    X.var["means"] = means
 
-#     # Copy so that the subsetting is preserved
-#     X._init_as_actual(X.copy())
-
-#     # Normalize read depth
-#     normalize_total(X)
-
-#     # Scale genes by sum
-#     readmean, _ = mean_variance_axis(X.X, axis=0)  # type: ignore
-#     readsum = X.shape[0] * readmean
-#     inplace_column_scale(X.X, 1.0 / readsum)  # type: ignore
-
-#     # Transform values
-#     X.X.data = np.log10((1000.0 * X.X.data) + 1.0)  # type: ignore
-
-#     # Get the indices for subsetting the data
-#     _, sgIndex = np.unique(X.obs_vector(condition_name), return_inverse=True)
-#     X.obs["condition_unique_idxs"] = sgIndex
-
-#     # Pre-calculate gene means
-#     means, _ = mean_variance_axis(X.X, axis=0)  # type: ignore
-#     X.var["means"] = means
-
-#     return X
+    return X
 
 
-# def anndata_to_3d_list(adata: 'anndata.AnnData', 
-#                        condition_key: str = 'condition_unique_idxs',
-#                        use_cupy: bool = False) -> list:
-#     """
-#     Converts an AnnData object to a 3D list structure based on a condition key.
+
+def anndata_to_communication_tensors(adata):
+    """
+    Convert AnnData to a list of 3D sparse tensors for each condition.
+    Each sample can have different numbers of sender/receiver types.
+    """
+    try:
+        import sparse
+    except ImportError:
+        raise ImportError("This function requires the 'sparse' package. Install with: pip install sparse")
     
-#     Parameters
-#     ----------
-#     adata : anndata.AnnData
-#         The AnnData object to convert.
-#     condition_key : str, default='condition_unique_idxs'
-#         The key in adata.obs to use for grouping the data.
-#     use_cupy : bool, default=False
-#         Whether to convert the arrays to CuPy arrays (for GPU processing).
+    samples = adata.obs['condition_unique_idxs'].unique()
+    lr_pairs = adata.var_names
+    tensor_list = []
+    
+    for sample in samples:
+        # Filter data for this sample
+        sample_data = adata[adata.obs['condition_unique_idxs'] == sample]
         
-#     Returns
-#     -------
-#     list
-#         A 3D list structure where the first dimension represents conditions,
-#         the second dimension represents observations within each condition,
-#         and the third dimension represents features.
-#     """
-#     import numpy as np
-#     import scipy.sparse as sps
-    
-#     # Ensure the condition key exists in adata.obs
-#     if condition_key not in adata.obs.columns:
-#         raise ValueError(f"The key '{condition_key}' is not found in adata.obs.")
-    
-#     # Extract the condition indices
-#     condition_indices = adata.obs[condition_key].to_numpy(dtype=int)
-#     n_conditions = np.max(condition_indices) + 1
-    
-#     # Initialize the 3D list
-#     data_3d = []
-    
-#     # Process each condition
-#     for i in range(n_conditions):
-#         # Get indices for the current condition
-#         mask = condition_indices == i
+        # Get unique sender/receiver types for this sample
+        sender_types = sample_data.obs['sender'].unique()
+        receiver_types = sample_data.obs['receiver'].unique()
         
-#         # Extract the corresponding data
-#         if isinstance(adata.X, np.ndarray):
-#             condition_data = adata.X[mask]
-#         else:  # Assuming it's a sparse matrix
-#             condition_data = adata.X[mask]
-            
-#             # Convert sparse matrix to dense if needed
-#             # Uncomment the next line if you want to convert to dense
-#             # condition_data = condition_data.toarray()
+        # Create mappings specific to this sample
+        sender_map = {ct: i for i, ct in enumerate(sender_types)}
+        receiver_map = {ct: i for i, ct in enumerate(receiver_types)}
         
-#         # Convert to CuPy if requested
-#         if use_cupy:
-#             import cupy as cp
-#             import cupyx.scipy.sparse as cupy_sparse
-            
-#             if isinstance(condition_data, np.ndarray):
-#                 condition_data = cp.array(condition_data)
-#             else:  # Assuming it's a sparse matrix
-#                 condition_data = cupy_sparse.csr_matrix(condition_data)
+        # Get indices for all dimensions
+        sender_indices = np.array([sender_map[s] for s in sample_data.obs['sender']])
+        receiver_indices = np.array([receiver_map[r] for r in sample_data.obs['receiver']])
         
-#         # Add to the 3D list
-#         data_3d.append(condition_data)
-    
-#     return data_3d
-
-
-# def anndata_to_communication_tensors(
-#     adata: 'anndata.AnnData',
-#     sender_key: str = 'sender_cell_type',
-#     receiver_key: str = 'receiver_cell_type',
-#     lr_pair_key: str = 'lr_pair',
-#     condition_key: str = 'condition',
-#     use_cupy: bool = False
-# ) -> list:
-#     """
-#     Converts an AnnData object to a list of 4D tensors for cell-cell communication analysis.
-    
-#     Parameters
-#     ----------
-#     adata : anndata.AnnData
-#         The AnnData object containing cell-cell communication data.
-#     sender_key : str, default='sender_cell_type'
-#         The key in adata.obs that identifies sender cell types.
-#     receiver_key : str, default='receiver_cell_type'
-#         The key in adata.obs that identifies receiver cell types.
-#     lr_pair_key : str, default='lr_pair'
-#         The key in adata.var that identifies ligand-receptor pairs.
-#     condition_key : str, default='condition'
-#         The key in adata.obs that identifies different experimental conditions.
-#     use_cupy : bool, default=False
-#         Whether to convert tensors to CuPy arrays (for GPU processing).
+        # Get values and convert to dense if sparse
+        if sp.issparse(sample_data.X):
+            values = sample_data.X.toarray().flatten()
+        else:
+            values = sample_data.X.flatten()
         
-#     Returns
-#     -------
-#     list
-#         A list of 4D tensors where each tensor has shape:
-#         (n_sender_types, n_receiver_types, n_lr_pairs, n_samples_per_condition)
-#         representing communication scores for each sender-receiver-lr_pair combination 
-#         under each condition.
-#     """
-#     import numpy as np
-#     import scipy.sparse as sps
-#     from collections import defaultdict
-    
-#     # Ensure required keys exist
-#     for key, container in [
-#         (sender_key, 'obs'),
-#         (receiver_key, 'obs'),
-#         (condition_key, 'obs'),
-#         (lr_pair_key, 'var')
-#     ]:
-#         if container == 'obs' and key not in adata.obs.columns:
-#             raise ValueError(f"The key '{key}' is not found in adata.obs.")
-#         elif container == 'var' and key not in adata.var.columns:
-#             raise ValueError(f"The key '{key}' is not found in adata.var.")
-    
-#     # Extract unique values for each dimension
-#     sender_types = adata.obs[sender_key].unique()
-#     receiver_types = adata.obs[receiver_key].unique()
-#     lr_pairs = adata.var[lr_pair_key].unique()
-#     conditions = adata.obs[condition_key].unique()
-    
-#     # Create mappings for faster indexing
-#     sender_map = {val: idx for idx, val in enumerate(sender_types)}
-#     receiver_map = {val: idx for idx, val in enumerate(receiver_types)}
-#     lr_map = {val: idx for idx, val in enumerate(lr_pairs)}
-#     condition_map = {val: idx for idx, val in enumerate(conditions)}
-    
-#     # Initialize the tensor list
-#     tensor_list = []
-    
-#     # Process each condition separately
-#     for condition in conditions:
-#         # Create a 4D tensor for this condition
-#         # Shape: (n_sender_types, n_receiver_types, n_lr_pairs, n_samples_per_condition)
-#         # First, determine number of samples in this condition
-#         condition_mask = adata.obs[condition_key] == condition
-#         n_samples = np.sum(condition_mask)
+        # Create coordinates for 3D tensor
+        n_entries = len(values)
+        sender_rep = np.repeat(sender_indices, len(lr_pairs))
+        receiver_rep = np.repeat(receiver_indices, len(lr_pairs))
+        lr_rep = np.tile(np.arange(len(lr_pairs)), len(sample_data))
         
-#         # Initialize the tensor
-#         tensor_shape = (len(sender_types), len(receiver_types), len(lr_pairs), n_samples)
-#         condition_tensor = np.zeros(tensor_shape)
+        # Stack coordinates
+        coords = np.stack([sender_rep, receiver_rep, lr_rep])
         
-#         # Group observations by sender and receiver types
-#         for sender_type in sender_types:
-#             sender_idx = sender_map[sender_type]
-#             for receiver_type in receiver_types:
-#                 receiver_idx = receiver_map[receiver_type]
-                
-#                 # Find observations for this sender-receiver pair in this condition
-#                 pair_mask = (adata.obs[sender_key] == sender_type) & \
-#                             (adata.obs[receiver_key] == receiver_type) & \
-#                             condition_mask
-                
-#                 if np.sum(pair_mask) == 0:
-#                     continue  # No data for this combination
-                
-#                 # Extract data for this sender-receiver pair
-#                 if isinstance(adata.X, np.ndarray):
-#                     pair_data = adata.X[pair_mask]
-#                 else:  # Sparse matrix
-#                     pair_data = adata.X[pair_mask].toarray()
-                
-#                 # Map each LR pair column to the correct index in the tensor
-#                 for lr_pair in lr_pairs:
-#                     lr_idx = lr_map[lr_pair]
-                    
-#                     # Find columns corresponding to this LR pair
-#                     lr_col_mask = adata.var[lr_pair_key] == lr_pair
-                    
-#                     if np.sum(lr_col_mask) == 0:
-#                         continue  # No data for this LR pair
-                    
-#                     # Extract and store the values
-#                     lr_data = pair_data[:, lr_col_mask]
-#                     condition_tensor[sender_idx, receiver_idx, lr_idx, :lr_data.shape[0]] = lr_data.flatten()[:n_samples]
+        # Create 3D sparse tensor
+        shape = (len(sender_types), len(receiver_types), len(lr_pairs))
+        tensor = sparse.COO(coords, values, shape=shape)
         
-#         # Convert to CuPy if requested
-#         if use_cupy:
-#             import cupy as cp
-#             condition_tensor = cp.array(condition_tensor)
+        tensor_list.append(tensor)
         
-#         # Add to the list
-#         tensor_list.append(condition_tensor)
+        print(f"\nSample: {sample}")
+        print(f"Tensor shape: {shape}")
+        print(f"Non-zero elements: {len(values)}")
     
-#     return tensor_list
+    return tensor_list
