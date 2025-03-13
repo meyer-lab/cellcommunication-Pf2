@@ -39,10 +39,6 @@ def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
     return adata
 
 
-if __name__ == "__main__":
-    import_balf_covid()
-
-
 def import_ligand_receptor_pairs():
     """Import ligand-receptor pairs from CellChat 
     CellChat (Jin et al. 2021, Nature Communications"""
