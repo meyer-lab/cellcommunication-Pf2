@@ -13,6 +13,7 @@ from ..import_data import (
     
 )
 from ..ccc import calc_communication_score
+from ..cc_pf2 import fit_pf2
 
 
 def makeFigure():
@@ -25,7 +26,7 @@ def makeFigure():
 
     # Make smaller dataset for now
     X = X[::200]
-    df_lrp = df_lrp.iloc[:20, :]
+    df_lrp = df_lrp.iloc[:5, :]
 
     Xccc = calc_communication_score(X, df_lrp, communication_score="expression_product")
     
@@ -37,5 +38,9 @@ def makeFigure():
     assert len(X_list[0].shape) == 3
     assert X_list[0].shape[0] == X_list[0].shape[1]
     assert X_list[0].shape[2] == X_list[1].shape[2] 
+    
+    
+    output, r2x = fit_pf2(X_list, rank=2, n_iter_max=20, tol=1e-5)
+    
 
     return f
