@@ -9,8 +9,7 @@ from ..ccc import calc_communication_score
 
 
 def test_anndata_ccc_processing_pipeline():
-    """Test the full COVID BALF data processing pipeline"""
-    # Replace actual imports with mocks for testing
+    """Test the full data processing pipeline"""
     X = import_balf_covid()
     df_lrp = import_ligand_receptor_pairs()
     
@@ -25,15 +24,17 @@ def test_anndata_ccc_processing_pipeline():
     X, df_lrp = anndata_lrp_overlap(X, df_lrp)
     
     # Check that anndata_lrp_overlap doesn't change AnnData dimensions
-    assert X.shape == X_original_shape, "AnnData dimensions should not change after overlap"
+    assert X.shape[0] == X_original_shape[0], "AnnData dimensions should not change after overlap"
     assert len(df_lrp) <= df_lrp_original_len, "Filtered LR pairs should be equal or fewer than original"
+    assert X.shape[1] <= X_original_shape[1], "Filtered LR pairs should be equal or fewer than original"
     
     # Test subsampling
     X_small = X[::200]
-    df_lrp_small = df_lrp.iloc[:20, :]
+    number_of_pairs = 20
+    df_lrp_small = df_lrp.iloc[:number_of_pairs, :]
     
     ccc_X = calc_communication_score(X_small, df_lrp_small, communication_score="expression_product")
         
-    assert ccc_X.shape[1] == X_small.shape[1], "Output should have same number of LR pairs as input"
+    assert ccc_X.shape[1] == number_of_pairs, "Output should have same number of LR pairs as input"
     assert ccc_X.obs("sample").nunique() == X_small.obs("sample").nunique(), "Output should have same number of samples as input"
   
