@@ -36,16 +36,23 @@ def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
         urllib.request.urlretrieve(url, filename)
     else:
         print("File already exists. Loading data...")
-    adata = anndata.read_h5ad(filename)
-    return adata
+    return anndata.read_h5ad(filename)
 
 
-def import_ligand_receptor_pairs():
+def import_ligand_receptor_pairs(filename="./data/Human-2020-Jin-LR-pairs.csv"):
     """Import ligand-receptor pairs from CellChat
     CellChat (Jin et al. 2021, Nature Communications"""
-    df_lrp = pd.read_csv("cellcommunicationpf2/data/Human-2020-Jin-LR-pairs.csv")
 
-    return df_lrp
+    url = "https://raw.githubusercontent.com/LewisLabUCSD/Ligand-Receptor-Pairs/refs/heads/master/Human/Human-2020-Jin-LR-pairs.csv"
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    
+    if not os.path.exists(filename):
+        print("Downloading data from GitHub...")
+        urllib.request.urlretrieve(url, filename)
+    else:
+        print("File already exists. Loading data...")
+    
+    return pd.read_csv(filename)
 
 
 def anndata_lrp_overlap(X: anndata.AnnData, df_lrp: pd.DataFrame):
