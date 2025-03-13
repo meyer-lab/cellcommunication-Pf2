@@ -81,20 +81,18 @@ def solve_projections(
     """
     projections: list[np.ndarray] = []
     
-    if random_seed is not None:
-        rng = np.random.RandomState(random_seed)
+    rng = np.random.RandomState(random_seed)
 
     for i, mat in enumerate(X_list):
         manifold = Stiefel(mat.shape[0], full_tensor.shape[1])
         a_mat = anp.asarray(mat)
         a_lhs = anp.asarray(full_tensor[i, :, :, :])
-
-        if random_seed is not None:
-            # Generate a reproducible initial point on the Stiefel manifold
-            X = rng.randn(mat.shape[0], full_tensor.shape[1])
-            # Use QR factorization to get a point on the Stiefel manifold
-            Q, _ = np.linalg.qr(X)
-            initial_point = Q
+        
+        # Generate a reproducible initial point on the Stiefel manifold
+        X = rng.randn(mat.shape[0], full_tensor.shape[1])
+        # Use QR factorization to get a point on the Stiefel manifold
+        Q, _ = np.linalg.qr(X)
+        initial_point = Q
         
         @pymanopt.function.autograd(manifold)
         def projection_loss_function(proj):
@@ -108,10 +106,8 @@ def solve_projections(
 
         # Solve the problem
         solver = TrustRegions(verbosity=0, min_gradient_norm=1e-9, min_step_size=1e-12)
-        if random_seed is not None:
-            proj = solver.run(problem, initial_point=initial_point).point
-        else:
-            proj = solver.run(problem).point
+        
+        proj = solver.run(problem, initial_point=initial_point).point
 
         U, _, Vt = np.linalg.svd(proj, full_matrices=False)
         proj = U @ Vt
