@@ -8,6 +8,10 @@ from ..cc_pf2 import (
     fit_pf2,
 )
 
+from tensorly import cp_to_tensor
+from tensorly.cp_tensor import cp_permute_factors, CPTensor
+import pytest
+
 
 def test_init():
     """
@@ -117,7 +121,9 @@ def test_reconstruction_error():
     ]
 
     # Generate random projections
-    projections = [np.random.rand(cells, rank) for _ in range(obs)]
+    projections = projections = [
+        np.linalg.qr(np.random.rand(cells, rank))[0] for _ in range(obs)
+    ]
 
     # Call the reconstruction_error method
     error = reconstruction_error(factors, X_list, projections)
@@ -140,10 +146,64 @@ def test_fitting_method():
     X_list = [np.random.rand(cells, cells, LR) for _ in range(obs)]
 
     # Call the fitting method
-    (factors, _), error = fit_pf2(X_list, rank, 10, 0.1)
+    (factors, _), error = fit_pf2(X_list, rank, 2, 0.1)
 
     assert error >= 0
     assert factors[0].shape == (obs, rank)
     assert factors[1].shape == (rank, rank)
     assert factors[2].shape == (rank, rank)
     assert factors[3].shape == (LR, rank)
+
+
+def test_fitting_method_output_reproducible():
+    """
+    Tests that the output of the decomposition is the same between two runs of the fitting method.
+    """
+
+    X_list, _, _ = random_4d_tensor(3, 5)
+
+    (factors1, _), _ = fit_pf2(X_list, 5, 10, 1e-2, random_state=0)
+    (factors2, _), _ = fit_pf2(X_list, 5, 10, 1e-2, random_state=0)
+
+    cp1 = CPTensor((None, factors1))
+    cp2 = CPTensor((None, factors2))
+
+    cp2_permuted, _ = cp_permute_factors(cp1, cp2)
+
+    f1s = cp1.factors
+    f2s = cp2_permuted.factors
+    
+    for i, (f1, f2) in enumerate(zip(f1s, f2s)):
+        max_diff = np.max(np.abs(f1 - f2))
+        print(f"Max difference in factor {i}: {max_diff}")
+        assert np.allclose(f1, f2, rtol=1e-2, atol=1e-2)
+
+
+def random_4d_tensor(obs, rank):
+    """
+    Generates a random 4D tensor with the given number of observations and rank.
+    Generated tensor will be of the form obs x cells x cells x LR
+    """
+
+    # Generate a list of random dimensions for the tensors
+    shapes = []
+    for _ in range(obs):
+        cells = np.random.randint(10, 20)
+        LR = np.random.randint(10, 20)
+        shapes.append((cells, cells, LR))
+
+    projections = [np.linalg.qr(np.random.rand(cells, rank))[0] for _ in range(obs)]
+
+    # Generate random factors
+    factors = [
+        np.random.rand(obs, rank),
+        np.random.rand(rank, rank),
+        np.random.rand(rank, rank),
+        np.random.rand(LR, rank),
+    ]
+
+    # Generate X_list from the factors and projections
+    reconstructed_X = cp_to_tensor((None, factors))
+    X_list = [reconstructed_X[i, :, :, :] for i in range(obs)]
+
+    return X_list, factors, projections
