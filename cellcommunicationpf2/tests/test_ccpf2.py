@@ -172,7 +172,7 @@ def test_fitting_method_output_reproducible():
 
     f1s = cp1.factors
     f2s = cp2_permuted.factors
-    
+
     for i, (f1, f2) in enumerate(zip(f1s, f2s)):
         max_diff = np.max(np.abs(f1 - f2))
         print(f"Max difference in factor {i}: {max_diff}")

@@ -80,20 +80,20 @@ def solve_projections(
     reconstruct the data based on the projection matrices.
     """
     projections: list[np.ndarray] = []
-    
+
     rng = np.random.RandomState(random_seed)
 
     for i, mat in enumerate(X_list):
         manifold = Stiefel(mat.shape[0], full_tensor.shape[1])
         a_mat = anp.asarray(mat)
         a_lhs = anp.asarray(full_tensor[i, :, :, :])
-        
+
         # Generate a reproducible initial point on the Stiefel manifold
         X = rng.randn(mat.shape[0], full_tensor.shape[1])
         # Use QR factorization to get a point on the Stiefel manifold
         Q, _ = np.linalg.qr(X)
         initial_point = Q
-        
+
         @pymanopt.function.autograd(manifold)
         def projection_loss_function(proj):
             a_mat_recon = anp.einsum("ba,dc,acg->bdg", proj, proj, a_lhs)
@@ -106,7 +106,7 @@ def solve_projections(
 
         # Solve the problem
         solver = TrustRegions(verbosity=0, min_gradient_norm=1e-9, min_step_size=1e-12)
-        
+
         proj = solver.run(problem, initial_point=initial_point).point
 
         U, _, Vt = np.linalg.svd(proj, full_matrices=False)
@@ -127,7 +127,7 @@ def fit_pf2(
     """
     Fits the factors of the CP decomposition for a list of 3D tensors
     """
-        
+
     factors = init(X_list, rank, random_state=random_state)
     errs = []
 
