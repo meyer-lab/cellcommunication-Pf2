@@ -36,5 +36,5 @@ def test_anndata_ccc_processing_pipeline():
     ccc_X = calc_communication_score(X_small, df_lrp_small, communication_score="expression_product")
         
     assert ccc_X.shape[1] == number_of_pairs, "Output should have same number of LR pairs as input"
-    assert pd.unique(ccc_X.obs["sample"]) == pd.unique(X_small.obs["sample"]), "Output should have same number of samples as input"
+    assert len(pd.unique(ccc_X.obs["sample"])) == len(pd.unique(X_small.obs["sample"])), "Output should have same number of samples as input"
   
