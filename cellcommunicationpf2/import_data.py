@@ -3,6 +3,7 @@ import os
 import anndata
 import pandas as pd
 
+
 # The below code is taken directly from https://github.com/earmingol/cell2cell/blob/master/cell2cell/datasets/anndata.py
 def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"):
     """BALF samples from COVID-19 patients
@@ -40,9 +41,9 @@ def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
 
 
 def import_ligand_receptor_pairs():
-    """Import ligand-receptor pairs from CellChat 
+    """Import ligand-receptor pairs from CellChat
     CellChat (Jin et al. 2021, Nature Communications"""
-    df_lrp = pd.read_csv("cellcommunicationpf2/data/Human-2020-Jin-LR-pairs.csv")  
+    df_lrp = pd.read_csv("cellcommunicationpf2/data/Human-2020-Jin-LR-pairs.csv")
 
     return df_lrp
 
@@ -51,9 +52,11 @@ def anndata_lrp_overlap(X: anndata.AnnData, df_lrp: pd.DataFrame):
     """Filter anndata to  include genes present in the ligand-receptor pairs data"""
     df_lrp = df_lrp[["ligand", "receptor"]]
 
-    valid_mask = (df_lrp['ligand'].isin(X.var_names)) & (df_lrp['receptor'].isin(X.var_names))
+    valid_mask = (df_lrp["ligand"].isin(X.var_names)) & (
+        df_lrp["receptor"].isin(X.var_names)
+    )
     df_lrp = df_lrp[valid_mask].copy().reset_index(drop=True)
-    
-    genes_to_keep = list(set(df_lrp['ligand']) | set(df_lrp['receptor']))
+
+    genes_to_keep = list(set(df_lrp["ligand"]) | set(df_lrp["receptor"]))
 
     return X[:, genes_to_keep], df_lrp
