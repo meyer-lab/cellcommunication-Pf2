@@ -8,7 +8,6 @@ from ..import_data import (
     import_ligand_receptor_pairs,
     anndata_lrp_overlap,
 )
-from ..ccc import calc_communication_score
 
 
 def makeFigure():
@@ -18,11 +17,5 @@ def makeFigure():
     X = import_balf_covid()
     df_lrp = import_ligand_receptor_pairs()
     X, df_lrp = anndata_lrp_overlap(X, df_lrp)
-
-    # Make smaller dataset for now
-    X = X[::200]
-    df_lrp = df_lrp.iloc[:20, :]
-
-    Xccc = calc_communication_score(X, df_lrp, communication_score="expression_product")
 
     return f
