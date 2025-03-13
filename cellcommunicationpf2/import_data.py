@@ -36,6 +36,7 @@ def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
         urllib.request.urlretrieve(url, filename)
     else:
         print("File already exists. Loading data...")
+        
     return anndata.read_h5ad(filename)
 
 
