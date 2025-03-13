@@ -16,8 +16,10 @@ fonttools==4.56.0
 h5py==3.12.1
 joblib==1.4.2
 kiwisolver==1.4.8
+llvmlite==0.44.0
 matplotlib==3.10.1
 natsort==8.4.0
+numba==0.61.0
 numpy==2.0.2
 packaging==24.2
 pandas==2.2.3
@@ -30,6 +32,7 @@ scikit-learn==1.5.2
 scipy==1.15.2
 seaborn==0.13.2
 six==1.17.0
+sparse==0.15.5
 tensorly==0.9.0
 threadpoolctl==3.5.0
 tzdata==2025.1
