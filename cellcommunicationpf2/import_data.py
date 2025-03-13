@@ -45,13 +45,13 @@ def import_ligand_receptor_pairs(filename="./data/Human-2020-Jin-LR-pairs.csv"):
 
     url = "https://raw.githubusercontent.com/LewisLabUCSD/Ligand-Receptor-Pairs/refs/heads/master/Human/Human-2020-Jin-LR-pairs.csv"
     os.makedirs(os.path.dirname(filename), exist_ok=True)
-    
+
     if not os.path.exists(filename):
         print("Downloading data from GitHub...")
         urllib.request.urlretrieve(url, filename)
     else:
         print("File already exists. Loading data...")
-    
+
     return pd.read_csv(filename)
 
 
