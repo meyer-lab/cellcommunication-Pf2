@@ -4,7 +4,9 @@ from ..import_data import (
     import_balf_covid,
     import_ligand_receptor_pairs,
     anndata_lrp_overlap,
-)
+    add_cond_idxs,
+    anndata_to_tensor
+    )
 from ..ccc import calc_communication_score
 
 
@@ -49,3 +51,12 @@ def test_anndata_ccc_processing_pipeline():
     assert len(pd.unique(ccc_X.obs["sample"])) == len(
         pd.unique(X_small.obs["sample"])
     ), "Output should have same number of samples as input"
+
+
+    ccc_X = add_cond_idxs(ccc_X, condition_name="sample")
+    tensor_list = anndata_to_tensor(ccc_X, return_sparse=False)
+    
+    assert len(tensor_list) == len(ccc_X.obs['condition_unique_idxs'].unique()), "Should have one tensor per condition"
+    for tensor in tensor_list:
+        assert len(tensor.shape) == 3, "Should be 3D tensor"
+        assert tensor.shape[2] == ccc_X.n_vars, "Third dimension should match number of genes"

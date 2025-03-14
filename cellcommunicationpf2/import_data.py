@@ -2,7 +2,8 @@ import urllib.request
 import os
 import anndata
 import pandas as pd
-
+import numpy as np
+import sparse
 
 # The below code is taken directly from https://github.com/earmingol/cell2cell/blob/master/cell2cell/datasets/anndata.py
 def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"):
@@ -68,3 +69,59 @@ def anndata_lrp_overlap(X: anndata.AnnData, df_lrp: pd.DataFrame):
     genes_to_keep = list(set(df_lrp["ligand"]) | set(df_lrp["receptor"]))
 
     return X[:, genes_to_keep], df_lrp
+
+
+def add_cond_idxs(
+    X: anndata.AnnData, condition_name: str,) -> anndata.AnnData:
+    """Add condition-specific indices to AnnData object"""
+    # Get the indices for subsetting the data
+    _, sgIndex = np.unique(X.obs_vector(condition_name), return_inverse=True)
+    X.obs["condition_unique_idxs"] = sgIndex
+
+    return X
+
+
+def anndata_to_tensor(X: anndata.AnnData, return_sparse: bool = True) -> list:
+    """
+    Convert AnnData to a list of 3D sparse tensors for each condition.
+    Each sample can have different numbers of sender/receiver cells.
+    """
+    samples = X.obs['condition_unique_idxs'].unique()
+    lr_pairs = X.var_names
+    tensor_list = []
+
+    for sample in samples:
+        # Filter data for this sample
+        sample_data = X[X.obs['condition_unique_idxs'] == sample]
+
+        # Get unique sender/receiver types for this sample
+        sender_types = sample_data.obs['sender'].unique()
+        receiver_types = sample_data.obs['receiver'].unique()
+
+        # Create mappings specific to this sample
+        sender_map = {ct: i for i, ct in enumerate(sender_types)}
+        receiver_map = {ct: i for i, ct in enumerate(receiver_types)}
+
+        # Get indices for all dimensions
+        sender_indices = np.array([sender_map[s] for s in sample_data.obs['sender']])
+        receiver_indices = np.array([receiver_map[r] for r in sample_data.obs['receiver']])
+
+        # Create coordinates for 3D tensor
+        sender_rep = np.repeat(sender_indices, len(lr_pairs))
+        receiver_rep = np.repeat(receiver_indices, len(lr_pairs))
+        lr_rep = np.tile(np.arange(len(lr_pairs)), len(sample_data))
+
+        # Stack coordinates
+        coords = np.stack([sender_rep, receiver_rep, lr_rep])
+        shape = (len(sender_types), len(receiver_types), len(lr_pairs))
+        values = sample_data.X.toarray().flatten()
+
+        if return_sparse:
+            tensor = sparse.COO(coords, values, shape=shape)
+        else:
+            tensor = np.zeros(shape)
+            tensor[coords[0], coords[1], coords[2]] = values
+
+        tensor_list.append(tensor)
+
+    return tensor_list
