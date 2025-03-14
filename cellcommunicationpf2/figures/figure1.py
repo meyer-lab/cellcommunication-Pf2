@@ -112,22 +112,49 @@ def store_pf2(
     X,
     parafac2_output):
     """Store the Pf2 results into the anndata object."""
-    sgIndex = X.obs["condition_unique_idxs"]
 
     X.uns["Pf2_weights"] = parafac2_output[0]
     X.uns["Pf2_A"], X.uns["Pf2_B"],  X.uns["Pf2_C"], X.varm["Pf2_D"] = parafac2_output[1]
-
-    print(np.shape(X))
-
-    X.obsm["projections"] = np.zeros((X.shape[0], len(X.uns["Pf2_weights"])))
+    projections = parafac2_output[2]
+    X.uns["Pf2_projections"] = projections
     
-    print(np.shape(X.obsm["projections"]))
-    for i, p in enumerate(parafac2_output[2]):
-        print(np.shape(p))
-        print(i)
-        print(np.shape(X.obsm["projections"][sgIndex == i, :] ))
-        X.obsm["projections"][sgIndex == i, :] = p  # type: ignore
-
-    # X.obsm["weighted_projections"] = X.obsm["projections"] @ X.uns["Pf2_B"]
+    stacked_projections = np.vstack(projections)
+    
+    # Create condition index vector matching stacked projections
+    condition_indices = []
+    for idx, proj in enumerate(projections):
+        condition_indices.extend([idx] * proj.shape[0])
+    
+    # Store both stacked projections and their condition indices
+    X.uns["Pf2_projections"] = stacked_projections
+    X.uns["Pf2_weighted_projections"] = stacked_projections @ X.uns["Pf2_B"]
+    X.uns["Pf2_projection_conditions"] = np.array(condition_indices)
+    
+    n_pairs = X.shape[0]  # Number of cell-cell pairs
+    n_components = len(X.uns["Pf2_weights"])  # Number of components
+    
+    # Initialize projection scores matrix
+    proj_scores = np.zeros((n_pairs, n_components))
+   
+    current_idx = 0
+    
+    # Process each sample separately
+    samples = X.obs["sample"].unique()
+    for k in range(len(samples)):
+        sample_proj = projections[k]  # Get projections for this sample
+        n_cells = sample_proj.shape[0]
+        
+        # Generate all cell pairs for this sample
+        for i in range(n_cells):
+            for j in range(n_cells):
+                if i != j:  # Skip self-interactions
+                    # Calculate projection products and store at current index
+                    proj_scores[current_idx, :] = sample_proj[i] * sample_proj[j]
+                    current_idx += 1
+                    
+    
+    # Convert to DataFrame and create new layer
+    X.obsm["Pf2_cell_cell_projections"] = proj_scores
+    X.obsm["Pf2_cell_cell_projections"] = proj_scores @ X.uns["Pf2_B"]
 
     return X
