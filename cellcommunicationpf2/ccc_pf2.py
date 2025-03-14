@@ -117,7 +117,7 @@ def solve_projections(
     return projections
 
 
-def fit_pf2(
+def ccc_pf2(
     X_list: list,
     rank: int,
     n_iter_max: int,
@@ -158,4 +158,6 @@ def fit_pf2(
             break
 
     final_err = errs[-1]
+    
+    
     return (factors, projections), final_err

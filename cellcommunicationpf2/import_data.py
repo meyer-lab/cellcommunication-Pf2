@@ -103,6 +103,20 @@ def anndata_to_tensor(X: anndata.AnnData):
         sender_map = {ct: i for i, ct in enumerate(sender_types)}
         receiver_map = {ct: i for i, ct in enumerate(receiver_types)}
 
+
+        # # Fill tensor with values
+        # for idx, row in condition_data.obs.iterrows():
+        #     s_idx = sender_map[row["sender"]]
+        #     r_idx = receiver_map[row["receiver"]]
+        #     if sp.issparse(condition_data.X):
+        #         values = condition_data[idx].X.toarray().flatten()
+        #     else:
+        #         values = condition_data[idx].X
+        #     tensor[s_idx, r_idx, :] = values
+            
+        # tensor_list.append(tensor)
+        
+        
         # Get indices for all dimensions
         sender_indices = np.array([sender_map[s] for s in sample_data.obs['sender']])
         receiver_indices = np.array([receiver_map[r] for r in sample_data.obs['receiver']])
