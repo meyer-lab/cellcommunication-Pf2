@@ -8,6 +8,8 @@ from typing import Optional
 from sklearn.utils.extmath import randomized_svd
 from tensorly.cp_tensor import cp_to_tensor
 from tensorly.decomposition import parafac
+import scipy.sparse as sp
+import sparse
 
 
 def reconstruction_error(
@@ -31,15 +33,29 @@ def flatten_tensor_list(tensor_list: list) -> np.ndarray:
     """
     Flatten a list of 3D tensors from A x B x B x C to a matrix of (A*B*B) x C
     """
-
+    
+    flattened_tensors = []
     # Reshape each tensor to a 2D matrix
     # This will stack rows of each B x B tensor into a single row
-    reshaped_tensors = [tensor.reshape(-1, tensor.shape[-1]) for tensor in tensor_list]
-
-    # Vertically stack these matrices
-    flattened_matrix = np.vstack(reshaped_tensors)
-
-    return flattened_matrix
+    for tensor in tensor_list:
+        # Get tensor properties
+        coords = tensor.coords
+        data = tensor.data
+        shape = tensor.shape
+        
+        # Calculate new row indices for flattened tensor
+        new_rows = coords[0] * shape[1] + coords[1]
+        new_cols = coords[2]
+        
+        # Create flattened sparse matrix
+        flat_shape = (shape[0] * shape[1], shape[2])
+        flattened = sp.csr_matrix(
+            (data, (new_rows, new_cols)),
+            shape=flat_shape
+        )
+        flattened_tensors.append(flattened)
+    
+    return sp.vstack(flattened_tensors)
 
 
 def init(
@@ -85,8 +101,11 @@ def solve_projections(
 
     for i, mat in enumerate(X_list):
         manifold = Stiefel(mat.shape[0], full_tensor.shape[1])
-        a_mat = anp.asarray(mat)
+        # a_mat = anp.asarray(mat)
         a_lhs = anp.asarray(full_tensor[i, :, :, :])
+        
+        coords = mat.coords
+        data = mat.data
 
         # Generate a reproducible initial point on the Stiefel manifold
         X = rng.randn(mat.shape[0], full_tensor.shape[1])
@@ -97,7 +116,16 @@ def solve_projections(
         @pymanopt.function.autograd(manifold)
         def projection_loss_function(proj):
             a_mat_recon = anp.einsum("ba,dc,acg->bdg", proj, proj, a_lhs)
-            return anp.sum(anp.square(a_mat - a_mat_recon))
+            
+            loss = 0.0
+            for k in range(len(data)):
+                i_idx, j_idx, k_idx = coords[0][k], coords[1][k], coords[2][k]
+                # Get the corresponding value in the reconstructed tensor
+                recon_val = a_mat_recon[j_idx, i_idx, k_idx]
+                # Compute the squared difference
+                loss += anp.square(data[k] - recon_val)
+            
+            return loss
 
         problem = Problem(
             manifold=manifold,
