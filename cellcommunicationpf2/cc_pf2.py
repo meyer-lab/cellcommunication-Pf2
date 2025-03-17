@@ -9,7 +9,6 @@ from sklearn.utils.extmath import randomized_svd
 from tensorly.cp_tensor import cp_to_tensor
 from tensorly.decomposition import parafac
 import scipy.sparse as sp
-import sparse
 
 
 def reconstruction_error(
@@ -22,9 +21,17 @@ def reconstruction_error(
 
     recon_err = 0.0
 
-    for i, proj in enumerate(projections):
+    for i, (orig_tensor, proj) in enumerate(zip(original_X, projections)):
         projected_X = project_data(reconstructed_X[i, :, :, :], proj.T)
-        recon_err += np.linalg.norm(original_X[i] - projected_X) ** 2
+        
+        # Get coordinates and data from current sparse tensor
+        coords = orig_tensor.coords
+        data = orig_tensor.data
+        
+        # Compare only at non-zero locations
+        recon_vals = projected_X[coords[0], coords[1], coords[2]]
+        diff = data - recon_vals
+        recon_err += (diff ** 2).sum()
 
     return recon_err
 
@@ -76,7 +83,7 @@ def init(
 def project_data(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
     """
     Projects a 3D tensor of C x C x LR with a projection matrix of C x CES
-    along both C dimensions to form a resulting tensor of CES x CES x LR.
+    along both C dimensions to form a resulting in a 3D tensor of CES x CES x LR.
     """
     return np.einsum("ab,cd,acg->bdg", proj_matrix, proj_matrix, tensor)
 
@@ -106,6 +113,7 @@ def solve_projections(
         
         coords = mat.coords
         data = mat.data
+        i_idx, j_idx, k_idx = coords[0], coords[1], coords[2]
 
         # Generate a reproducible initial point on the Stiefel manifold
         X = rng.randn(mat.shape[0], full_tensor.shape[1])
@@ -117,15 +125,9 @@ def solve_projections(
         def projection_loss_function(proj):
             a_mat_recon = anp.einsum("ba,dc,acg->bdg", proj, proj, a_lhs)
             
-            loss = 0.0
-            for k in range(len(data)):
-                i_idx, j_idx, k_idx = coords[0][k], coords[1][k], coords[2][k]
-                # Get the corresponding value in the reconstructed tensor
-                recon_val = a_mat_recon[j_idx, i_idx, k_idx]
-                # Compute the squared difference
-                loss += anp.square(data[k] - recon_val)
+            recon_vals = a_mat_recon[j_idx, i_idx, k_idx]
             
-            return loss
+            return anp.sum(anp.square(data - recon_vals))
 
         problem = Problem(
             manifold=manifold,
@@ -168,8 +170,9 @@ def cc_pf2(
         projected_X = [
             project_data(X_list[i], proj) for i, proj in enumerate(projections)
         ]
+        projected_X = np.stack(projected_X, axis=0)
         _, factors = parafac(
-            np.array(projected_X),
+            projected_X,
             rank,
             n_iter_max=20,
             init=(None, [np.array(f) for f in factors]),
