@@ -5,7 +5,7 @@ from ..cc_pf2 import (
     solve_projections,
     init,
     reconstruction_error,
-    fit_pf2,
+    cc_pf2,
 )
 
 from tensorly import cp_to_tensor
@@ -146,7 +146,7 @@ def test_fitting_method():
     X_list = [np.random.rand(cells, cells, LR) for _ in range(obs)]
 
     # Call the fitting method
-    (factors, _), error = fit_pf2(X_list, rank, 2, 0.1)
+    (factors, _), error = cc_pf2(X_list, rank, 2, 0.1)
 
     assert error >= 0
     assert factors[0].shape == (obs, rank)
@@ -162,8 +162,8 @@ def test_fitting_method_output_reproducible():
 
     X_list, _, _ = random_4d_tensor(3, 5)
 
-    (factors1, _), _ = fit_pf2(X_list, 5, 10, 1e-2, random_state=0)
-    (factors2, _), _ = fit_pf2(X_list, 5, 10, 1e-2, random_state=0)
+    (factors1, _), _ = cc_pf2(X_list, 5, 10, 1e-2, random_state=0)
+    (factors2, _), _ = cc_pf2(X_list, 5, 10, 1e-2, random_state=0)
 
     cp1 = CPTensor((None, factors1))
     cp2 = CPTensor((None, factors2))

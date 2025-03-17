@@ -117,7 +117,7 @@ def solve_projections(
     return projections
 
 
-def fit_pf2(
+def cc_pf2(
     X_list: list,
     rank: int,
     n_iter_max: int,

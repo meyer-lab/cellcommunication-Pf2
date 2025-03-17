@@ -8,6 +8,7 @@ from ..import_data import (
     anndata_to_tensor,
 )
 from ..ccc import calc_communication_score
+from ..cc_pf2 import cc_pf2
 
 
 def test_anndata_ccc_processing_pipeline():
@@ -63,3 +64,5 @@ def test_anndata_ccc_processing_pipeline():
         assert tensor.shape[2] == ccc_X.n_vars, (
             "Third dimension should match number of genes"
         )
+
+    output, r2x = cc_pf2(tensor_list, rank=2, n_iter_max=5, tol=1e-5)
