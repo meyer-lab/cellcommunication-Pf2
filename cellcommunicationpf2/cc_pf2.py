@@ -175,7 +175,7 @@ def standardize_pf2(
     weights, factors = cp_flip_sign(cp_normalize((None, factors)), mode=1)
 
     for i in [1, 2]:
-        # Order eigen-cells to maximize the diagonal of B
+        # Order eigen-cells to maximize the diagonal of B/C
         _, col_ind = linear_sum_assignment(np.abs(factors[i].T), maximize=True)
         factors[i] = factors[i][col_ind, :]
         projections = [p[:, col_ind] for p in projections]
@@ -216,13 +216,13 @@ def store_pf2(
 
     # Initialize projection scores matrix
     proj_scores = np.zeros((n_pairs, n_components))
+    cell_cell_indices = np.zeros(n_pairs, dtype=int)
 
     current_idx = 0
-
     # Process each sample separately
     samples = X.obs["sample"].unique()
     for k in range(len(samples)):
-        sample_proj = projections[k]  # Get projections for this sample
+        sample_proj = projections[k] 
         n_cells = sample_proj.shape[0]
 
         # Generate all cell pairs for this sample
@@ -231,11 +231,12 @@ def store_pf2(
                 if i != j:  # Skip self-interactions
                     # Calculate projection products and store at current index
                     proj_scores[current_idx, :] = sample_proj[i] * sample_proj[j]
+                    cell_cell_indices.append(k)
                     current_idx += 1
+                    
 
-
-    # Convert to DataFrame and create new layer
     X.obsm["Pf2_cell_cell_projections"] = proj_scores
-    X.obsm["Pf2_cell_cell_projections"] = proj_scores @ X.uns["Pf2_B"]
+    X.obsm["Pf2_cell_cell_weighted_projections"] = proj_scores @ X.uns["Pf2_B"]
+    X.obsm["Pf2_cell_cell_condition"] = cell_cell_indices
 
     return X
