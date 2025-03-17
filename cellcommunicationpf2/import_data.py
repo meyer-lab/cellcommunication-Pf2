@@ -84,7 +84,7 @@ def add_cond_idxs(
     return X
 
 
-def anndata_to_tensor(X: anndata.AnnData, return_sparse: bool = True) -> list:
+def anndata_to_tensor(X: anndata.AnnData) -> list:
     """
     Convert AnnData to a list of 3D sparse tensors for each condition.
     Each sample can have different numbers of sender/receiver cells.
@@ -121,12 +121,8 @@ def anndata_to_tensor(X: anndata.AnnData, return_sparse: bool = True) -> list:
         shape = (len(sender_types), len(receiver_types), len(lr_pairs))
         values = sample_data.X.toarray().flatten()
 
-        if return_sparse:
-            tensor = sparse.COO(coords, values, shape=shape)
-        else:
-            tensor = np.zeros(shape)
-            tensor[coords[0], coords[1], coords[2]] = values
 
+        tensor = sparse.COO(coords, values, shape=shape)
         tensor_list.append(tensor)
 
     return tensor_list

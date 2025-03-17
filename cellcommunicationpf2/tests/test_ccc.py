@@ -53,7 +53,7 @@ def test_anndata_ccc_processing_pipeline():
     ), "Output should have same number of samples as input"
 
     ccc_X = add_cond_idxs(ccc_X, condition_name="sample")
-    tensor_list = anndata_to_tensor(ccc_X, return_sparse=False)
+    tensor_list = anndata_to_tensor(ccc_X)
 
     assert len(tensor_list) == len(ccc_X.obs["condition_unique_idxs"].unique()), (
         "Should have one tensor per condition"
