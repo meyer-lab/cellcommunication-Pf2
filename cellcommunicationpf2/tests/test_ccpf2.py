@@ -10,7 +10,6 @@ from ..cc_pf2 import (
 
 from tensorly import cp_to_tensor
 from tensorly.cp_tensor import cp_permute_factors, CPTensor
-import pytest
 
 
 def test_init():

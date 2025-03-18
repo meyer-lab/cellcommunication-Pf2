@@ -164,7 +164,7 @@ def fit_pf2(
 
 
 
-def standardize_pf2(
+def standardize_cc_pf2(
     factors: list[np.ndarray], projections: list[np.ndarray]
 ) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray]]:
     # Order components by condition variance
@@ -189,7 +189,7 @@ def standardize_pf2(
 
 
 
-def store_pf2(
+def store_cc_pf2(
     X: anndata.AnnData,  
     parafac2_output: tuple):
     """Store the Pf2 results into the anndata object."""
