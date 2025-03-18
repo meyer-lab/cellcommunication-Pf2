@@ -1,5 +1,6 @@
 import autograd.numpy as anp
 import numpy as np
+import anndata
 import pymanopt
 from pymanopt import Problem
 from pymanopt.manifolds import Stiefel
@@ -8,7 +9,8 @@ from typing import Optional
 from sklearn.utils.extmath import randomized_svd
 from tensorly.cp_tensor import cp_to_tensor
 from tensorly.decomposition import parafac
-
+from tensorly.cp_tensor import cp_flip_sign, cp_normalize
+from scipy.optimize import linear_sum_assignment
 
 def reconstruction_error(
     factors: list[np.ndarray], original_X: np.ndarray, projections: list[np.ndarray]
@@ -159,3 +161,82 @@ def fit_pf2(
 
     final_err = errs[-1]
     return (factors, projections), final_err
+
+
+
+def standardize_cc_pf2(
+    factors: list[np.ndarray], projections: list[np.ndarray]
+) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray]]:
+    # Order components by condition variance
+    gini = np.var(factors[0], axis=0) / np.mean(factors[0], axis=0)
+    gini_idx = np.argsort(gini)
+    factors = [f[:, gini_idx] for f in factors]
+
+    weights, factors = cp_flip_sign(cp_normalize((None, factors)), mode=1)
+
+    for i in [1, 2]:
+        # Order eigen-cells to maximize the diagonal of B/C
+        _, col_ind = linear_sum_assignment(np.abs(factors[i].T), maximize=True)
+        factors[i] = factors[i][col_ind, :]
+        projections = [p[:, col_ind] for p in projections]
+
+        # Flip the sign based on B/C
+        signn = np.sign(np.diag(factors[i]))
+        factors[i] *= signn[:, np.newaxis]
+        projections = [p * signn for p in projections]
+
+    return weights, factors, projections
+
+
+
+def store_cc_pf2(
+    X: anndata.AnnData,  
+    parafac2_output: tuple):
+    """Store the Pf2 results into the anndata object."""
+
+    X.uns["Pf2_weights"] = parafac2_output[0]
+    X.uns["Pf2_A"], X.uns["Pf2_B"],  X.uns["Pf2_C"], X.varm["Pf2_D"] = parafac2_output[1]
+    projections = parafac2_output[2]
+    X.uns["Pf2_projections"] = projections
+
+    stacked_projections = np.vstack(projections)
+
+    # Create condition index vector matching stacked projections
+    condition_indices = []
+    for idx, proj in enumerate(projections):
+        condition_indices.extend([idx] * proj.shape[0])
+
+    # Store both stacked projections and their condition indices
+    X.uns["Pf2_projections"] = stacked_projections
+    X.uns["Pf2_weighted_projections"] = stacked_projections @ X.uns["Pf2_B"]
+    X.uns["Pf2_projection_conditions"] = np.array(condition_indices)
+
+    n_pairs = X.shape[0]  # Number of cell-cell pairs
+    n_components = len(X.uns["Pf2_weights"])  # Number of components
+
+    # Initialize projection scores matrix
+    proj_scores = np.zeros((n_pairs, n_components))
+    cell_cell_indices = np.zeros(n_pairs, dtype=int)
+
+    current_idx = 0
+    # Process each sample separately
+    samples = X.obs["sample"].unique()
+    for k in range(len(samples)):
+        sample_proj = projections[k] 
+        n_cells = sample_proj.shape[0]
+
+        # Generate all cell pairs for this sample
+        for i in range(n_cells):
+            for j in range(n_cells):
+                if i != j:  # Skip self-interactions
+                    # Calculate projection products and store at current index
+                    proj_scores[current_idx, :] = sample_proj[i] * sample_proj[j]
+                    cell_cell_indices.append(k)
+                    current_idx += 1
+                    
+
+    X.obsm["Pf2_cell_cell_projections"] = proj_scores
+    X.obsm["Pf2_cell_cell_weighted_projections"] = proj_scores @ X.uns["Pf2_B"]
+    X.obsm["Pf2_cell_cell_condition"] = cell_cell_indices
+
+    return X
