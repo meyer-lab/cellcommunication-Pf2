@@ -7,7 +7,11 @@ from ..cc_pf2 import (
     cc_pf2,
     project_data,
     solve_projections,
-    reconstruction_error)
+    init,
+    reconstruction_error,
+    fit_pf2,
+)
+
 
 def dense_to_sparse(tensor, sparsity=0.9):
     """Convert dense tensor to sparse by randomly zeroing elements."""
