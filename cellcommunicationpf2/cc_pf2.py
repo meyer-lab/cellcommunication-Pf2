@@ -9,8 +9,10 @@ from typing import Optional
 from sklearn.utils.extmath import randomized_svd
 from tensorly.cp_tensor import cp_to_tensor
 from tensorly.decomposition import parafac
+import scipy.sparse as sp
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize
 from scipy.optimize import linear_sum_assignment
+
 
 def reconstruction_error(
     factors: list[np.ndarray], original_X: np.ndarray, projections: list[np.ndarray]
@@ -22,9 +24,17 @@ def reconstruction_error(
 
     recon_err = 0.0
 
-    for i, proj in enumerate(projections):
+    for i, (orig_tensor, proj) in enumerate(zip(original_X, projections)):
         projected_X = project_data(reconstructed_X[i, :, :, :], proj.T)
-        recon_err += np.linalg.norm(original_X[i] - projected_X) ** 2
+        
+        # Get coordinates and data from current sparse tensor
+        coords = orig_tensor.coords
+        data = orig_tensor.data
+        
+        # Compare only at non-zero locations
+        recon_vals = projected_X[coords[0], coords[1], coords[2]]
+        diff = data - recon_vals
+        recon_err += (diff ** 2).sum()
 
     return recon_err
 
@@ -33,15 +43,29 @@ def flatten_tensor_list(tensor_list: list) -> np.ndarray:
     """
     Flatten a list of 3D tensors from A x B x B x C to a matrix of (A*B*B) x C
     """
-
+    
+    flattened_tensors = []
     # Reshape each tensor to a 2D matrix
     # This will stack rows of each B x B tensor into a single row
-    reshaped_tensors = [tensor.reshape(-1, tensor.shape[-1]) for tensor in tensor_list]
-
-    # Vertically stack these matrices
-    flattened_matrix = np.vstack(reshaped_tensors)
-
-    return flattened_matrix
+    for tensor in tensor_list:
+        # Get tensor properties
+        coords = tensor.coords
+        data = tensor.data
+        shape = tensor.shape
+        
+        # Calculate new row indices for flattened tensor
+        new_rows = coords[0] * shape[1] + coords[1]
+        new_cols = coords[2]
+        
+        # Create flattened sparse matrix
+        flat_shape = (shape[0] * shape[1], shape[2])
+        flattened = sp.csr_matrix(
+            (data, (new_rows, new_cols)),
+            shape=flat_shape
+        )
+        flattened_tensors.append(flattened)
+    
+    return sp.vstack(flattened_tensors)
 
 
 def init(
@@ -62,7 +86,7 @@ def init(
 def project_data(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
     """
     Projects a 3D tensor of C x C x LR with a projection matrix of C x CES
-    along both C dimensions to form a resulting tensor of CES x CES x LR.
+    along both C dimensions to form a resulting in a 3D tensor of CES x CES x LR.
     """
     return np.einsum("ab,cd,acg->bdg", proj_matrix, proj_matrix, tensor)
 
@@ -87,8 +111,12 @@ def solve_projections(
 
     for i, mat in enumerate(X_list):
         manifold = Stiefel(mat.shape[0], full_tensor.shape[1])
-        a_mat = anp.asarray(mat)
+        # a_mat = anp.asarray(mat)
         a_lhs = anp.asarray(full_tensor[i, :, :, :])
+        
+        coords = mat.coords
+        data = mat.data
+        i_idx, j_idx, k_idx = coords[0], coords[1], coords[2]
 
         # Generate a reproducible initial point on the Stiefel manifold
         X = rng.randn(mat.shape[0], full_tensor.shape[1])
@@ -99,7 +127,10 @@ def solve_projections(
         @pymanopt.function.autograd(manifold)
         def projection_loss_function(proj):
             a_mat_recon = anp.einsum("ba,dc,acg->bdg", proj, proj, a_lhs)
-            return anp.sum(anp.square(a_mat - a_mat_recon))
+            
+            recon_vals = a_mat_recon[j_idx, i_idx, k_idx]
+            
+            return anp.sum(anp.square(data - recon_vals))
 
         problem = Problem(
             manifold=manifold,
@@ -119,7 +150,7 @@ def solve_projections(
     return projections
 
 
-def fit_pf2(
+def cc_pf2(
     X_list: list,
     rank: int,
     n_iter_max: int,
@@ -142,8 +173,9 @@ def fit_pf2(
         projected_X = [
             project_data(X_list[i], proj) for i, proj in enumerate(projections)
         ]
+        projected_X = np.stack(projected_X, axis=0)
         _, factors = parafac(
-            np.array(projected_X),
+            projected_X,
             rank,
             n_iter_max=20,
             init=(None, [np.array(f) for f in factors]),
