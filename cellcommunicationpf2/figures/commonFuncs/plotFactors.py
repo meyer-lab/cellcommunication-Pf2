@@ -10,13 +10,14 @@ from matplotlib.axes import Axes
 
 cmap = sns.diverging_palette(240, 10, as_cmap=True)
 
+
 def plot_condition_factors(
     data: anndata.AnnData,
     ax: Axes,
     cond: str = "Condition",
     cond_group_labels: Optional[pd.Series] = None,
-    color_key = None,
-    group_cond = False,
+    color_key=None,
+    group_cond=False,
 ):
     """Plots Pf2 condition factors"""
     pd.set_option("display.max_rows", None)
@@ -153,8 +154,8 @@ def plot_gene_factors_partial(
         sns.barplot(data=df.iloc[:geneAmount, :], x="Gene", y=cmpName, color="k", ax=ax)
 
     ax.tick_params(axis="x", rotation=90)
-    
-    
+
+
 def reorder_table(projs: np.ndarray):
     """Reorder a table's rows using heirarchical clustering"""
     assert projs.ndim == 2
