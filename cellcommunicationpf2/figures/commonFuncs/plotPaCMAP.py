@@ -8,7 +8,6 @@ import datashader as ds
 import datashader.transfer_functions as tf
 from matplotlib.patches import Patch
 import anndata
-from scipy.sparse import spmatrix
 
 
 def _get_canvas(points: np.ndarray) -> ds.Canvas:
@@ -131,8 +130,8 @@ def plot_pair_wp_pacmap(
 
     points = np.concatenate(
         (
-            [X.obsm["weighted_projections"][:, cmp1 - 1]],
-            [X.obsm["weighted_projections"][:, cmp2 - 1]],
+            [X.obsm["Pf2_cell_cell_weighted_projections"][:, cmp1 - 1]],
+            [X.obsm["Pf2_cell_cell_weighted_projections"][:, cmp2 - 1]],
         )
     ).transpose()
 
@@ -148,14 +147,13 @@ def plot_pair_wp_pacmap(
     )
 
     ds_show(result, ax)
-    # ax = assign_labels(ax)
 
 
 def plot_wp_per_celltype(
     X: anndata.AnnData, cmp: int, ax: Axes, outliers: bool = False, cellType="cell_type"
 ):
     """Boxplot of weighted projections for one component across cell types"""
-    XX = X.obsm["weighted_projections"][:, cmp - 1]
+    XX = X.obsm["Pf2_cell_cell_weighted_projections"][:, cmp - 1]
     cmpName = f"Cmp. {cmp}"
 
     df = pd.DataFrame({cmpName: XX, "Cell Type": X.obs[cellType].to_numpy()})
@@ -172,16 +170,16 @@ def plot_wp_per_celltype(
     ax.set_title(cmpName)
 
 
-def plot_gene_pacmap(gene: str, X: anndata.AnnData, ax: Axes, clip_outliers=.9995):
-    """Scatterplot of PaCMAP visualization weighted by gene"""
-    geneList = X[:, gene].to_df().values
+def plot_lr_pacmap(lr: str, X: anndata.AnnData, ax: Axes, clip_outliers=.9995):
+    """Scatterplot of PaCMAP visualization weighted by lr"""
+    lrList = X[:, lr].to_df().values
 
-    geneList = np.clip(geneList, None, np.quantile(geneList, clip_outliers))
+    lrList = np.clip(lrList, None, np.quantile(lrList, clip_outliers))
     cmap = sns.color_palette("ch:s=-.2,r=.6", as_cmap=True)
 
-    values = geneList
+    values = lrList
 
-    points = np.array(X.obsm["X_pf2_PaCMAP"])
+    points = np.array(X.obsm["Pf2_PaCMAP_projections"])
 
     canvas = _get_canvas(points)
     data = pd.DataFrame(points, columns=("x", "y"))
@@ -203,7 +201,7 @@ def plot_gene_pacmap(gene: str, X: anndata.AnnData, ax: Axes, clip_outliers=.999
     plt.colorbar(psm, ax=ax)
 
     ax = assign_labels(ax)
-    ax.set(title=f"{gene}")
+    ax.set(title=f"{lr}")
 
 
 def assign_labels(ax):
