@@ -197,7 +197,6 @@ def store_cc_pf2(
     X.uns["Pf2_weights"] = parafac2_output[0]
     X.uns["Pf2_A"], X.uns["Pf2_B"],  X.uns["Pf2_C"], X.varm["Pf2_D"] = parafac2_output[1]
     projections = parafac2_output[2]
-    X.uns["Pf2_projections"] = projections
 
     stacked_projections = np.vstack(projections)
 
