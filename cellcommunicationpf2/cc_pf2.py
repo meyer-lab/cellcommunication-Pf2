@@ -11,6 +11,7 @@ from tensorly.cp_tensor import cp_to_tensor
 from tensorly.decomposition import parafac
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize
 from scipy.optimize import linear_sum_assignment
+from pacmap import PaCMAP
 
 def reconstruction_error(
     factors: list[np.ndarray], original_X: np.ndarray, projections: list[np.ndarray]
@@ -163,6 +164,27 @@ def fit_pf2(
     return (factors, projections), final_err
 
 
+def fit_cc_pf2(
+    X: anndata.AnnData,
+    rank: int,
+    random_state=1,
+    do_embedding: bool = True,
+    tol=1e-7,
+    max_iter: int = 100,
+) -> tuple[anndata.AnnData, float]:
+    """
+    Fits the Pf2 decomposition for a list of 3D tensors
+    """
+    cc_pf2_out, r2x = fit_pf2(X, rank=rank, random_state=random_state, tol=tol, n_iter_max=max_iter)
+
+    data = store_cc_pf2(X, cc_pf2_out)
+
+    if do_embedding:
+        pcm = PaCMAP(random_state=random_state)
+        data.obsm["Pf2_PaCMAP_projections"] = pcm.fit_transform(data.obsm["Pf2_cell_cell_projections"])  # type: ignore
+
+    return data, r2x
+                
 
 def standardize_cc_pf2(
     factors: list[np.ndarray], projections: list[np.ndarray]
