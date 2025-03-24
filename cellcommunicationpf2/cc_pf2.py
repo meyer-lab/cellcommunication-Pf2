@@ -181,7 +181,7 @@ def fit_cc_pf2(
 
     if do_embedding:
         pcm = PaCMAP(random_state=random_state)
-        data.obsm["X_pf2_PaCMAP"] = pcm.fit_transform(data.obsm["projections"])  # type: ignore
+        data.obsm["Pf2_PaCMAP_projections"] = pcm.fit_transform(data.obsm["Pf2_cell_cell_projections"])  # type: ignore
 
     return data, r2x
                 
