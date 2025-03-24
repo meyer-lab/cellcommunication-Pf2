@@ -17,6 +17,7 @@ dependencies = [
     "matplotlib~=3.10.1",
     "seaborn~=0.13.2",
     "sparse>=0.15.5",
+    "pacmap>=0.8.0",
 ]
 
 readme = "README.md"
