@@ -18,6 +18,7 @@ dependencies = [
     "seaborn~=0.13.2",
     "sparse>=0.15.5",
     "datashader>=0.17.0",
+    "pacmap>=0.8.0",
 ]
 
 readme = "README.md"
