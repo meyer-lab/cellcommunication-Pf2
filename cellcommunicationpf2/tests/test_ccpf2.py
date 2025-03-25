@@ -9,7 +9,6 @@ from ..cc_pf2 import (
     solve_projections,
     init,
     reconstruction_error,
-    fit_pf2,
 )
 
 

@@ -207,7 +207,7 @@ def fit_cc_pf2(
     """
     Fits the Pf2 decomposition for a list of 3D tensors
     """
-    cc_pf2_out, r2x = fit_pf2(X, rank=rank, random_state=random_state, tol=tol, n_iter_max=max_iter)
+    cc_pf2_out, r2x = cc_pf2(X, rank=rank, random_state=random_state, tol=tol, n_iter_max=max_iter)
 
     data = store_cc_pf2(X, cc_pf2_out)
 
