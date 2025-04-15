@@ -63,13 +63,10 @@ def test_project_data_output_proj_matrix():
         Q = projections[i]
         A = projected_X[i, :, :, :]
         B = project_data(A, Q.T)
-        # Ensure B is dense if needed
-        if hasattr(B, 'todense'):
-            B = B.todense()
         recreated_tensors.append(B)
 
     # Keep your original function call order
-    projections_recreated = solve_projections(recreated_tensors, projected_X.todense())
+    projections_recreated = solve_projections(recreated_tensors, projected_X)
 
     # Verify projections match (up to sign)
     for i in range(obs):
