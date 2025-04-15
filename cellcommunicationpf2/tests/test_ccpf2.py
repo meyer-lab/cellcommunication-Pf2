@@ -57,19 +57,19 @@ def test_project_data_output_proj_matrix():
     # Generate reference tensors and projections
     X_list = [dense_to_sparse(np.random.rand(cells, cells, variables)) for _ in range(num_tensors)]
     projections = [np.linalg.qr(np.random.rand(cells, rank))[0] for _ in range(num_tensors)]
-    
+
     # Create projected tensors using known projections
     projected_tensors = []
     for i in range(num_tensors):
         Q = projections[i]
         proj_tensor = project_data(X_list[i], Q)
         projected_tensors.append(proj_tensor)
-    
+
     # Stack projected tensors into 4D tensor
     projected_X = np.stack([t.todense() for t in projected_tensors])
 
     # Solve for projections using the projected data
-    projections_recreated = solve_projections(X_list, projected_X)
+    projections_recreated = solve_projections(projected_X, X_list)
 
     # Verify projections match (up to sign)
     for i in range(num_tensors):
