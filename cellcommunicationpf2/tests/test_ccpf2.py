@@ -55,7 +55,7 @@ def test_project_data_output_proj_matrix():
     obs = 3
 
     # Generate reference tensors and projections
-    projected_X = dense_to_sparse(np.random.rand(obs, cells, cells, LR))
+    projected_X = dense_to_sparse(np.random.rand(obs, rank, rank, LR))
     projections = [np.linalg.qr(np.random.rand(cells, rank))[0] for _ in range(obs)]
 
     recreated_tensors = []
