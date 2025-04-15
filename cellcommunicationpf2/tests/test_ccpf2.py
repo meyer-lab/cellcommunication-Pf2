@@ -66,7 +66,7 @@ def test_project_data_output_proj_matrix():
         recreated_tensors.append(B)
 
     # Keep your original function call order
-    projections_recreated = solve_projections(recreated_tensors, projected_X)
+    projections_recreated = solve_projections(recreated_tensors, projected_X.todense())
 
     # Verify projections match (up to sign)
     for i in range(obs):
