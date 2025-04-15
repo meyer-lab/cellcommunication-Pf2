@@ -67,9 +67,11 @@ def test_project_data_output_proj_matrix():
 
     # Stack projected tensors into 4D tensor
     projected_X = np.stack([t.todense() for t in projected_tensors])
+    # Convert X_list sparse matrices to dense arrays before passing to solve_projections
+    X_list_dense = [x.todense() for x in X_list]
 
     # Solve for projections using the projected data
-    projections_recreated = solve_projections(projected_X, X_list)
+    projections_recreated = solve_projections(projected_X, X_list_dense)
 
     # Verify projections match (up to sign)
     for i in range(num_tensors):
