@@ -49,32 +49,27 @@ def test_project_data():
 
 def test_project_data_output_proj_matrix():
     """Tests optimal projection matrix calculation with sparse data."""
-    num_tensors = 3
     cells = 20
-    variables = 10
+    LR = 10
     rank = 5
+    obs = 3
 
     # Generate reference tensors and projections
-    X_list = [dense_to_sparse(np.random.rand(cells, cells, variables)) for _ in range(num_tensors)]
-    projections = [np.linalg.qr(np.random.rand(cells, rank))[0] for _ in range(num_tensors)]
+    projected_X = dense_to_sparse(np.random.rand(obs, cells, cells, LR))
+    projections = [np.linalg.qr(np.random.rand(cells, rank))[0] for _ in range(obs)]
 
-    # Create projected tensors using known projections
-    projected_tensors = []
-    for i in range(num_tensors):
+    recreated_tensors = []
+    for i in range(obs):
         Q = projections[i]
-        proj_tensor = project_data(X_list[i], Q)
-        projected_tensors.append(proj_tensor)
+        A = projected_X[i, :, :, :]
+        B = project_data(A, Q.T)
+        recreated_tensors.append(B)
 
-    # Stack projected tensors into 4D tensor
-    projected_X = np.stack([t.todense() for t in projected_tensors])
-    # Convert X_list sparse matrices to dense arrays before passing to solve_projections
-    X_list_dense = [x.todense() for x in X_list]
-
-    # Solve for projections using the projected data
-    projections_recreated = solve_projections(projected_X, X_list_dense)
+    # Keep your original function call order
+    projections_recreated = solve_projections(recreated_tensors, projected_X)
 
     # Verify projections match (up to sign)
-    for i in range(num_tensors):
+    for i in range(obs):
         sign_correct = np.sign(projections[i][0, 0] * projections_recreated[i][0, 0])
         np.testing.assert_allclose(
             projections[i], 
