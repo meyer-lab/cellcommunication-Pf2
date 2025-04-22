@@ -65,7 +65,7 @@ def test_project_data_output_proj_matrix():
     num_tensors = 3
     cells = 20
     variables = 10
-    obs = 20
+    obs = num_tensors
     rank = 5
     # Generate a random projected tensor
     projected_X = np.random.rand(obs, rank, rank, variables)
