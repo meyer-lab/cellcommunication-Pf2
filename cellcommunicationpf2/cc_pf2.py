@@ -105,6 +105,7 @@ def solve_projections(
         problem = Problem(
             manifold=manifold,
             cost=projection_loss_function,
+            maximum_iterations=200
         )
 
         # Solve the problem
