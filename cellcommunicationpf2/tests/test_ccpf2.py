@@ -64,6 +64,20 @@ def test_project_data():
     projected_X = project_data(X_mat, proj_matrix)
 
     assert projected_X.shape == (rank, rank, LR)
+    
+
+def test_project_data_sparse():
+    """Tests projection with sparse tensor."""
+    cells = 20
+    LR = 10
+    rank = 5
+
+    # Generate sparse tensor
+    X_mat = dense_to_sparse(np.random.rand(cells, cells, LR))
+    proj_matrix = np.linalg.qr(np.random.rand(cells, rank))[0]
+    
+    projected_X = project_data(X_mat, proj_matrix)
+    assert projected_X.shape == (rank, rank, LR)
 
 
 def test_project_data_output_proj_matrix():
