@@ -25,9 +25,17 @@ def reconstruction_error(
 
     recon_err = 0.0
 
-    for i, proj in enumerate(projections):
+    for i, (orig_tensor, proj) in enumerate(zip(original_X, projections)):
         projected_X = project_data(reconstructed_X[i, :, :, :], proj.T)
-        recon_err += np.linalg.norm(original_X[i] - projected_X) ** 2
+
+        # Get coordinates and data from current sparse tensor
+        coords = orig_tensor.coords
+        data = orig_tensor.data
+
+        # Compare only at non-zero locations
+        recon_vals = projected_X[coords[0], coords[1], coords[2]]
+        diff = data - recon_vals
+        recon_err += (diff**2).sum()
 
     return recon_err
 
@@ -37,38 +45,25 @@ def flatten_tensor_list(tensor_list: list) -> np.ndarray:
     Flatten a list of 3D tensors from A x B x B x C to a matrix of (A*B*B) x C
     """
 
-    if hasattr(tensor_list[0], "coords"):
-        flattened_tensors = []
-        # Reshape each tensor to a 2D matrix
-        # This will stack rows of each B x B tensor into a single row
-        for tensor in tensor_list:
-            # Get tensor properties
-            coords = tensor.coords
-            data = tensor.data
-            shape = tensor.shape
+    flattened_tensors = []
+    # Reshape each tensor to a 2D matrix
+    # This will stack rows of each B x B tensor into a single row
+    for tensor in tensor_list:
+        # Get tensor properties
+        coords = tensor.coords
+        data = tensor.data
+        shape = tensor.shape
 
-            # Calculate new row indices for flattened tensor
-            new_rows = coords[0] * shape[1] + coords[1]
-            new_cols = coords[2]
+        # Calculate new row indices for flattened tensor
+        new_rows = coords[0] * shape[1] + coords[1]
+        new_cols = coords[2]
 
-            # Create flattened sparse matrix
-            flat_shape = (shape[0] * shape[1], shape[2])
-            flattened = sp.csr_matrix(
-                (data, (new_rows, new_cols)),
-                shape=flat_shape
-            )
-            flattened_tensors.append(flattened)
+        # Create flattened sparse matrix
+        flat_shape = (shape[0] * shape[1], shape[2])
+        flattened = sp.csr_matrix((data, (new_rows, new_cols)), shape=flat_shape)
+        flattened_tensors.append(flattened)
 
-        return sp.vstack(flattened_tensors)
-    else:
-        # Reshape each tensor to a 2D matrix
-        # This will stack rows of each B x B tensor into a single row
-        reshaped_tensors = [tensor.reshape(-1, tensor.shape[-1]) for tensor in tensor_list]
-
-        # Vertically stack these matrices
-        flattened_matrix = np.vstack(reshaped_tensors)
-
-        return flattened_matrix
+    return sp.vstack(flattened_tensors)
 
 
 def init(
