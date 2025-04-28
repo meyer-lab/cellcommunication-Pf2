@@ -153,7 +153,7 @@ def solve_projections(
     return projections
 
 
-def fit_pf2(
+def cc_pf2(
     X_list: list,
     rank: int,
     n_iter_max: int,
@@ -176,8 +176,9 @@ def fit_pf2(
         projected_X = [
             project_data(X_list[i], proj) for i, proj in enumerate(projections)
         ]
+        projected_X = np.stack(projected_X, axis=0)
         _, factors = parafac(
-            np.array(projected_X),
+            projected_X,
             rank,
             n_iter_max=20,
             init=(None, [np.array(f) for f in factors]),
@@ -208,7 +209,9 @@ def fit_cc_pf2(
     """
     Fits the Pf2 decomposition for a list of 3D tensors
     """
-    cc_pf2_out, r2x = fit_pf2(X, rank=rank, random_state=random_state, tol=tol, n_iter_max=max_iter)
+    cc_pf2_out, r2x = cc_pf2(
+        X, rank=rank, random_state=random_state, tol=tol, n_iter_max=max_iter
+    )
 
     data = store_cc_pf2(X, cc_pf2_out)
 
@@ -243,13 +246,11 @@ def standardize_cc_pf2(
     return weights, factors, projections
 
 
-def store_cc_pf2(
-    X: anndata.AnnData,  
-    parafac2_output: tuple):
+def store_cc_pf2(X: anndata.AnnData, parafac2_output: tuple):
     """Store the Pf2 results into the anndata object."""
 
     X.uns["Pf2_weights"] = parafac2_output[0]
-    X.uns["Pf2_A"], X.uns["Pf2_B"],  X.uns["Pf2_C"], X.varm["Pf2_D"] = parafac2_output[1]
+    X.uns["Pf2_A"], X.uns["Pf2_B"], X.uns["Pf2_C"], X.varm["Pf2_D"] = parafac2_output[1]
     projections = parafac2_output[2]
 
     stacked_projections = np.vstack(projections)
@@ -275,7 +276,7 @@ def store_cc_pf2(
     # Process each sample separately
     samples = X.obs["sample"].unique()
     for k in range(len(samples)):
-        sample_proj = projections[k] 
+        sample_proj = projections[k]
         n_cells = sample_proj.shape[0]
 
         # Generate all cell pairs for this sample
@@ -286,7 +287,6 @@ def store_cc_pf2(
                     proj_scores[current_idx, :] = sample_proj[i] * sample_proj[j]
                     cell_cell_indices.append(k)
                     current_idx += 1
-                    
 
     X.obsm["Pf2_cell_cell_projections"] = proj_scores
     X.obsm["Pf2_cell_cell_weighted_projections"] = proj_scores @ X.uns["Pf2_B"]
