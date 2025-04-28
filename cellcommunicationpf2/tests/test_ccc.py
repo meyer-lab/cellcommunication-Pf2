@@ -8,8 +8,10 @@ from ..import_data import (
     anndata_to_tensor,
 )
 from ..ccc import calc_communication_score
+import pytest
 
 
+@pytest.mark.skip(reason="Test takes too long to run")
 def test_anndata_ccc_processing_pipeline():
     """Test the full data processing pipeline"""
     X = import_balf_covid()

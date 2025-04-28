@@ -100,7 +100,7 @@ def solve_projections(
         @pymanopt.function.autograd(manifold)
         def projection_loss_function(proj):
             a_mat_recon = anp.einsum("ba,dc,acg->bdg", proj, proj, a_lhs)
-            return anp.sum(anp.square(a_mat - a_mat_recon))
+            return anp.sum(anp.square(a_mat - a_mat_recon)) + 1e-6 * anp.sum(anp.square(proj))
 
         problem = Problem(
             manifold=manifold,
