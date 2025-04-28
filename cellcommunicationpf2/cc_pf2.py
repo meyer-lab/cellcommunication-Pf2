@@ -14,6 +14,7 @@ from scipy.optimize import linear_sum_assignment
 from pacmap import PaCMAP
 import scipy.sparse as sp
 
+
 def reconstruction_error(
     factors: list[np.ndarray], original_X: np.ndarray, projections: list[np.ndarray]
 ) -> float:
@@ -36,14 +37,38 @@ def flatten_tensor_list(tensor_list: list) -> np.ndarray:
     Flatten a list of 3D tensors from A x B x B x C to a matrix of (A*B*B) x C
     """
 
-    # Reshape each tensor to a 2D matrix
-    # This will stack rows of each B x B tensor into a single row
-    reshaped_tensors = [tensor.reshape(-1, tensor.shape[-1]) for tensor in tensor_list]
+    if hasattr(tensor_list[0], "coords"):
+        flattened_tensors = []
+        # Reshape each tensor to a 2D matrix
+        # This will stack rows of each B x B tensor into a single row
+        for tensor in tensor_list:
+            # Get tensor properties
+            coords = tensor.coords
+            data = tensor.data
+            shape = tensor.shape
 
-    # Vertically stack these matrices
-    flattened_matrix = np.vstack(reshaped_tensors)
+            # Calculate new row indices for flattened tensor
+            new_rows = coords[0] * shape[1] + coords[1]
+            new_cols = coords[2]
 
-    return flattened_matrix
+            # Create flattened sparse matrix
+            flat_shape = (shape[0] * shape[1], shape[2])
+            flattened = sp.csr_matrix(
+                (data, (new_rows, new_cols)),
+                shape=flat_shape
+            )
+            flattened_tensors.append(flattened)
+
+        return sp.vstack(flattened_tensors)
+    else:
+        # Reshape each tensor to a 2D matrix
+        # This will stack rows of each B x B tensor into a single row
+        reshaped_tensors = [tensor.reshape(-1, tensor.shape[-1]) for tensor in tensor_list]
+
+        # Vertically stack these matrices
+        flattened_matrix = np.vstack(reshaped_tensors)
+
+        return flattened_matrix
 
 
 def init(
