@@ -103,9 +103,7 @@ def solve_projections(
             return anp.sum(anp.square(a_mat - a_mat_recon)) + 1e-6 * anp.sum(anp.square(proj))
 
         problem = Problem(
-            manifold=manifold,
-            cost=projection_loss_function,
-            maximum_iterations=200
+            manifold=manifold, cost=projection_loss_function
         )
 
         # Solve the problem
@@ -185,7 +183,7 @@ def fit_cc_pf2(
         data.obsm["Pf2_PaCMAP_projections"] = pcm.fit_transform(data.obsm["Pf2_cell_cell_projections"])  # type: ignore
 
     return data, r2x
-                
+
 
 def standardize_cc_pf2(
     factors: list[np.ndarray], projections: list[np.ndarray]
@@ -209,7 +207,6 @@ def standardize_cc_pf2(
         projections = [p * signn for p in projections]
 
     return weights, factors, projections
-
 
 
 def store_cc_pf2(
