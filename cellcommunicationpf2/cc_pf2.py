@@ -25,9 +25,17 @@ def reconstruction_error(
 
     recon_err = 0.0
 
-    for i, proj in enumerate(projections):
+    for i, (orig_tensor, proj) in enumerate(zip(original_X, projections)):
         projected_X = project_data(reconstructed_X[i, :, :, :], proj.T)
-        recon_err += np.linalg.norm(original_X[i] - projected_X) ** 2
+
+        # Get coordinates and data from current sparse tensor
+        coords = orig_tensor.coords
+        data = orig_tensor.data
+
+        # Compare only at non-zero locations
+        recon_vals = projected_X[coords[0], coords[1], coords[2]]
+        diff = data - recon_vals
+        recon_err += (diff**2).sum()
 
     return recon_err
 
