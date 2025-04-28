@@ -11,6 +11,16 @@ from ..cc_pf2 import (
 from tensorly import cp_to_tensor
 from tensorly.cp_tensor import cp_permute_factors, CPTensor
 
+import scipy.sparse as sp
+import sparse
+
+
+def dense_to_sparse(tensor, sparsity=0.9):
+    """Convert dense tensor to sparse by randomly zeroing elements."""
+    mask = np.random.random(tensor.shape) > sparsity
+    sparse_data = tensor * mask
+    return sparse.COO.from_numpy(sparse_data)
+
 
 def test_init():
     """
@@ -91,6 +101,50 @@ def test_project_data_output_proj_matrix():
 
     # Assert that the projections are the same
     for i in range(num_tensors):
+        sign_correct = np.sign(projections[i][0, 0] * projections_recreated[i][0, 0])
+        np.testing.assert_allclose(
+            projections[i], projections_recreated[i] * sign_correct, atol=1e-9
+        )
+
+
+def test_project_data_sparse_input():
+    """
+    Tests that the solve_projections method correctly handles sparse input tensors.
+    Creates sparse tensors, solves for projection matrices, and compares results
+    with the same operation on equivalent dense tensors.
+    """
+    # Define dimensions
+    num_tensors = 3
+    cells = 20
+    variables = 10
+    obs = num_tensors
+    rank = 5
+
+    # Generate a random projected tensor
+    projected_X = dense_to_sparse(np.random.rand(obs, rank, rank, variables))
+
+    # Generate a random set of projection matrices
+    projections = [
+        np.linalg.qr(np.random.rand(cells, rank))[0] for _ in range(num_tensors)
+    ]
+
+    # Recreate the original tensor using the projection matrices and projected tensor
+    recreated_tensors = []
+    for i in range(num_tensors):
+        Q = projections[i]
+        A = projected_X[i, :, :, :]
+        B = project_data(A, Q.T)
+        recreated_tensors.append(B)
+
+    # Call the project_data method using the recreated tensors to get the projected_X that gets solved by our method
+    projections_recreated = solve_projections(
+        recreated_tensors,
+        projected_X,
+    )
+
+    # Assert that the projections are the same
+    for i in range(num_tensors):
+        # Calculate sign correction factor
         sign_correct = np.sign(projections[i][0, 0] * projections_recreated[i][0, 0])
         np.testing.assert_allclose(
             projections[i], projections_recreated[i] * sign_correct, atol=1e-9

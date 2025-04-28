@@ -12,6 +12,7 @@ from tensorly.decomposition import parafac
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize
 from scipy.optimize import linear_sum_assignment
 from pacmap import PaCMAP
+import scipy.sparse as sp
 
 def reconstruction_error(
     factors: list[np.ndarray], original_X: np.ndarray, projections: list[np.ndarray]
@@ -86,13 +87,21 @@ def solve_projections(
 
     rng = np.random.RandomState(random_seed)
 
-    for i, mat in enumerate(X_list):
-        manifold = Stiefel(mat.shape[0], full_tensor.shape[1])
-        a_mat = anp.asarray(mat)
-        a_lhs = anp.asarray(full_tensor[i, :, :, :])
+    for i, tensor in enumerate(X_list):
+        # Handle possible sparse tensor
+        if hasattr(tensor, "todense"):
+            tensor = tensor.todense()
+
+        manifold = Stiefel(tensor.shape[0], full_tensor.shape[1])
+        a_mat = anp.asarray(tensor)
+        # LHS full slice
+        ft = full_tensor[i, :, :, :]
+        if hasattr(ft, "todense"):
+            ft = ft.todense()
+        a_lhs = anp.asarray(ft)
 
         # Generate a reproducible initial point on the Stiefel manifold
-        X = rng.randn(mat.shape[0], full_tensor.shape[1])
+        X = rng.randn(tensor.shape[0], full_tensor.shape[1])
         # Use QR factorization to get a point on the Stiefel manifold
         Q, _ = np.linalg.qr(X)
         initial_point = Q
