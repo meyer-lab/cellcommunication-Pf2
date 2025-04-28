@@ -289,6 +289,21 @@ def test_fitting_method_output_reproducible():
         assert np.allclose(f1, f2, rtol=1e-2, atol=1e-2)
 
 
+def test_sparse_fitting_method_output_reproducible():
+    """Tests output reproducibility with sparse tensors."""
+    X_list, _, _ = random_4d_tensor_sparse(3, 5)
+
+    (factors1, _), _ = cc_pf2(X_list, 5, 10, 1e-2, random_state=0)
+    (factors2, _), _ = cc_pf2(X_list, 5, 10, 1e-2, random_state=0)
+
+    cp1 = CPTensor((None, factors1))
+    cp2 = CPTensor((None, factors2))
+    cp2_permuted, _ = cp_permute_factors(cp1, cp2)
+
+    for i, (f1, f2) in enumerate(zip(cp1.factors, cp2_permuted.factors)):
+        assert np.allclose(f1, f2, rtol=1e-2, atol=1e-2)
+
+
 def random_4d_tensor(obs, rank):
     """
     Generates a random 4D tensor with the given number of observations and rank.
@@ -315,5 +330,28 @@ def random_4d_tensor(obs, rank):
     # Generate X_list from the factors and projections
     reconstructed_X = cp_to_tensor((None, factors))
     X_list = [reconstructed_X[i, :, :, :] for i in range(obs)]
+
+    return X_list, factors, projections
+
+
+def random_4d_tensor_sparse(obs, rank):
+    """Generates random sparse 4D tensor."""
+    shapes = []
+    for _ in range(obs):
+        cells = np.random.randint(10, 20)
+        LR = np.random.randint(10, 20)
+        shapes.append((cells, cells, LR))
+
+    projections = [np.linalg.qr(np.random.rand(shape[0], rank))[0] for shape in shapes]
+
+    factors = [
+        np.random.rand(obs, rank),
+        np.random.rand(rank, rank),
+        np.random.rand(rank, rank),
+        np.random.rand(LR, rank),
+    ]
+
+    reconstructed_X = cp_to_tensor((None, factors))
+    X_list = [dense_to_sparse(reconstructed_X[i]) for i in range(obs)]
 
     return X_list, factors, projections
