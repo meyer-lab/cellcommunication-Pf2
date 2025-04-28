@@ -201,6 +201,29 @@ def test_reconstruction_error():
     assert error >= 0
 
 
+def test_sparse_reconstruction_error():
+    """Tests reconstruction error with sparse tensors."""
+    cells = 20
+    LR = 10
+    rank = 5
+    obs = 3
+
+    # Generate sparse X_list
+    X_list = [dense_to_sparse(np.random.rand(cells, cells, LR)) for _ in range(obs)]
+
+    factors = [
+        np.random.rand(obs, rank),
+        np.random.rand(rank, rank),
+        np.random.rand(rank, rank),
+        np.random.rand(LR, rank),
+    ]
+
+    projections = [np.linalg.qr(np.random.rand(cells, rank))[0] for _ in range(obs)]
+
+    error = reconstruction_error(factors, X_list, projections)
+    assert error >= 0
+
+
 def test_fitting_method():
     """
     Tests the fitting method to ensure that it is able to run without errors ie. the dimensions are correct.
