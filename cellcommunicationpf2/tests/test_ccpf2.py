@@ -1,15 +1,16 @@
 import numpy as np
+import pytest
+from sparse import COO
+from tensorly import cp_to_tensor
+from tensorly.cp_tensor import CPTensor, cp_permute_factors
 
 from ..cc_pf2 import (
-    project_data,
-    solve_projections,
-    init,
-    reconstruction_error,
     fit_pf2,
+    init,
+    project_data,
+    reconstruction_error,
+    solve_projections,
 )
-
-from tensorly import cp_to_tensor
-from tensorly.cp_tensor import cp_permute_factors, CPTensor
 
 
 def test_init():
@@ -56,23 +57,30 @@ def test_project_data():
     assert projected_X.shape == (rank, rank, LR)
 
 
-def test_project_data_output_proj_matrix():
+@pytest.mark.parametrize("sparse", [True, False])
+@pytest.mark.parametrize("random_state", [3, 4, 5, 6, 7, 8, 9, 10])
+def test_project_data_output_proj_matrix(sparse, random_state):
     """
     Tests that the project data method is actually able to solve for the correct optimal projection matrix.
     Asserts that the projection matrices solved are the same.
     """
+    rng = np.random.default_rng(random_state)
+
     # Define dimensions
-    num_tensors = 3
+    num_tensors = 2
     cells = 20
-    variables = 10
+    variables = 50
     obs = num_tensors
     rank = 5
     # Generate a random projected tensor
-    projected_X = np.random.rand(obs, rank, rank, variables)
+    projected_X = rng.uniform(size=(obs, rank, rank, variables))
+
+    if sparse:
+        projected_X = COO.from_numpy(projected_X)
 
     # Generate a random set of projection matrices
     projections = [
-        np.linalg.qr(np.random.rand(cells, rank))[0] for _ in range(num_tensors)
+        np.linalg.qr(rng.uniform(size=(cells, rank)))[0] for _ in range(num_tensors)
     ]
 
     # Recreate the original tensor using the projection matrices and projected tensor
@@ -85,8 +93,7 @@ def test_project_data_output_proj_matrix():
 
     # Call the project_data method using the recreated tensors to get the projected_X that gets solved by our method
     projections_recreated = solve_projections(
-        recreated_tensors,
-        projected_X,
+        recreated_tensors, projected_X, random_state
     )
 
     # Assert that the projections are the same
