@@ -1,17 +1,16 @@
-import autograd.numpy as anp
-import numpy as np
+from typing import Optional
+
 import anndata
+import numpy as np
 import pymanopt
+from pacmap import PaCMAP
 from pymanopt import Problem
 from pymanopt.manifolds import Stiefel
-from pymanopt.optimizers import TrustRegions
-from typing import Optional
-from sklearn.utils.extmath import randomized_svd
-from tensorly.cp_tensor import cp_to_tensor
-from tensorly.decomposition import parafac
-from tensorly.cp_tensor import cp_flip_sign, cp_normalize
+from pymanopt.optimizers import ConjugateGradient
 from scipy.optimize import linear_sum_assignment
-from pacmap import PaCMAP
+from sklearn.utils.extmath import randomized_svd
+from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
+from tensorly.decomposition import parafac
 
 
 def reconstruction_error(
@@ -93,28 +92,58 @@ def solve_projections(
             tensor = tensor.todense()
 
         manifold = Stiefel(tensor.shape[0], full_tensor.shape[1])
-        a_mat = anp.asarray(tensor)
+        a_mat = np.array(tensor)
         # LHS full slice
-        ft = full_tensor[i, :, :, :]
-        if hasattr(ft, "todense"):
-            ft = ft.todense()
-        a_lhs = anp.asarray(ft)
+        a_lhs = full_tensor[i, :, :, :]
+        if hasattr(a_lhs, "todense"):
+            a_lhs = a_lhs.todense()
 
         # Generate a reproducible initial point on the Stiefel manifold
         X = rng.randn(tensor.shape[0], full_tensor.shape[1])
         # Use QR factorization to get a point on the Stiefel manifold
-        Q, _ = np.linalg.qr(X)
-        initial_point = Q
+        initial_point, _ = np.linalg.qr(X)
 
-        @pymanopt.function.autograd(manifold)
+        @pymanopt.function.numpy(manifold)
         def projection_loss_function(proj):
-            a_mat_recon = anp.einsum("ba,dc,acg->bdg", proj, proj, a_lhs)
-            return anp.sum(anp.square(a_mat - a_mat_recon))
+            a_mat_recon = np.einsum("ba,dc,acg->bdg", proj, proj, a_lhs)
+            return np.sum(np.square(a_mat - a_mat_recon))
 
-        problem = Problem(manifold=manifold, cost=projection_loss_function)
+        @pymanopt.function.numpy(manifold)
+        def projection_gradient_function(proj):
+            """
+            Computes the Euclidean gradient of the projection_loss_function
+            with respect to the projection matrix proj.
+            """
+            # Calculate the reconstructed tensor
+            # a_mat_recon has shape (N, N, G)
+            a_mat_recon = np.einsum("ba,dc,acg->bdg", proj, proj, a_lhs)
+            # Calculate the error tensor E = a_mat - a_mat_recon
+            # E has shape (N, N, G)
+            E = a_mat - a_mat_recon
+            # Calculate the two terms of the gradient using einsum
+            # proj has shape (N, M), a_lhs has shape (M, M, G)
+            # grad_term1 corresponds to differentiating wrt the first proj ('ba')
+            # grad_term1 = sum_{d,g,c} E_{bdg} * proj_{dc} * a_lhs_{acg}
+            # Output shape should be (N, M) matching proj ('ba')
+            grad_term1 = np.einsum("bdg,dc,acg->ba", E, proj, a_lhs)
+            # grad_term2 corresponds to differentiating wrt the second proj ('dc')
+            # grad_term2 = sum_{b,g,a} E_{bdg} * proj_{ba} * a_lhs_{acg}
+            # Output shape should be (N, M) matching proj ('dc')
+            grad_term2 = np.einsum("bdg,ba,acg->dc", E, proj, a_lhs)
+            # Combine the terms and scale by -2
+            gradient = -2 * (grad_term1 + grad_term2)
+            return gradient
+
+        problem = Problem(
+            manifold=manifold,
+            cost=projection_loss_function,
+            euclidean_gradient=projection_gradient_function,
+        )
 
         # Solve the problem
-        solver = TrustRegions(verbosity=0, min_gradient_norm=1e-10, min_step_size=1e-12)
+        solver = ConjugateGradient(
+            verbosity=0, min_gradient_norm=1e-10, min_step_size=1e-12
+        )
 
         proj = solver.run(problem, initial_point=initial_point).point
 
