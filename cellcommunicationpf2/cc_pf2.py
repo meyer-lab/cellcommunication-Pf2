@@ -12,7 +12,7 @@ from tensorly.decomposition import parafac
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize
 from scipy.optimize import linear_sum_assignment
 from pacmap import PaCMAP
-import scipy.sparse as sp
+
 
 def reconstruction_error(
     factors: list[np.ndarray], original_X: np.ndarray, projections: list[np.ndarray]
@@ -109,14 +109,14 @@ def solve_projections(
         @pymanopt.function.autograd(manifold)
         def projection_loss_function(proj):
             a_mat_recon = anp.einsum("ba,dc,acg->bdg", proj, proj, a_lhs)
-            return anp.sum(anp.square(a_mat - a_mat_recon)) + 1e-6 * anp.sum(anp.square(proj))
+            return anp.sum(anp.square(a_mat - a_mat_recon)) + 1e-6 * anp.sum(
+                anp.square(proj)
+            )
 
-        problem = Problem(
-            manifold=manifold, cost=projection_loss_function
-        )
+        problem = Problem(manifold=manifold, cost=projection_loss_function)
 
         # Solve the problem
-        solver = TrustRegions(verbosity=0, min_gradient_norm=1e-9, min_step_size=1e-12)
+        solver = TrustRegions(verbosity=0, min_gradient_norm=1e-10, min_step_size=1e-12)
 
         proj = solver.run(problem, initial_point=initial_point).point
 
@@ -183,13 +183,17 @@ def fit_cc_pf2(
     """
     Fits the Pf2 decomposition for a list of 3D tensors
     """
-    cc_pf2_out, r2x = fit_pf2(X, rank=rank, random_state=random_state, tol=tol, n_iter_max=max_iter)
+    cc_pf2_out, r2x = fit_pf2(
+        X, rank=rank, random_state=random_state, tol=tol, n_iter_max=max_iter
+    )
 
     data = store_cc_pf2(X, cc_pf2_out)
 
     if do_embedding:
         pcm = PaCMAP(random_state=random_state)
-        data.obsm["Pf2_PaCMAP_projections"] = pcm.fit_transform(data.obsm["Pf2_cell_cell_projections"])  # type: ignore
+        data.obsm["Pf2_PaCMAP_projections"] = pcm.fit_transform(
+            data.obsm["Pf2_cell_cell_projections"]
+        )  # type: ignore
 
     return data, r2x
 
@@ -218,13 +222,11 @@ def standardize_cc_pf2(
     return weights, factors, projections
 
 
-def store_cc_pf2(
-    X: anndata.AnnData,  
-    parafac2_output: tuple):
+def store_cc_pf2(X: anndata.AnnData, parafac2_output: tuple):
     """Store the Pf2 results into the anndata object."""
 
     X.uns["Pf2_weights"] = parafac2_output[0]
-    X.uns["Pf2_A"], X.uns["Pf2_B"],  X.uns["Pf2_C"], X.varm["Pf2_D"] = parafac2_output[1]
+    X.uns["Pf2_A"], X.uns["Pf2_B"], X.uns["Pf2_C"], X.varm["Pf2_D"] = parafac2_output[1]
     projections = parafac2_output[2]
 
     stacked_projections = np.vstack(projections)
@@ -250,7 +252,7 @@ def store_cc_pf2(
     # Process each sample separately
     samples = X.obs["sample"].unique()
     for k in range(len(samples)):
-        sample_proj = projections[k] 
+        sample_proj = projections[k]
         n_cells = sample_proj.shape[0]
 
         # Generate all cell pairs for this sample
@@ -261,7 +263,6 @@ def store_cc_pf2(
                     proj_scores[current_idx, :] = sample_proj[i] * sample_proj[j]
                     cell_cell_indices.append(k)
                     current_idx += 1
-                    
 
     X.obsm["Pf2_cell_cell_projections"] = proj_scores
     X.obsm["Pf2_cell_cell_weighted_projections"] = proj_scores @ X.uns["Pf2_B"]
