@@ -57,20 +57,6 @@ def test_project_data():
     assert projected_X.shape == (rank, rank, LR)
 
 
-def test_project_data_sparse():
-    """Tests projection with sparse tensor."""
-    cells = 20
-    LR = 10
-    rank = 5
-
-    # Generate sparse tensor
-    X_mat = COO.from_numpy(np.random.rand(cells, cells, LR))
-    proj_matrix = np.linalg.qr(np.random.rand(cells, rank))[0]
-
-    projected_X = project_data(X_mat, proj_matrix)
-    assert projected_X.shape == (rank, rank, LR)
-
-
 @pytest.mark.parametrize("sparse", [True, False])
 @pytest.mark.parametrize("random_state", [3, 4, 5, 6, 7, 8, 9, 10])
 def test_project_data_output_proj_matrix(sparse, random_state):
