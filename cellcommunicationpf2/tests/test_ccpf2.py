@@ -46,8 +46,8 @@ def random_4d_tensor(
     ]
     reconstructed = cp_to_tensor((None, factors))
     X_list = [
-        project_data(reconstructed[k], P.T)
-        for k, P in enumerate(projections)
+        project_data(reconstructed[i], proj.T)
+        for i, proj in enumerate(projections)
     ]
     return X_list, factors, projections
 
