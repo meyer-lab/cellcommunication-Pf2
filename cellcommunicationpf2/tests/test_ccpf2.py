@@ -7,7 +7,7 @@ from tensorly.cp_tensor import CPTensor, cp_permute_factors
 from ..cc_pf2 import cc_pf2, init, project_data, reconstruction_error, solve_projections
 
 
-def dense_to_sparse(tensor, sparsity=0.9, random_state=None):
+def dense_to_sparse(tensor):
     """Convert a dense tensor to sparse by randomly zeroing elements with uniform sampling."""
     # rng = np.random.default_rng(random_state)
     # mask = rng.uniform(0.0, 1.0, size=tensor.shape) > sparsity
@@ -50,11 +50,11 @@ def random_4d_tensor_sparse(
     X_list, factors, projections = random_4d_tensor(
         obs=obs, rank=rank, cell_sizes=cell_sizes, LR=LR, random_state=random_state
     )
-    sparse_list = [dense_to_sparse(X, random_state=random_state) for X in X_list]
+    sparse_list = [dense_to_sparse(X) for X in X_list]
     return sparse_list, factors, projections
 
 
-@pytest.mark.parametrize("sparse", [True, """False"""])
+@pytest.mark.parametrize("sparse", [True, False])
 @pytest.mark.parametrize("random_state", [3, 4, 5, 6])
 def test_init(sparse, random_state):
     obs, rank, LR = 3, 5, 10
@@ -74,14 +74,14 @@ def test_init(sparse, random_state):
     assert factors[3].shape == (LR, rank)
 
 
-@pytest.mark.parametrize("sparse", [True, """False"""])
+@pytest.mark.parametrize("sparse", [True, False])
 @pytest.mark.parametrize("random_state", [3, 4, 5, 6])
 def test_project_data(sparse, random_state):
     rng = np.random.default_rng(random_state)
     cells, LR, rank = 20, 10, 5
 
     dense = rng.uniform(0.0, 1.0, size=(cells, cells, LR))
-    X_mat = dense_to_sparse(dense, random_state=random_state) if sparse else dense
+    X_mat = dense_to_sparse(dense) if sparse else dense
 
     proj_matrix = np.linalg.qr(rng.uniform(0.0, 1.0, size=(cells, rank)))[0]
     projected_X = project_data(X_mat, proj_matrix)
@@ -89,16 +89,14 @@ def test_project_data(sparse, random_state):
     assert projected_X.shape == (rank, rank, LR)
 
 
-@pytest.mark.parametrize("sparse", [True, """False"""])
+@pytest.mark.parametrize("sparse", [True, False])
 @pytest.mark.parametrize("random_state", [3, 4, 5, 6, 7, 8, 9, 10])
 def test_project_data_output_proj_matrix(sparse, random_state):
     rng = np.random.default_rng(random_state)
     num_tensors, cells, variables, rank = 2, 20, 50, 5
 
     projected = rng.uniform(0.0, 1.0, size=(num_tensors, rank, rank, variables))
-    projected_X = (
-        dense_to_sparse(projected, random_state=random_state) if sparse else projected
-    )
+    projected_X = dense_to_sparse(projected) if sparse else projected
     projections = [
         np.linalg.qr(rng.uniform(0.0, 1.0, size=(cells, rank)))[0]
         for _ in range(num_tensors)
@@ -125,7 +123,7 @@ def test_project_data_output_proj_matrix(sparse, random_state):
         )
 
 
-@pytest.mark.parametrize("sparse", [True, """False"""])
+@pytest.mark.parametrize("sparse", [True, False])
 @pytest.mark.parametrize("random_state", [3, 4, 5, 6])
 def test_reconstruction_error(sparse, random_state):
     obs, rank = 3, 5
@@ -144,7 +142,7 @@ def test_reconstruction_error(sparse, random_state):
     assert error >= 0
 
 
-@pytest.mark.parametrize("sparse", [True, """False"""])
+@pytest.mark.parametrize("sparse", [True, False])
 @pytest.mark.parametrize("random_state", [3, 4, 5, 6])
 def test_fitting_method(sparse, random_state):
     obs, rank, LR = 3, 5, 10
@@ -165,7 +163,7 @@ def test_fitting_method(sparse, random_state):
     assert facs[3].shape == (LR, rank)
 
 
-@pytest.mark.parametrize("sparse", [True, """False"""])
+@pytest.mark.parametrize("sparse", [True, False])
 @pytest.mark.parametrize("random_state", [0, 1, 2])
 def test_fitting_method_output_reproducible(sparse, random_state):
     obs, rank = 3, 5

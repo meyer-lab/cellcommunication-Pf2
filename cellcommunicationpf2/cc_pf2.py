@@ -1,16 +1,15 @@
-
 import anndata
 import numpy as np
 import pymanopt
-import scipy.sparse as sp
+import sparse
 from pacmap import PaCMAP
 from pymanopt import Problem
 from pymanopt.manifolds import Stiefel
 from pymanopt.optimizers import ConjugateGradient
 from scipy.optimize import linear_sum_assignment
-from sklearn.utils.extmath import randomized_svd
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
 from tensorly.decomposition import parafac
+from tensorly.tenalg.svd import randomized_svd
 
 
 def reconstruction_error(
@@ -26,42 +25,12 @@ def reconstruction_error(
     for i, (orig_tensor, proj) in enumerate(zip(original_X, projections, strict=False)):
         projected_X = project_data(reconstructed_X[i, :, :, :], proj.T)
 
-        # Get coordinates and data from current sparse tensor
-        coords = orig_tensor.coords
-        data = orig_tensor.data
-
-        # Compare only at non-zero locations
-        recon_vals = projected_X[coords[0], coords[1], coords[2]]
-        diff = data - recon_vals
-        recon_err += (diff**2).sum()
+        recon_err += float(
+            np.linalg.norm(sparse.asnumpy(orig_tensor) - sparse.asnumpy(projected_X))
+            ** 2
+        )
 
     return recon_err
-
-
-def flatten_tensor_list(tensor_list: list) -> np.ndarray:
-    """
-    Flatten a list of 3D tensors from A x B x B x C to a matrix of (A*B*B) x C
-    """
-
-    flattened_tensors = []
-    # Reshape each tensor to a 2D matrix
-    # This will stack rows of each B x B tensor into a single row
-    for tensor in tensor_list:
-        # Get tensor properties
-        coords = tensor.coords
-        data = tensor.data
-        shape = tensor.shape
-
-        # Calculate new row indices for flattened tensor
-        new_rows = coords[0] * shape[1] + coords[1]
-        new_cols = coords[2]
-
-        # Create flattened sparse matrix
-        flat_shape = (shape[0] * shape[1], shape[2])
-        flattened = sp.csr_matrix((data, (new_rows, new_cols)), shape=flat_shape)
-        flattened_tensors.append(flattened)
-
-    return sp.vstack(flattened_tensors)
 
 
 def init(
@@ -72,7 +41,14 @@ def init(
     """
     Initializes the factors for the CP decomposition of a list of 3D tensors
     """
-    data_matrix = flatten_tensor_list(X_list)
+    # Reshape each tensor to a 2D matrix
+    # This will stack rows of each B x B tensor into a single row
+    flattened_tensors = [t.reshape((-1, t.shape[2])) for t in X_list]
+
+    if isinstance(flattened_tensors[0], sparse.SparseArray):
+        data_matrix = sparse.concatenate(flattened_tensors, 0)
+    else:
+        data_matrix = np.concatenate(flattened_tensors, 0)
 
     _, _, C = randomized_svd(data_matrix, rank, random_state=random_state)
     factors = [np.ones((len(X_list), rank)), np.eye(rank), np.eye(rank), C.T]

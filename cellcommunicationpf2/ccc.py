@@ -1,6 +1,6 @@
-import pandas as pd
-import numpy as np
 import anndata
+import numpy as np
+import pandas as pd
 import scipy.sparse as sp
 
 
@@ -67,7 +67,7 @@ def calc_communication_score(
                     "receiver_type": sample_data.obs["celltype"].iloc[r],
                     **{
                         f"{row.ligand}_{row.receptor}": score
-                        for score, (_, row) in zip(pair_scores, df_lrp.iterrows())
+                        for score, (_, row) in zip(pair_scores, df_lrp.iterrows(), strict=False)
                     },
                 }
             )
