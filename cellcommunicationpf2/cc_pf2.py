@@ -71,7 +71,7 @@ def project_data(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
 def solve_projections(
     X_list: list,
     full_tensor: np.ndarray,
-    random_seed: Optional[int] = None,
+    random_seed: int | None = None,
 ) -> list[np.ndarray]:
     """
     Takes a list of 3D tensors of C x C x LR, a means matrix, factors of
@@ -92,7 +92,7 @@ def solve_projections(
             tensor = tensor.todense()
 
         manifold = Stiefel(tensor.shape[0], full_tensor.shape[1])
-        a_mat = np.array(tensor)
+
         # LHS full slice
         a_lhs = full_tensor[i, :, :, :]
         if hasattr(a_lhs, "todense"):
@@ -103,10 +103,30 @@ def solve_projections(
         # Use QR factorization to get a point on the Stiefel manifold
         initial_point, _ = np.linalg.qr(X)
 
+        # Term 1: ||tensor||^2 - constant term, precomputed outside this
+        # function for efficiency as the function is called many times
+        tensor_squared_norm = np.linalg.norm(tensor)**2.0
+
         @pymanopt.function.numpy(manifold)
         def projection_loss_function(proj):
-            a_mat_recon = np.einsum("ba,dc,acg->bdg", proj, proj, a_lhs)
-            return np.sum(np.square(a_mat - a_mat_recon))
+            """
+            Computes the projection loss without creating the large a_mat_recon tensor.
+            Uses the expansion of ||tensor - a_mat_recon||^2 = ||tensor||^2 -
+                2<tensor, a_mat_recon> + ||a_mat_recon||^2
+            """
+            # Term 2: -2<tensor, a_mat_recon>
+            # Compute the inner product without creating the full a_mat_recon
+            inner_product = np.einsum("bdg,ba,dc,acg->", tensor, proj, proj, a_lhs)
+
+            # Term 3: ||a_mat_recon||^2
+            # Compute the squared norm of a_mat_recon without creating the full tensor
+            proj_a_lhs = np.einsum("ba,acg->bcg", proj, a_lhs)
+            recon_squared_norm = np.einsum(
+                "ba,dc,bcg,dcg->", proj, proj, proj_a_lhs, proj_a_lhs
+            )
+
+            # Combine all terms
+            return tensor_squared_norm - 2 * inner_product + recon_squared_norm
 
         @pymanopt.function.numpy(manifold)
         def projection_gradient_function(proj):
@@ -119,7 +139,7 @@ def solve_projections(
             a_mat_recon = np.einsum("ba,dc,acg->bdg", proj, proj, a_lhs)
             # Calculate the error tensor E = a_mat - a_mat_recon
             # E has shape (N, N, G)
-            E = a_mat - a_mat_recon
+            E = tensor - a_mat_recon
             # Calculate the two terms of the gradient using einsum
             # proj has shape (N, M), a_lhs has shape (M, M, G)
             # grad_term1 corresponds to differentiating wrt the first proj ('ba')

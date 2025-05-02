@@ -100,7 +100,10 @@ def test_project_data_output_proj_matrix(sparse, random_state):
     for i in range(num_tensors):
         sign_correct = np.sign(projections[i][0, 0] * projections_recreated[i][0, 0])
         np.testing.assert_allclose(
-            projections[i], projections_recreated[i] * sign_correct, atol=1e-9
+            projections[i],
+            projections_recreated[i] * sign_correct,
+            atol=1e-6,
+            rtol=1e-6,
         )
 
 

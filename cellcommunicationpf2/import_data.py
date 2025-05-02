@@ -121,7 +121,6 @@ def anndata_to_tensor(X: anndata.AnnData) -> list:
         shape = (len(sender_types), len(receiver_types), len(lr_pairs))
         values = sample_data.X.toarray().flatten()
 
-
         tensor = sparse.COO(coords, values, shape=shape)
         tensor_list.append(tensor)
 
