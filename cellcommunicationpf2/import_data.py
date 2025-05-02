@@ -1,8 +1,9 @@
-import urllib.request
 import os
+import urllib.request
+
 import anndata
-import pandas as pd
 import numpy as np
+import pandas as pd
 import sparse
 
 
@@ -120,7 +121,6 @@ def anndata_to_tensor(X: anndata.AnnData) -> list:
         coords = np.stack([sender_rep, receiver_rep, lr_rep])
         shape = (len(sender_types), len(receiver_types), len(lr_pairs))
         values = sample_data.X.toarray().flatten()
-
 
         tensor = sparse.COO(coords, values, shape=shape)
         tensor_list.append(tensor)

@@ -1,16 +1,15 @@
-from typing import Optional
-
 import anndata
 import numpy as np
 import pymanopt
+import sparse
 from pacmap import PaCMAP
 from pymanopt import Problem
 from pymanopt.manifolds import Stiefel
 from pymanopt.optimizers import ConjugateGradient
 from scipy.optimize import linear_sum_assignment
-from sklearn.utils.extmath import randomized_svd
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
 from tensorly.decomposition import parafac
+from tensorly.tenalg.svd import randomized_svd
 
 
 def reconstruction_error(
@@ -23,37 +22,33 @@ def reconstruction_error(
 
     recon_err = 0.0
 
-    for i, proj in enumerate(projections):
+    for i, (orig_tensor, proj) in enumerate(zip(original_X, projections, strict=False)):
         projected_X = project_data(reconstructed_X[i, :, :, :], proj.T)
-        recon_err += np.linalg.norm(original_X[i] - projected_X) ** 2
+
+        recon_err += float(
+            np.linalg.norm(sparse.asnumpy(orig_tensor) - sparse.asnumpy(projected_X))
+            ** 2
+        )
 
     return recon_err
-
-
-def flatten_tensor_list(tensor_list: list) -> np.ndarray:
-    """
-    Flatten a list of 3D tensors from A x B x B x C to a matrix of (A*B*B) x C
-    """
-
-    # Reshape each tensor to a 2D matrix
-    # This will stack rows of each B x B tensor into a single row
-    reshaped_tensors = [tensor.reshape(-1, tensor.shape[-1]) for tensor in tensor_list]
-
-    # Vertically stack these matrices
-    flattened_matrix = np.vstack(reshaped_tensors)
-
-    return flattened_matrix
 
 
 def init(
     X_list: list,
     rank: int,
-    random_state: Optional[int] = None,
+    random_state: int | None = None,
 ) -> list[np.ndarray]:
     """
     Initializes the factors for the CP decomposition of a list of 3D tensors
     """
-    data_matrix = flatten_tensor_list(X_list)
+    # Reshape each tensor to a 2D matrix
+    # This will stack rows of each B x B tensor into a single row
+    flattened_tensors = [t.reshape((-1, t.shape[2])) for t in X_list]
+
+    if isinstance(flattened_tensors[0], sparse.SparseArray):
+        data_matrix = sparse.concatenate(flattened_tensors, 0)
+    else:
+        data_matrix = np.concatenate(flattened_tensors, 0)
 
     _, _, C = randomized_svd(data_matrix, rank, random_state=random_state)
     factors = [np.ones((len(X_list), rank)), np.eye(rank), np.eye(rank), C.T]
@@ -71,7 +66,7 @@ def project_data(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
 def solve_projections(
     X_list: list,
     full_tensor: np.ndarray,
-    random_seed: Optional[int] = None,
+    random_seed: int | None = None,
 ) -> list[np.ndarray]:
     """
     Takes a list of 3D tensors of C x C x LR, a means matrix, factors of
@@ -155,12 +150,12 @@ def solve_projections(
     return projections
 
 
-def fit_pf2(
+def cc_pf2(
     X_list: list,
     rank: int,
     n_iter_max: int,
     tol: float,
-    random_state: Optional[int] = None,
+    random_state: int | None = None,
 ) -> tuple[tuple, float]:
     """
     Fits the factors of the CP decomposition for a list of 3D tensors
@@ -178,8 +173,9 @@ def fit_pf2(
         projected_X = [
             project_data(X_list[i], proj) for i, proj in enumerate(projections)
         ]
+        projected_X = np.stack(projected_X, axis=0)
         _, factors = parafac(
-            np.array(projected_X),
+            projected_X,
             rank,
             n_iter_max=20,
             init=(None, [np.array(f) for f in factors]),
@@ -210,7 +206,7 @@ def fit_cc_pf2(
     """
     Fits the Pf2 decomposition for a list of 3D tensors
     """
-    cc_pf2_out, r2x = fit_pf2(
+    cc_pf2_out, r2x = cc_pf2(
         X, rank=rank, random_state=random_state, tol=tol, n_iter_max=max_iter
     )
 

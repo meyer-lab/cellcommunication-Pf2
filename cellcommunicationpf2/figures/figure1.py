@@ -2,12 +2,12 @@
 Figure 1
 """
 
-from .common import getSetup, subplotLabel
 from ..import_data import (
+    anndata_lrp_overlap,
     import_balf_covid,
     import_ligand_receptor_pairs,
-    anndata_lrp_overlap,
 )
+from .common import getSetup, subplotLabel
 
 
 def makeFigure():

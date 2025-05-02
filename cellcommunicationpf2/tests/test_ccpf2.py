@@ -4,31 +4,69 @@ from sparse import COO
 from tensorly import cp_to_tensor
 from tensorly.cp_tensor import CPTensor, cp_permute_factors
 
-from ..cc_pf2 import (
-    fit_pf2,
-    init,
-    project_data,
-    reconstruction_error,
-    solve_projections,
-)
+from ..cc_pf2 import cc_pf2, init, project_data, reconstruction_error, solve_projections
 
 
-def test_init():
-    """
-    Tests that the dimensions are correct and that the method is able to run without errors.
-    """
+def dense_to_sparse(tensor):
+    """Convert a dense tensor to sparse by randomly zeroing elements with uniform sampling."""
+    # rng = np.random.default_rng(random_state)
+    # mask = rng.uniform(0.0, 1.0, size=tensor.shape) > sparsity
+    # sparse_data = tensor * mask
+    return COO.from_numpy(tensor)
 
-    # Define dimensions
-    obs = 3
-    cells = 20
-    LR = 10
-    rank = 5
 
-    # Generate random X_list
-    X_list = [np.random.rand(cells, cells, LR) for _ in range(obs)]
+def random_4d_tensor(
+    obs: int, rank: int, cell_sizes: list[int] = None, LR: int = None, random_state=None
+):
+    """Generate a list of random dense 4D tensors using uniform sampling."""
+    rng = np.random.default_rng(random_state)
+    if cell_sizes is None:
+        cell_sizes = rng.integers(10, 20, size=obs)
+    if LR is None:
+        LR = rng.integers(10, 20)
 
-    # Call the init method
-    factors = init(X_list, rank)
+    projections = [
+        np.linalg.qr(rng.uniform(0.0, 1.0, size=(n, rank)))[0] for n in cell_sizes
+    ]
+
+    factors = [
+        rng.uniform(0.0, 1.0, size=(obs, rank)),
+        rng.uniform(0.0, 1.0, size=(rank, rank)),
+        rng.uniform(0.0, 1.0, size=(rank, rank)),
+        rng.uniform(0.0, 1.0, size=(LR, rank)),
+    ]
+    reconstructed = cp_to_tensor((None, factors))
+    X_list = [
+        project_data(reconstructed[i], proj.T) for i, proj in enumerate(projections)
+    ]
+    return X_list, factors, projections
+
+
+def random_4d_tensor_sparse(
+    obs: int, rank: int, cell_sizes: list[int] = None, LR: int = None, random_state=None
+):
+    """Generate a list of random sparse 4D tensors using uniform sampling."""
+    # Fixed function call: use named parameters to avoid ordering issues
+    X_list, factors, projections = random_4d_tensor(
+        obs=obs, rank=rank, cell_sizes=cell_sizes, LR=LR, random_state=random_state
+    )
+    sparse_list = [dense_to_sparse(X) for X in X_list]
+    return sparse_list, factors, projections
+
+
+@pytest.mark.parametrize("sparse", [True, False])
+@pytest.mark.parametrize("random_state", [3, 4, 5, 6])
+def test_init(sparse, random_state):
+    obs, rank, LR = 3, 5, 10
+
+    if sparse:
+        X_list, _, _ = random_4d_tensor_sparse(
+            obs, rank, LR=LR, random_state=random_state
+        )
+    else:
+        X_list, _, _ = random_4d_tensor(obs, rank, LR=LR, random_state=random_state)
+
+    factors = init(X_list, rank, random_state=random_state)
 
     assert factors[0].shape == (obs, rank)
     assert factors[1].shape == (rank, rank)
@@ -36,22 +74,16 @@ def test_init():
     assert factors[3].shape == (LR, rank)
 
 
-def test_project_data():
-    """
-    Tests that the dimensions are correct and that the method is able to run without errors.
-    """
+@pytest.mark.parametrize("sparse", [True, False])
+@pytest.mark.parametrize("random_state", [3, 4, 5, 6])
+def test_project_data(sparse, random_state):
+    rng = np.random.default_rng(random_state)
+    cells, LR, rank = 20, 10, 5
 
-    # Define dimensions
-    cells = 20
-    LR = 10
-    rank = 5
+    dense = rng.uniform(0.0, 1.0, size=(cells, cells, LR))
+    X_mat = dense_to_sparse(dense) if sparse else dense
 
-    # Generate random X_list
-    X_mat = np.random.rand(cells, cells, LR)
-
-    # Projection matrix
-    proj_matrix = np.linalg.qr(np.random.rand(cells, rank))[0]
-
+    proj_matrix = np.linalg.qr(rng.uniform(0.0, 1.0, size=(cells, rank)))[0]
     projected_X = project_data(X_mat, proj_matrix)
 
     assert projected_X.shape == (rank, rank, LR)
@@ -60,27 +92,14 @@ def test_project_data():
 @pytest.mark.parametrize("sparse", [True, False])
 @pytest.mark.parametrize("random_state", [3, 4, 5, 6, 7, 8, 9, 10])
 def test_project_data_output_proj_matrix(sparse, random_state):
-    """
-    Tests that the project data method is actually able to solve for the correct optimal projection matrix.
-    Asserts that the projection matrices solved are the same.
-    """
     rng = np.random.default_rng(random_state)
+    num_tensors, cells, variables, rank = 2, 20, 50, 5
 
-    # Define dimensions
-    num_tensors = 2
-    cells = 20
-    variables = 50
-    obs = num_tensors
-    rank = 5
-    # Generate a random projected tensor
-    projected_X = rng.uniform(size=(obs, rank, rank, variables))
-
-    if sparse:
-        projected_X = COO.from_numpy(projected_X)
-
-    # Generate a random set of projection matrices
+    projected = rng.uniform(0.0, 1.0, size=(num_tensors, rank, rank, variables))
+    projected_X = dense_to_sparse(projected) if sparse else projected
     projections = [
-        np.linalg.qr(rng.uniform(size=(cells, rank)))[0] for _ in range(num_tensors)
+        np.linalg.qr(rng.uniform(0.0, 1.0, size=(cells, rank)))[0]
+        for _ in range(num_tensors)
     ]
 
     # Recreate the original tensor using the projection matrices and projected tensor
@@ -104,112 +123,63 @@ def test_project_data_output_proj_matrix(sparse, random_state):
         )
 
 
-def test_reconstruction_error():
-    """
-    Tests that the reconstruction error function is able to run without errors. ie. the dimensions are correct.
-    """
+@pytest.mark.parametrize("sparse", [True, False])
+@pytest.mark.parametrize("random_state", [3, 4, 5, 6])
+def test_reconstruction_error(sparse, random_state):
+    obs, rank = 3, 5
 
-    # Define dimensions
-    cells = 20
-    LR = 10
-    rank = 5
-    obs = 3
+    if sparse:
+        X_list, factors, projections = random_4d_tensor_sparse(
+            obs, rank, random_state=random_state
+        )
+    else:
+        X_list, factors, projections = random_4d_tensor(
+            obs, rank, random_state=random_state
+        )
 
-    # Generate random X_list
-    X_list = [np.random.rand(cells, cells, LR) for _ in range(obs)]
-
-    # Generate random factors
-    factors = [
-        np.random.rand(obs, rank),
-        np.random.rand(rank, rank),
-        np.random.rand(rank, rank),
-        np.random.rand(LR, rank),
-    ]
-
-    # Generate random projections
-    projections = projections = [
-        np.linalg.qr(np.random.rand(cells, rank))[0] for _ in range(obs)
-    ]
-
-    # Call the reconstruction_error method
     error = reconstruction_error(factors, X_list, projections)
 
     assert error >= 0
 
 
-def test_fitting_method():
-    """
-    Tests the fitting method to ensure that it is able to run without errors ie. the dimensions are correct.
-    """
+@pytest.mark.parametrize("sparse", [True, False])
+@pytest.mark.parametrize("random_state", [3, 4, 5, 6])
+def test_fitting_method(sparse, random_state):
+    obs, rank, LR = 3, 5, 10
 
-    # Define dimensions
-    cells = 20
-    LR = 10
-    rank = 5
-    obs = 3
+    if sparse:
+        X_list, _, _ = random_4d_tensor_sparse(
+            obs, rank, LR=LR, random_state=random_state
+        )
+    else:
+        X_list, _, _ = random_4d_tensor(obs, rank, LR=LR, random_state=random_state)
 
-    # Generate random X_list
-    X_list = [np.random.rand(cells, cells, LR) for _ in range(obs)]
-
-    # Call the fitting method
-    (factors, _), error = fit_pf2(X_list, rank, 2, 0.1)
+    (facs, _), error = cc_pf2(X_list, rank, 2, 0.1, random_state=random_state)
 
     assert error >= 0
-    assert factors[0].shape == (obs, rank)
-    assert factors[1].shape == (rank, rank)
-    assert factors[2].shape == (rank, rank)
-    assert factors[3].shape == (LR, rank)
+    assert facs[0].shape == (obs, rank)
+    assert facs[1].shape == (rank, rank)
+    assert facs[2].shape == (rank, rank)
+    assert facs[3].shape == (LR, rank)
 
 
-def test_fitting_method_output_reproducible():
-    """
-    Tests that the output of the decomposition is the same between two runs of the fitting method.
-    """
+@pytest.mark.parametrize("sparse", [True, False])
+@pytest.mark.parametrize("random_state", [0, 1, 2])
+def test_fitting_method_output_reproducible(sparse, random_state):
+    obs, rank = 3, 5
 
-    X_list, _, _ = random_4d_tensor(3, 5)
+    if sparse:
+        X_list, _, _ = random_4d_tensor_sparse(obs, rank, random_state=random_state)
+    else:
+        X_list, _, _ = random_4d_tensor(obs, rank, random_state=random_state)
 
-    (factors1, _), _ = fit_pf2(X_list, 5, 10, 1e-2, random_state=0)
-    (factors2, _), _ = fit_pf2(X_list, 5, 10, 1e-2, random_state=0)
+    (f1, _), _ = cc_pf2(X_list, rank, 10, 1e-2, random_state=random_state)
+    (f2, _), _ = cc_pf2(X_list, rank, 10, 1e-2, random_state=random_state)
 
-    cp1 = CPTensor((None, factors1))
-    cp2 = CPTensor((None, factors2))
+    cp1 = CPTensor((None, f1))
+    cp2 = CPTensor((None, f2))
 
-    cp2_permuted, _ = cp_permute_factors(cp1, cp2)
+    cp2p, _ = cp_permute_factors(cp1, cp2)
 
-    f1s = cp1.factors
-    f2s = cp2_permuted.factors
-
-    for i, (f1, f2) in enumerate(zip(f1s, f2s)):
-        max_diff = np.max(np.abs(f1 - f2))
-        print(f"Max difference in factor {i}: {max_diff}")
+    for f1, f2 in zip(cp1.factors, cp2p.factors, strict=False):
         assert np.allclose(f1, f2, rtol=1e-2, atol=1e-2)
-
-
-def random_4d_tensor(obs, rank):
-    """
-    Generates a random 4D tensor with the given number of observations and rank.
-    Generated tensor will be of the form obs x cells x cells x LR
-    """
-
-    # Generate a list of random dimensions for the tensors
-    shapes = []
-    for _ in range(obs):
-        cells = np.random.randint(10, 20)
-        LR = np.random.randint(10, 20)
-        shapes.append((cells, cells, LR))
-
-    projections = [np.linalg.qr(np.random.rand(cells, rank))[0] for _ in range(obs)]
-
-    # Generate random factors
-    factors = [
-        np.random.rand(obs, rank),
-        np.random.rand(rank, rank),
-        np.random.rand(rank, rank),
-        np.random.rand(LR, rank),
-    ]
-
-    # Generate X_list from the factors and projections
-    reconstructed_X = cp_to_tensor((None, factors))
-    X_list = [reconstructed_X[i, :, :, :] for i in range(obs)]
-
-    return X_list, factors, projections

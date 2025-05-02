@@ -1,13 +1,13 @@
+import anndata
+import datashader as ds
+import datashader.transfer_functions as tf
+import matplotlib.colors
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib.colors
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
-import datashader as ds
-import datashader.transfer_functions as tf
 from matplotlib.patches import Patch
-import anndata
 
 
 def _get_canvas(points: np.ndarray) -> ds.Canvas:
@@ -141,7 +141,7 @@ def plot_wp_per_celltype(
     ax.set_title(cmpName)
 
 
-def plot_lr_pacmap(lr: str, X: anndata.AnnData, ax: Axes, clip_outliers=.9995):
+def plot_lr_pacmap(lr: str, X: anndata.AnnData, ax: Axes, clip_outliers=0.9995):
     """Scatterplot of PaCMAP visualization weighted by lr"""
     lrList = X[:, lr].to_df().values
 
