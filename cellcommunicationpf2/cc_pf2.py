@@ -1,8 +1,8 @@
-from typing import Optional
 
 import anndata
 import numpy as np
 import pymanopt
+import scipy.sparse as sp
 from pacmap import PaCMAP
 from pymanopt import Problem
 from pymanopt.manifolds import Stiefel
@@ -11,9 +11,6 @@ from scipy.optimize import linear_sum_assignment
 from sklearn.utils.extmath import randomized_svd
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
 from tensorly.decomposition import parafac
-
-import scipy.sparse as sp
-
 
 
 def reconstruction_error(
@@ -26,7 +23,7 @@ def reconstruction_error(
 
     recon_err = 0.0
 
-    for i, (orig_tensor, proj) in enumerate(zip(original_X, projections)):
+    for i, (orig_tensor, proj) in enumerate(zip(original_X, projections, strict=False)):
         projected_X = project_data(reconstructed_X[i, :, :, :], proj.T)
 
         # Get coordinates and data from current sparse tensor
@@ -70,7 +67,7 @@ def flatten_tensor_list(tensor_list: list) -> np.ndarray:
 def init(
     X_list: list,
     rank: int,
-    random_state: Optional[int] = None,
+    random_state: int | None = None,
 ) -> list[np.ndarray]:
     """
     Initializes the factors for the CP decomposition of a list of 3D tensors
@@ -93,7 +90,7 @@ def project_data(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
 def solve_projections(
     X_list: list,
     full_tensor: np.ndarray,
-    random_seed: Optional[int] = None,
+    random_seed: int | None = None,
 ) -> list[np.ndarray]:
     """
     Takes a list of 3D tensors of C x C x LR, a means matrix, factors of
@@ -182,7 +179,7 @@ def cc_pf2(
     rank: int,
     n_iter_max: int,
     tol: float,
-    random_state: Optional[int] = None,
+    random_state: int | None = None,
 ) -> tuple[tuple, float]:
     """
     Fits the factors of the CP decomposition for a list of 3D tensors
