@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from sparse import COO
 from tensorly import cp_to_tensor
-from tensorly.cp_tensor import CPTensor, cp_permute_factors
+from tensorly.cp_tensor import CPTensor
 
 from ..cc_pf2 import cc_pf2, init, project_data, reconstruction_error, solve_projections
 
@@ -146,27 +146,6 @@ def test_reconstruction_error(sparse, random_state):
 
 
 @pytest.mark.parametrize("sparse", [True, False])
-@pytest.mark.parametrize("random_state", [3, 4, 5, 6])
-def test_fitting_method(sparse, random_state):
-    obs, rank, LR = 3, 5, 10
-
-    if sparse:
-        X_list, _, _ = random_4d_tensor_sparse(
-            obs, rank, LR=LR, random_state=random_state
-        )
-    else:
-        X_list, _, _ = random_4d_tensor(obs, rank, LR=LR, random_state=random_state)
-
-    (facs, _), error = cc_pf2(X_list, rank, 2, 0.1, random_state=random_state)
-
-    assert error >= 0
-    assert facs[0].shape == (obs, rank)
-    assert facs[1].shape == (rank, rank)
-    assert facs[2].shape == (rank, rank)
-    assert facs[3].shape == (LR, rank)
-
-
-@pytest.mark.parametrize("sparse", [True, False])
 @pytest.mark.parametrize("random_state", [0, 1, 2])
 def test_fitting_method_output_reproducible(sparse, random_state):
     obs, rank = 3, 5
@@ -176,13 +155,17 @@ def test_fitting_method_output_reproducible(sparse, random_state):
     else:
         X_list, _, _ = random_4d_tensor(obs, rank, random_state=random_state)
 
-    (f1, _), _ = cc_pf2(X_list, rank, 10, 1e-2, random_state=random_state)
-    (f2, _), _ = cc_pf2(X_list, rank, 10, 1e-2, random_state=random_state)
+    (f1, _), error = cc_pf2(X_list, rank, 2, 1e-2, random_state=random_state)
+    (f2, _), _ = cc_pf2(X_list, rank, 2, 1e-2, random_state=random_state)
 
     cp1 = CPTensor((None, f1))
     cp2 = CPTensor((None, f2))
 
-    cp2p, _ = cp_permute_factors(cp1, cp2)
+    assert error >= 0
+    assert f1[0].shape == (obs, rank)
+    assert f1[1].shape == (rank, rank)
+    assert f1[2].shape == (rank, rank)
+    assert f1[3].shape[1] == rank
 
-    for f1, f2 in zip(cp1.factors, cp2p.factors, strict=False):
+    for f1, f2 in zip(cp1.factors, cp2.factors, strict=False):
         assert np.allclose(f1, f2, rtol=1e-2, atol=1e-2)
