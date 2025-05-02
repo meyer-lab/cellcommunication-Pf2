@@ -1,12 +1,12 @@
-from typing import Optional
+
 import anndata
 import numpy as np
 import pandas as pd
+import scipy.cluster.hierarchy as sch
 import seaborn as sns
 from matplotlib import pyplot as plt
-import scipy.cluster.hierarchy as sch
-from matplotlib.patches import Patch
 from matplotlib.axes import Axes
+from matplotlib.patches import Patch
 
 cmap = sns.diverging_palette(240, 10, as_cmap=True)
 
@@ -15,7 +15,7 @@ def plot_condition_factors(
     data: anndata.AnnData,
     ax: Axes,
     cond: str = "Condition",
-    cond_group_labels: Optional[pd.Series] = None,
+    cond_group_labels: pd.Series | None = None,
     color_key=None,
     group_cond=False,
 ):

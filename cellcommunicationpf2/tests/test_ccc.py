@@ -1,14 +1,15 @@
 import anndata
 import pandas as pd
+import pytest
+
+from ..ccc import calc_communication_score
 from ..import_data import (
+    add_cond_idxs,
+    anndata_lrp_overlap,
+    anndata_to_tensor,
     import_balf_covid,
     import_ligand_receptor_pairs,
-    anndata_lrp_overlap,
-    add_cond_idxs,
-    anndata_to_tensor,
 )
-from ..ccc import calc_communication_score
-import pytest
 
 
 @pytest.mark.skip(reason="Test takes too long to run")

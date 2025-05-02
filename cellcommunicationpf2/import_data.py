@@ -1,8 +1,9 @@
-import urllib.request
 import os
+import urllib.request
+
 import anndata
-import pandas as pd
 import numpy as np
+import pandas as pd
 import sparse
 
 
