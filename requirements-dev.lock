@@ -74,6 +74,8 @@ numpy==2.1.3
     # via sparse
     # via tensorly
     # via xarray
+opt-einsum==3.4.0
+    # via cellcommunicationpf2
 packaging==24.2
     # via anndata
     # via datashader
