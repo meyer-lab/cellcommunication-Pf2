@@ -100,7 +100,7 @@ def solve_projections(
 
         # Term 1: ||tensor||^2 - constant term, precomputed outside this
         # function for efficiency as the function is called many times
-        tensor_squared_norm = np.linalg.norm(tensor)**2.0
+        tensor_squared_norm = np.linalg.norm(tensor) ** 2.0
 
         @pymanopt.function.numpy(manifold)
         def projection_loss_function(proj):

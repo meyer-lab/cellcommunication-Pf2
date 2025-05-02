@@ -67,7 +67,9 @@ def calc_communication_score(
                     "receiver_type": sample_data.obs["celltype"].iloc[r],
                     **{
                         f"{row.ligand}_{row.receptor}": score
-                        for score, (_, row) in zip(pair_scores, df_lrp.iterrows(), strict=False)
+                        for score, (_, row) in zip(
+                            pair_scores, df_lrp.iterrows(), strict=False
+                        )
                     },
                 }
             )
