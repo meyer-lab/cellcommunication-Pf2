@@ -82,6 +82,11 @@ def solve_projections(
 
     rng = np.random.RandomState(random_seed)
 
+    # Solve the problem
+    solver = ConjugateGradient(
+        verbosity=0, min_gradient_norm=1e-10, min_step_size=1e-12
+    )
+
     for i, tensor in enumerate(X_list):
         manifold = Stiefel(tensor.shape[0], full_tensor.shape[1])
 
@@ -107,13 +112,14 @@ def solve_projections(
             Uses the expansion of ||tensor - a_mat_recon||^2 = ||tensor||^2 -
                 2<tensor, a_mat_recon> + ||a_mat_recon||^2
             """
+            proj_a_lhs = contract("ba,acg->bcg", proj, a_lhs)
+
             # Term 2: -2<tensor, a_mat_recon>
             # Compute the inner product without creating the full a_mat_recon
-            inner_product = contract("bdg,ba,dc,acg->", tensor, proj, proj, a_lhs)
+            inner_product = contract("bdg,bcg,dc->", tensor, proj_a_lhs, proj)
 
             # Term 3: ||a_mat_recon||^2
             # Compute the squared norm of a_mat_recon without creating the full tensor
-            proj_a_lhs = contract("ba,acg->bcg", proj, a_lhs)
             recon_squared_norm = contract(
                 "ba,dc,bcg,dcg->", proj, proj, proj_a_lhs, proj_a_lhs
             )
@@ -151,11 +157,6 @@ def solve_projections(
             manifold=manifold,
             cost=projection_loss_function,
             euclidean_gradient=projection_gradient_function,
-        )
-
-        # Solve the problem
-        solver = ConjugateGradient(
-            verbosity=0, min_gradient_norm=1e-10, min_step_size=1e-12
         )
 
         proj = solver.run(problem, initial_point=initial_point).point
