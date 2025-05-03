@@ -2,6 +2,7 @@ import anndata
 import numpy as np
 import pymanopt
 import sparse
+from opt_einsum import contract
 from pacmap import PaCMAP
 from pymanopt import Problem
 from pymanopt.manifolds import Stiefel
@@ -81,27 +82,50 @@ def solve_projections(
 
     rng = np.random.RandomState(random_seed)
 
-    for i, tensor in enumerate(X_list):
-        # Handle possible sparse tensor
-        if hasattr(tensor, "todense"):
-            tensor = tensor.todense()
+    # Solve the problem
+    solver = ConjugateGradient(
+        verbosity=0, min_gradient_norm=1e-10, min_step_size=1e-12
+    )
 
+    for i, tensor in enumerate(X_list):
         manifold = Stiefel(tensor.shape[0], full_tensor.shape[1])
-        a_mat = np.array(tensor)
+
+        tensor = sparse.asnumpy(tensor)
+
         # LHS full slice
         a_lhs = full_tensor[i, :, :, :]
-        if hasattr(a_lhs, "todense"):
-            a_lhs = a_lhs.todense()
+        a_lhs = sparse.asnumpy(a_lhs)
 
         # Generate a reproducible initial point on the Stiefel manifold
         X = rng.randn(tensor.shape[0], full_tensor.shape[1])
         # Use QR factorization to get a point on the Stiefel manifold
         initial_point, _ = np.linalg.qr(X)
 
+        # Term 1: ||tensor||^2 - constant term, precomputed outside this
+        # function for efficiency as the function is called many times
+        tensor_squared_norm = np.linalg.norm(tensor)
+
         @pymanopt.function.numpy(manifold)
         def projection_loss_function(proj):
-            a_mat_recon = np.einsum("ba,dc,acg->bdg", proj, proj, a_lhs)
-            return np.sum(np.square(a_mat - a_mat_recon))
+            """
+            Computes the projection loss without creating the large a_mat_recon tensor.
+            Uses the expansion of ||tensor - a_mat_recon||^2 = ||tensor||^2 -
+                2<tensor, a_mat_recon> + ||a_mat_recon||^2
+            """
+            proj_a_lhs = contract("ba,acg->bcg", proj, a_lhs)
+
+            # Term 2: -2<tensor, a_mat_recon>
+            # Compute the inner product without creating the full a_mat_recon
+            inner_product = contract("bdg,bcg,dc->", tensor, proj_a_lhs, proj)
+
+            # Term 3: ||a_mat_recon||^2
+            # Compute the squared norm of a_mat_recon without creating the full tensor
+            recon_squared_norm = contract(
+                "ba,dc,bcg,dcg->", proj, proj, proj_a_lhs, proj_a_lhs
+            )
+
+            # Combine all terms
+            return tensor_squared_norm - 2 * inner_product + recon_squared_norm
 
         @pymanopt.function.numpy(manifold)
         def projection_gradient_function(proj):
@@ -111,20 +135,20 @@ def solve_projections(
             """
             # Calculate the reconstructed tensor
             # a_mat_recon has shape (N, N, G)
-            a_mat_recon = np.einsum("ba,dc,acg->bdg", proj, proj, a_lhs)
+            a_mat_recon = contract("ba,dc,acg->bdg", proj, proj, a_lhs)
             # Calculate the error tensor E = a_mat - a_mat_recon
             # E has shape (N, N, G)
-            E = a_mat - a_mat_recon
+            E = tensor - a_mat_recon
             # Calculate the two terms of the gradient using einsum
             # proj has shape (N, M), a_lhs has shape (M, M, G)
             # grad_term1 corresponds to differentiating wrt the first proj ('ba')
             # grad_term1 = sum_{d,g,c} E_{bdg} * proj_{dc} * a_lhs_{acg}
             # Output shape should be (N, M) matching proj ('ba')
-            grad_term1 = np.einsum("bdg,dc,acg->ba", E, proj, a_lhs)
+            grad_term1 = contract("bdg,dc,acg->ba", E, proj, a_lhs)
             # grad_term2 corresponds to differentiating wrt the second proj ('dc')
             # grad_term2 = sum_{b,g,a} E_{bdg} * proj_{ba} * a_lhs_{acg}
             # Output shape should be (N, M) matching proj ('dc')
-            grad_term2 = np.einsum("bdg,ba,acg->dc", E, proj, a_lhs)
+            grad_term2 = contract("bdg,ba,acg->dc", E, proj, a_lhs)
             # Combine the terms and scale by -2
             gradient = -2 * (grad_term1 + grad_term2)
             return gradient
@@ -133,11 +157,6 @@ def solve_projections(
             manifold=manifold,
             cost=projection_loss_function,
             euclidean_gradient=projection_gradient_function,
-        )
-
-        # Solve the problem
-        solver = ConjugateGradient(
-            verbosity=0, min_gradient_norm=1e-10, min_step_size=1e-12
         )
 
         proj = solver.run(problem, initial_point=initial_point).point
