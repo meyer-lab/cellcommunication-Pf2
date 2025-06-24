@@ -11,6 +11,7 @@ from scipy.optimize import linear_sum_assignment
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
 from tensorly.decomposition import parafac
 from tensorly.tenalg.svd import randomized_svd
+import parafac2.utils as pf2_utils
 
 
 def reconstruction_error(

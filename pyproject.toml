@@ -19,6 +19,7 @@ dependencies = [
     "datashader>=0.17.0",
     "pacmap>=0.8.0",
     "opt-einsum>=3.4.0",
+    "parafac2 @ git+https://github.com/meyer-lab/parafac2.git@main",
 ]
 
 readme = "README.md"
