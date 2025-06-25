@@ -11,7 +11,9 @@ from scipy.optimize import linear_sum_assignment
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
 from tensorly.decomposition import parafac
 from tensorly.tenalg.svd import randomized_svd
-import parafac2.utils as pf2_utils
+from parafac2.parafac2 import parafac2_nd
+from cellcommunicationpf2.ccc import calc_communication_score
+import pandas as pd
 
 
 def reconstruction_error(
@@ -239,6 +241,110 @@ def fit_cc_pf2(
         )  # type: ignore
 
     return data, r2x
+
+
+def temp_calc_communication_score(ces_matrix: np.ndarray) -> np.ndarray:
+    """
+    Calculate cell-cell interaction scores for a given CES matrix.
+    This function is a temporary placeholder and should be replaced with
+    the actual implementation of calc_communication_score.
+    """
+    # Placeholder for the actual calculation logic. Will currently just transform the matrix to a 3D tensor by filling the third dimension with random values.
+    # Replace this with the actual implementation of calc_communication_score.
+    rank = ces_matrix.shape[0]
+    genes = ces_matrix.shape[1]
+    # Create a random tensor of shape (rank, rank, genes) to simulate the interaction
+    interaction_tensor = np.random.rand(rank, rank, genes)
+    return interaction_tensor
+
+
+def cc_pf2_redesigned(
+    X_list: list[np.ndarray],
+    rank: int,
+    n_iter_max: int,
+    tol: float,
+    random_state: int | None = None,
+) -> tuple[tuple, float]:
+    """
+    Redesigned cell-cell communication model using initial PARAFAC2
+    followed by CP decomposition
+    """
+    import pandas as pd
+    import anndata
+
+    # Convert the X_list into an anndata object that can be used with parafac2_nd
+    n_conditions = len(X_list)
+    n_features = X_list[0].shape[1]  # genes dimension
+
+    # Calculate total number of cells across all conditions
+    total_cells = sum(x.shape[0] for x in X_list)
+
+    # Concatenate all matrices to create the full data matrix
+    X_full = np.vstack(X_list)
+
+    # Create condition indices for each cell
+    condition_idxs = []
+    for i, x in enumerate(X_list):
+        condition_idxs.extend([i] * x.shape[0])
+
+    # Create observation dataframe
+    obs_df = pd.DataFrame(index=[f"cell_{i}" for i in range(total_cells)])
+    obs_df["condition_unique_idxs"] = condition_idxs
+
+    # Create variable dataframe
+    var_df = pd.DataFrame(index=[f"gene_{i}" for i in range(n_features)])
+
+    # Add small amount of noise to avoid perfect rank-deficiency
+    if random_state is not None:
+        np.random.seed(random_state)
+    X_full = X_full + np.random.normal(0, 1e-6, X_full.shape)
+
+    # Create the AnnData object
+    adata = anndata.AnnData(X=X_full, obs=obs_df, var=var_df)
+
+    # Call parafac2_nd with our constructed AnnData
+    pf2_output, pf2_r2x = parafac2_nd(
+        adata, rank=rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
+    )
+
+    # Unpack results
+    weights, factors, projections = pf2_output
+
+    # Step 2: Project each matrix down to standardized dimension
+    projected_tensors = []
+    for i, tensor in enumerate(X_list):
+        proj = projections[i]
+        projected_tensors.append(proj.T @ tensor)  # (rank x genes)
+
+    # Step 3: Calculate cell-cell interaction scores for each sample
+    interaction_tensors = []
+    for i, ces_matrix in enumerate(projected_tensors):
+        # This creates (rank x rank x genes) tensors from (rank x genes) matrices
+        interaction_tensor = temp_calc_communication_score(ces_matrix)
+        interaction_tensors.append(interaction_tensor)
+
+    interaction_tensors = np.stack(interaction_tensors)
+
+    # Step 4: Run standard CP decomposition on the interaction tensors
+    _, cp_factors = parafac(
+        interaction_tensors,
+        rank,
+        n_iter_max=20,
+        tol=None,
+        normalize_factors=False,
+    )
+
+    # Calculate final R2X directly without using reconstruction_error
+    reconstructed = cp_to_tensor((None, cp_factors))
+
+    # Calculate total variance and error
+    total_variance = np.sum(interaction_tensors**2)
+    error = np.sum((interaction_tensors - reconstructed) ** 2)
+
+    # Calculate R2X (1 - normalized error)
+    final_R2X = 1 - (error / total_variance) if total_variance > 0 else 0.0
+
+    return (cp_factors, projections), final_R2X
 
 
 def standardize_cc_pf2(
