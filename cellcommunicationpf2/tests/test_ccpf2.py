@@ -191,11 +191,10 @@ def test_cc_pf2_redesigned_runs():
 
     try:
         # Run the function
-        result, r2x = cc_pf2_redesigned(
+        _, r2x = cc_pf2_redesigned(
             X_list, rank, 5, 1e-2, random_state=random_state
         )
         # If we get here without errors, the test passes
-        assert True
         assert r2x >= 0.0  # R2X should be non-negative
         print(f"Test passed with R2X: {r2x}")
     except Exception as e:
