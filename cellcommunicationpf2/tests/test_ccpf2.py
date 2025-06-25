@@ -171,7 +171,7 @@ def test_fitting_method_output_reproducible(sparse, random_state):
         assert np.allclose(f1, f2, rtol=1e-2, atol=1e-2)
 
 
-def test_cc_pf2_redesigned_runs():
+def test_cc_pf2_redesigned():
     """Test that cc_pf2_redesigned runs without errors with properly constructed 2D tensors."""
 
     # Use the random_3d_tensor function to generate better test data
@@ -191,11 +191,18 @@ def test_cc_pf2_redesigned_runs():
 
     try:
         # Run the function
-        _, r2x = cc_pf2_redesigned(
+        pf2_results, r2x = cc_pf2_redesigned(
             X_list, rank, 5, 1e-2, random_state=random_state
         )
         # If we get here without errors, the test passes
         assert r2x >= 0.0  # R2X should be non-negative
+        
+        # assert that the factors have the expected shapes
+        factors = pf2_results[0]
+        assert factors[0].shape == (n_samples, rank)
+        assert factors[1].shape == (rank, rank)
+        assert factors[2].shape == (rank, rank)
+        assert factors[3].shape == (n_genes, rank)
         print(f"Test passed with R2X: {r2x}")
     except Exception as e:
         pytest.fail(f"cc_pf2_redesigned raised an exception: {e}")
