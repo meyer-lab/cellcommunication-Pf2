@@ -181,7 +181,7 @@ def test_cc_pf2_redesigned_runs():
     n_genes = 15
     random_state = 42  # Use a different seed to avoid convergence issues
 
-    X_list, factors, projections = random_3d_tensor(
+    X_list, _, _ = random_3d_tensor(
         obs=n_samples,
         rank=rank,
         cell_sizes=cell_sizes,

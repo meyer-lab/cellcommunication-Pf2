@@ -269,12 +269,6 @@ def cc_pf2_redesigned(
     Redesigned cell-cell communication model using initial PARAFAC2
     followed by CP decomposition
     """
-    import pandas as pd
-    import anndata
-
-    # Convert the X_list into an anndata object that can be used with parafac2_nd
-    n_conditions = len(X_list)
-    n_features = X_list[0].shape[1]  # genes dimension
 
     # Calculate total number of cells across all conditions
     total_cells = sum(x.shape[0] for x in X_list)
@@ -291,24 +285,16 @@ def cc_pf2_redesigned(
     obs_df = pd.DataFrame(index=[f"cell_{i}" for i in range(total_cells)])
     obs_df["condition_unique_idxs"] = condition_idxs
 
-    # Create variable dataframe
-    var_df = pd.DataFrame(index=[f"gene_{i}" for i in range(n_features)])
-
-    # Add small amount of noise to avoid perfect rank-deficiency
-    if random_state is not None:
-        np.random.seed(random_state)
-    X_full = X_full + np.random.normal(0, 1e-6, X_full.shape)
-
     # Create the AnnData object
-    adata = anndata.AnnData(X=X_full, obs=obs_df, var=var_df)
+    adata = anndata.AnnData(X=X_full, obs=obs_df)
 
     # Call parafac2_nd with our constructed AnnData
-    pf2_output, pf2_r2x = parafac2_nd(
+    pf2_output, _ = parafac2_nd(
         adata, rank=rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
     )
 
     # Unpack results
-    weights, factors, projections = pf2_output
+    _, _, projections = pf2_output
 
     # Step 2: Project each matrix down to standardized dimension
     projected_tensors = []
