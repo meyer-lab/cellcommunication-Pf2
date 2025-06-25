@@ -202,16 +202,6 @@ def test_cc_pf2_redesigned_runs():
         pytest.fail(f"cc_pf2_redesigned raised an exception: {e}")
 
 
-def project_data_2d(tensor: np.ndarray, proj_matrix: np.ndarray) -> np.ndarray:
-    """
-    Projects a 2D tensor along the first dimension.
-    tensor: shape (dim1, dim2)
-    proj_matrix: shape (new_dim1, dim1)
-    returns: shape (new_dim1, dim2)
-    """
-    return proj_matrix @ tensor
-
-
 def random_3d_tensor(
     obs: int, rank: int, cell_sizes: list[int] = None, LR: int = None, random_state=None
 ):
