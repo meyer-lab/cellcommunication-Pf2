@@ -69,7 +69,7 @@ def cc_pf2_redesigned(
 
     # Step 3: Calculate cell-cell interaction scores for each sample
     interaction_tensors = []
-    for i, ces_matrix in enumerate(projected_tensors):
+    for _, ces_matrix in enumerate(projected_tensors):
         # This creates (rank x rank x genes) tensors from (rank x genes) matrices
         interaction_tensor = temp_calc_communication_score(ces_matrix)
         interaction_tensors.append(interaction_tensor)
