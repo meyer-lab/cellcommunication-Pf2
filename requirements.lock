@@ -90,7 +90,6 @@ numba==0.61.2
     # via pacmap
     # via pynndescent
     # via scanpy
-    # via sparse
     # via umap-learn
 numpy==2.2.6
     # via anndata
@@ -107,19 +106,15 @@ numpy==2.2.6
     # via parafac2
     # via patsy
     # via plotnine
-    # via pymanopt
     # via pyscipopt
     # via scanpy
     # via scikit-learn
     # via scipy
     # via seaborn
-    # via sparse
     # via statsmodels
     # via tensorly
     # via umap-learn
     # via xarray
-opt-einsum==3.4.0
-    # via cellcommunicationpf2
 packaging==24.2
     # via anndata
     # via datashader
@@ -156,8 +151,6 @@ pre-commit==4.2.0
     # via liana
 pyct==0.5.0
     # via datashader
-pymanopt==2.2.1
-    # via cellcommunicationpf2
 pynndescent==0.5.13
     # via scanpy
     # via umap-learn
@@ -189,11 +182,9 @@ scipy==1.15.2
     # via mizani
     # via parafac2
     # via plotnine
-    # via pymanopt
     # via pynndescent
     # via scanpy
     # via scikit-learn
-    # via sparse
     # via statsmodels
     # via tensorly
     # via umap-learn
@@ -205,8 +196,6 @@ session-info2==0.1.2
 six==1.17.0
     # via docrep
     # via python-dateutil
-sparse==0.15.5
-    # via cellcommunicationpf2
 statsmodels==0.14.4
     # via plotnine
     # via scanpy
