@@ -1,8 +1,6 @@
 import numpy as np
 import pytest
-from sparse import COO
 from tensorly import cp_to_tensor
-from tensorly.cp_tensor import CPTensor
 
 from ..cc_pf2 import cc_pf2_redesigned
 
@@ -32,7 +30,7 @@ def test_cc_pf2_redesigned():
         )
         # If we get here without errors, the test passes
         assert r2x >= 0.0  # R2X should be non-negative
-        
+
         # assert that the factors have the expected shapes
         factors = pf2_results[0]
         assert factors[0].shape == (n_samples, rank)
@@ -71,4 +69,3 @@ def random_3d_tensor(
     # We want: proj.T @ reconstructed[i] -> (n, LR)
     X_list = [projections[i] @ reconstructed[i] for i in range(obs)]
     return X_list, factors, projections
-

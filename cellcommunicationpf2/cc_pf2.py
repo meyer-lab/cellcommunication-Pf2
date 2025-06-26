@@ -1,13 +1,10 @@
 import anndata
 import numpy as np
-from pacmap import PaCMAP
+import pandas as pd
+from parafac2.parafac2 import parafac2_nd
 from scipy.optimize import linear_sum_assignment
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
 from tensorly.decomposition import parafac
-from parafac2.parafac2 import parafac2_nd
-from cellcommunicationpf2.ccc import calc_communication_score
-import pandas as pd
-
 
 # def fit_cc_pf2(
 #     X: anndata.AnnData,
@@ -112,7 +109,7 @@ def cc_pf2_redesigned(
         normalize_factors=False,
     )
 
-    # Calculate final R2X 
+    # Calculate final R2X
     reconstructed = cp_to_tensor((cp_weights, cp_factors))
 
     # Calculate total variance and error
