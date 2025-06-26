@@ -12,13 +12,18 @@
 -e file:.
 anndata==0.11.3
     # via cellcommunicationpf2
+    # via liana
+    # via mudata
     # via parafac2
+    # via scanpy
 annoy==1.17.3
     # via pacmap
 array-api-compat==1.11.2
     # via anndata
 certifi==2025.1.31
     # via requests
+cfgv==3.4.0
+    # via pre-commit
 charset-normalizer==3.4.1
     # via requests
 colorcet==3.1.0
@@ -31,31 +36,62 @@ cycler==0.12.1
     # via matplotlib
 datashader==0.17.0
     # via cellcommunicationpf2
+distlib==0.3.9
+    # via virtualenv
+docrep==0.3.2
+    # via liana
 fastrlock==0.8.3
     # via cupy-cuda12x
+filelock==3.18.0
+    # via virtualenv
 fonttools==4.56.0
     # via matplotlib
 h5py==3.13.0
     # via anndata
+    # via scanpy
+identify==2.6.12
+    # via pre-commit
 idna==3.10
     # via requests
 joblib==1.4.2
+    # via pynndescent
+    # via scanpy
     # via scikit-learn
 kiwisolver==1.4.8
     # via matplotlib
+legacy-api-wrap==1.4.1
+    # via scanpy
+liana==1.5.1
+    # via cellcommunicationpf2
 llvmlite==0.44.0
     # via numba
+    # via pynndescent
 matplotlib==3.10.1
     # via cellcommunicationpf2
+    # via plotnine
+    # via scanpy
     # via seaborn
+mizani==0.13.5
+    # via plotnine
+mudata==0.3.2
+    # via liana
 multipledispatch==1.0.0
     # via datashader
 natsort==8.4.0
     # via anndata
+    # via scanpy
+networkx==3.5
+    # via scanpy
+nodeenv==1.9.1
+    # via pre-commit
 numba==0.61.2
     # via datashader
+    # via liana
     # via pacmap
+    # via pynndescent
+    # via scanpy
     # via sparse
+    # via umap-learn
 numpy==2.2.6
     # via anndata
     # via cellcommunicationpf2
@@ -64,16 +100,23 @@ numpy==2.2.6
     # via datashader
     # via h5py
     # via matplotlib
+    # via mizani
     # via numba
     # via pacmap
     # via pandas
     # via parafac2
+    # via patsy
+    # via plotnine
     # via pymanopt
+    # via pyscipopt
+    # via scanpy
     # via scikit-learn
     # via scipy
     # via seaborn
     # via sparse
+    # via statsmodels
     # via tensorly
+    # via umap-learn
     # via xarray
 opt-einsum==3.4.0
     # via cellcommunicationpf2
@@ -81,52 +124,92 @@ packaging==24.2
     # via anndata
     # via datashader
     # via matplotlib
+    # via scanpy
+    # via statsmodels
     # via xarray
 pacmap==0.8.0
     # via cellcommunicationpf2
 pandas==2.2.3
     # via anndata
     # via datashader
+    # via mizani
+    # via plotnine
+    # via scanpy
     # via seaborn
+    # via statsmodels
     # via xarray
 parafac2 @ git+https://github.com/meyer-lab/parafac2.git@ccf708fe71c78a106151643e893ea006bba865d9
     # via cellcommunicationpf2
 param==2.2.0
     # via datashader
     # via pyct
+patsy==1.0.1
+    # via scanpy
+    # via statsmodels
 pillow==11.1.0
     # via matplotlib
+platformdirs==4.3.8
+    # via virtualenv
+plotnine==0.14.6
+    # via liana
+pre-commit==4.2.0
+    # via liana
 pyct==0.5.0
     # via datashader
 pymanopt==2.2.1
     # via cellcommunicationpf2
+pynndescent==0.5.13
+    # via scanpy
+    # via umap-learn
 pyparsing==3.2.2
     # via matplotlib
+pyscipopt==5.5.0
+    # via liana
 python-dateutil==2.9.0.post0
     # via matplotlib
     # via pandas
 pytz==2025.1
     # via pandas
+pyyaml==6.0.2
+    # via pre-commit
 requests==2.32.3
     # via datashader
+scanpy==1.11.2
+    # via liana
 scikit-learn==1.6.1
     # via cellcommunicationpf2
     # via pacmap
+    # via pynndescent
+    # via scanpy
+    # via umap-learn
 scipy==1.15.2
     # via anndata
     # via cellcommunicationpf2
     # via datashader
+    # via mizani
     # via parafac2
+    # via plotnine
     # via pymanopt
+    # via pynndescent
+    # via scanpy
     # via scikit-learn
     # via sparse
+    # via statsmodels
     # via tensorly
+    # via umap-learn
 seaborn==0.13.2
     # via cellcommunicationpf2
+    # via scanpy
+session-info2==0.1.2
+    # via scanpy
 six==1.17.0
+    # via docrep
     # via python-dateutil
 sparse==0.15.5
     # via cellcommunicationpf2
+statsmodels==0.14.4
+    # via plotnine
+    # via scanpy
 tensorly==0.9.0
     # via cellcommunicationpf2
     # via parafac2
@@ -135,10 +218,19 @@ threadpoolctl==3.6.0
 toolz==1.0.0
     # via datashader
 tqdm==4.67.1
+    # via liana
     # via parafac2
+    # via scanpy
+    # via umap-learn
+typing-extensions==4.14.0
+    # via scanpy
 tzdata==2025.2
     # via pandas
+umap-learn==0.5.7
+    # via scanpy
 urllib3==2.3.0
     # via requests
+virtualenv==20.31.2
+    # via pre-commit
 xarray==2025.3.0
     # via datashader

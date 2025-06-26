@@ -2,7 +2,6 @@ import anndata
 import pandas as pd
 import pytest
 
-from ..ccc import calc_communication_score
 from ..import_data import (
     add_cond_idxs,
     anndata_lrp_overlap,
@@ -42,16 +41,3 @@ def test_anndata_ccc_processing_pipeline():
     X_small = X[::200]
     number_of_pairs = 20
     df_lrp_small = df_lrp.iloc[:number_of_pairs, :]
-
-    ccc_X = calc_communication_score(
-        X_small, df_lrp_small, communication_score="expression_product"
-    )
-
-    assert ccc_X.shape[1] == number_of_pairs, (
-        "Output should have same number of LR pairs as input"
-    )
-    assert len(pd.unique(ccc_X.obs["sample"])) == len(
-        pd.unique(X_small.obs["sample"])
-    ), "Output should have same number of samples as input"
-
-    ccc_X = add_cond_idxs(ccc_X, condition_name="sample")

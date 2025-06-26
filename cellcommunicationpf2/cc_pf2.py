@@ -6,31 +6,6 @@ from scipy.optimize import linear_sum_assignment
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
 from tensorly.decomposition import parafac
 
-# def fit_cc_pf2(
-#     X: anndata.AnnData,
-#     rank: int,
-#     random_state=1,
-#     do_embedding: bool = True,
-#     tol=1e-7,
-#     max_iter: int = 100,
-# ) -> tuple[anndata.AnnData, float]:
-#     """
-#     Fits the Pf2 decomposition for a list of 3D tensors
-#     """
-#     cc_pf2_out, r2x = cc_pf2(
-#         X, rank=rank, random_state=random_state, tol=tol, n_iter_max=max_iter
-#     )
-
-#     data = store_cc_pf2(X, cc_pf2_out)
-
-#     if do_embedding:
-#         pcm = PaCMAP(random_state=random_state)
-#         data.obsm["Pf2_PaCMAP_projections"] = pcm.fit_transform(
-#             data.obsm["Pf2_cell_cell_projections"]
-#         )  # type: ignore
-
-#     return data, r2x
-
 
 def temp_calc_communication_score(ces_matrix: np.ndarray) -> np.ndarray:
     """
@@ -38,8 +13,9 @@ def temp_calc_communication_score(ces_matrix: np.ndarray) -> np.ndarray:
     This function is a temporary placeholder and should be replaced with
     the actual implementation of calc_communication_score.
     """
-    # Placeholder for the actual calculation logic. Will currently just transform the matrix to a 3D tensor by filling the third dimension with random values.
-    # Replace this with the actual implementation of calc_communication_score.
+    # Placeholder for the actual calculation logic. Will currently just transform the
+    # matrix to a 3D tensor by filling the third dimension with random values.
+    # Replace this with the actual implementation through liana.
     rank = ces_matrix.shape[0]
     genes = ces_matrix.shape[1]
     # Create a random tensor of shape (rank, rank, genes) to simulate the interaction
