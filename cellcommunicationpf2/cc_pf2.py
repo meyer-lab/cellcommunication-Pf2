@@ -1,7 +1,7 @@
 import anndata
 import numpy as np
 import pandas as pd
-from parafac2.parafac2 import parafac2_nd
+from parafac2.parafac2 import parafac2_nd, anndata_to_list
 from scipy.optimize import linear_sum_assignment
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
 from tensorly.decomposition import parafac
@@ -105,41 +105,8 @@ def cc_pf2_redesigned(
     followed by CP decomposition
     """
 
-    conditions = adata.obs['condition'].unique()
-
-    X_list = []
-    for condition_idx in range(len(conditions)):
-        # Get cells for this condition
-        mask = adata.obs['condition_unique_idxs'] == condition_idx
-        # Extract the expression matrix
-        X_condition = adata[mask].X
-
-        # Convert to dense array if sparse
-        if hasattr(X_condition, 'toarray'):
-            X_condition = X_condition.toarray()
-
-        # Add small noise for numerical stability
-        X_condition = X_condition + np.random.RandomState(random_state).normal(0, 1e-5, X_condition.shape)
-
-        X_list.append(X_condition)
-
-    # Calculate total number of cells across all conditions
-    total_cells = sum(x.shape[0] for x in X_list)
-
-    # Concatenate all matrices to create the full data matrix
-    X_full = np.vstack(X_list)
-
-    # Create condition indices for each cell
-    condition_idxs = []
-    for i, x in enumerate(X_list):
-        condition_idxs.extend([i] * x.shape[0])
-
-    # Create observation dataframe
-    obs_df = pd.DataFrame(index=[f"cell_{i}" for i in range(total_cells)])
-    obs_df["condition_unique_idxs"] = condition_idxs
-
-    # Create the AnnData object
-    adata = anndata.AnnData(X=X_full, obs=obs_df)
+    # Use anndata_to_list to get data matrices (returns CuPy arrays)
+    X_list = np.array(anndata_to_list(adata))
 
     # Call parafac2_nd with our constructed AnnData
     pf2_output, _ = parafac2_nd(
@@ -153,7 +120,17 @@ def cc_pf2_redesigned(
     projected_tensors = []
     for i, tensor in enumerate(X_list):
         proj = projections[i]
-        projected_tensors.append(proj.T @ tensor)  # (rank x genes)
+        # Convert tensor to NumPy if it's a CuPy array
+        if hasattr(tensor, 'get'):  # CuPy arrays have a 'get' method
+            tensor_np = tensor.get()  # Convert to NumPy
+        elif hasattr(tensor, 'toarray'):  # For sparse matrices
+            tensor_np = tensor.toarray()
+            if hasattr(tensor_np, 'get'):  # If still CuPy
+                tensor_np = tensor_np.get()
+        else:
+            tensor_np = tensor
+            
+        projected_tensors.append(proj.T @ tensor_np)  # (rank x genes)
 
     # Step 3: Calculate cell-cell interaction scores for each sample
     interaction_tensors = []
@@ -172,6 +149,7 @@ def cc_pf2_redesigned(
         n_iter_max=20,
         tol=None,
         normalize_factors=False,
+        random_state=random_state,  # Added for reproducibility
     )
 
     # Calculate final R2X

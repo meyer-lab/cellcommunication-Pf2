@@ -43,7 +43,7 @@ def test_cc_pf2_real_data():
     lr_pairs = import_ligand_receptor_pairs()
 
     # Filter data to include only genes in the ligand-receptor pairs
-    adata_filtered, lr_pairs_filtered = anndata_lrp_overlap(adata, lr_pairs)
+    adata_filtered, _ = anndata_lrp_overlap(adata, lr_pairs)
 
     # From the test output, we know 'condition' is the column with 3 values:
     # 'Control', 'Moderate COVID-19', 'Severe COVID-19'
