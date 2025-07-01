@@ -1,102 +1,76 @@
 import numpy as np
 import pytest
-from tensorly import cp_to_tensor
 
 from ..cc_pf2 import cc_pf2_redesigned
-from ..import_data import import_balf_covid, import_ligand_receptor_pairs, anndata_lrp_overlap, add_cond_idxs
-
-def random_3d_tensor(
-    obs: int, rank: int, cell_sizes: list[int] = None, genes: int = None, random_state=None
-):
-    """Generate a list of random dense 2D tensors (3D structure) using uniform sampling."""
-    rng = np.random.default_rng(random_state)
-    if cell_sizes is None:
-        cell_sizes = rng.integers(10, 20, size=obs)
-    if genes is None:
-        genes = rng.integers(10, 20)
-
-    projections = [
-        np.linalg.qr(rng.uniform(0.0, 1.0, size=(n, rank)))[0] for n in cell_sizes
-    ]
-
-    factors = [
-        rng.uniform(0.0, 1.0, size=(obs, rank)),
-        rng.uniform(0.0, 1.0, size=(rank, rank)),
-        rng.uniform(0.0, 1.0, size=(genes, rank)),
-    ]
-    reconstructed = cp_to_tensor((None, factors))
-
-    # reconstructed has shape (obs, rank, LR)
-    # reconstructed[i] has shape (rank, LR)
-    # proj.T has shape (rank, n) where n is cell_sizes[i]
-    # We want: proj.T @ reconstructed[i] -> (n, LR)
-    X_list = [projections[i] @ reconstructed[i] for i in range(obs)]
-    return X_list, factors, projections
+from ..import_data import (
+    add_cond_idxs,
+    anndata_lrp_overlap,
+    import_balf_covid,
+    import_ligand_receptor_pairs,
+)
 
 
-def test_cc_pf2_real_data():
-    """Test that cc_pf2_redesigned runs without errors with real data."""
-
+@pytest.mark.filterwarnings("ignore::anndata._warnings.OldFormatWarning")
+@pytest.mark.parametrize("test_rank", [2, 3, 4])
+@pytest.mark.parametrize("random_state", [42, 123, 456])
+def test_cc_pf2_real_data(test_rank, random_state):
+    """Test that cc_pf2_redesigned runs with different ranks and random states."""
     adata = import_balf_covid()
-
-    # Import ligand-receptor pairs
     lr_pairs = import_ligand_receptor_pairs()
 
     # Filter data to include only genes in the ligand-receptor pairs
-    adata_filtered, _ = anndata_lrp_overlap(adata, lr_pairs)
+    adata_filtered, lr_pairs_filtered = anndata_lrp_overlap(adata, lr_pairs)
 
-    # From the test output, we know 'condition' is the column with 3 values:
-    # 'Control', 'Moderate COVID-19', 'Severe COVID-19'
-    condition_column = 'condition'
-    print(f"Using '{condition_column}' as condition with values: {adata_filtered.obs[condition_column].unique()}")
-
-    # Add condition indices using the determined condition column
+    # Get condition information and add indices
+    condition_column = "condition"
+    conditions = adata_filtered.obs[condition_column].unique()
     adata_filtered = add_cond_idxs(adata_filtered, condition_column)
 
-    # Subset data for testing - use more cells for better stability
-    n_cells_per_condition = 100  # Increased from 50
-    conditions = adata_filtered.obs[condition_column].unique()
-
+    # Subset data for testing
+    n_cells_per_condition = 100
     subset_cells = []
     for condition in conditions:
         mask = adata_filtered.obs[condition_column] == condition
         condition_cells = np.where(mask)[0]
 
         if len(condition_cells) > n_cells_per_condition:
-            # Use consistent random seed
-            selected = np.random.RandomState(42).choice(
+            selected = np.random.RandomState(random_state).choice(
                 condition_cells, n_cells_per_condition, replace=False
             )
             subset_cells.extend(selected)
 
-    # Subset the data
     adata_subset = adata_filtered[subset_cells]
-
-    # Parameters for decomposition - use lower rank for stability
-    rank = min(2, len(conditions))  # Reduced from 3 to 2
-    n_iter_max = 3  # Increased iterations slightly
+    rank = min(test_rank, len(conditions))
+    n_iter_max = 10
     tol = 1e-2
 
     try:
         # Run cc_pf2_redesigned
         results, r2x = cc_pf2_redesigned(
-            adata_subset, rank, n_iter_max, tol, random_state=42
+            adata_subset, rank, n_iter_max, tol, random_state=random_state
         )
-
-        # Basic validation
         factors, projections = results
 
-        # Check that the factors have the expected dimensions
-        assert factors[0].shape[0] == len(conditions)
-        assert factors[0].shape[1] == rank
+        # Validate factors
+        factor_names = ["Conditions", "Sender cells", "Receiver cells", "LR pairs"]
+        assert len(factors) == 4, f"Expected 4 factors, got {len(factors)}"
 
-        # Check that we have one projection matrix per condition
-        assert len(projections) == len(conditions)
+        # Expected shapes for factors
+        assert factors[0].shape == (len(conditions), rank), f"Factor 0 (Conditions) shape mismatch: expected {(len(conditions), rank)}, got {factors[0].shape}"
+        assert factors[1].shape == (rank, rank), f"Factor 1 (Sender cells) shape mismatch: expected {(rank, rank)}, got {factors[1].shape}"
+        assert factors[2].shape == (rank, rank), f"Factor 2 (Receiver cells) shape mismatch: expected {(rank, rank)}, got {factors[2].shape}"
+        assert factors[3].shape == (len(lr_pairs_filtered), rank), f"Factor 3 (LR pairs) shape mismatch: expected {(len(lr_pairs_filtered), rank)}, got {factors[3].shape}"
+        # Check for NaN values in all factors
+        for i, factor in enumerate(factors):
+            assert not np.isnan(factor).any(), f"Factor {i} contains NaN values"
 
-        # Verify R2X value
+        # Validate projections
+        assert len(projections) == len(conditions), f"Expected {len(conditions)} projections, got {len(projections)}"
+        for i, proj in enumerate(projections):
+            assert proj.shape[1] == rank, f"Projection {i} should have {rank} columns, got {proj.shape[1]}"
+
+        # Validate R2X
         assert 0 <= r2x <= 1.0, f"R2X should be between 0 and 1, got {r2x}"
 
-        print(f"Cell communication test with real data passed. R2X: {r2x:.4f}")
-
     except Exception as e:
-        pytest.fail(f"cc_pf2_redesigned with real data raised an exception: {e}")
+        pytest.fail(f"Test failed with rank={rank}, random_state={random_state}: {e}")

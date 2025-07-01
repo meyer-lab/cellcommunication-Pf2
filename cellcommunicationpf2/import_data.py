@@ -2,7 +2,6 @@ import os
 import urllib.request
 
 import anndata
-import numpy as np
 import pandas as pd
 
 
@@ -72,13 +71,16 @@ def anndata_lrp_overlap(X: anndata.AnnData, df_lrp: pd.DataFrame):
     return X[:, genes_to_keep], df_lrp
 
 
-def add_cond_idxs(
-    X: anndata.AnnData,
-    condition_name: str,
-) -> anndata.AnnData:
-    """Add condition-specific indices to AnnData object"""
-    # Get the indices for subsetting the data
-    _, sgIndex = np.unique(X.obs_vector(condition_name), return_inverse=True)
-    X.obs["condition_unique_idxs"] = sgIndex
+def add_cond_idxs(X, condition_key):
+    """Add unique condition indices to an AnnData object."""
+    # Create a copy to avoid modifying a view
+    X = X.copy()
+
+    # Get unique conditions and map to indices
+    conditions = X.obs[condition_key].unique()
+    condition_map = {cond: i for i, cond in enumerate(conditions)}
+
+    # Add indices to obs
+    X.obs["condition_unique_idxs"] = X.obs[condition_key].map(condition_map).values
 
     return X

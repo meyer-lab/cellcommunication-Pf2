@@ -1,94 +1,84 @@
 import anndata
 import numpy as np
 import pandas as pd
-from parafac2.parafac2 import parafac2_nd, anndata_to_list
+from parafac2.parafac2 import anndata_to_list, parafac2_nd
 from scipy.optimize import linear_sum_assignment
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
 from tensorly.decomposition import parafac
 
+from .ccc import build_context_ccc_tensor
 
-def calc_communication_score(ces_matrix: np.ndarray, gene_names: list[str] = None, lr_pairs: pd.DataFrame = None) -> np.ndarray:
+
+def calc_communication_score(
+    projected_matrices: list[np.ndarray], 
+    gene_names: list[str] = None, 
+    lr_pairs: pd.DataFrame = None
+) -> np.ndarray:
     """
-    Calculate cell-cell communication scores using expression product method
-    from Tensor Cell2Cell.
+    Calculate cell-cell communication scores using build_context_ccc_tensor 
+    from Tensor Cell2Cell for all conditions at once.
     
     Parameters:
     -----------
-    ces_matrix : np.ndarray
-        Matrix of shape (rank, genes) representing projected cell expressions
+    projected_tensors : list[np.ndarray]
+        List of matrices of shape (rank, genes) representing projected cell expressions
+        across different conditions
     gene_names : list[str], optional
-        List of gene names corresponding to columns in ces_matrix
+        List of gene names corresponding to columns in the matrices
     lr_pairs : pd.DataFrame, optional
         DataFrame with 'ligand' and 'receptor' columns
         
     Returns:
     --------
     np.ndarray
-        Interaction tensor of shape (rank, rank, n_lr_pairs)
+        4D interaction tensor of shape (conditions, rank, rank, n_lr_pairs)
     """
     if lr_pairs is None:
         from .import_data import import_ligand_receptor_pairs
         lr_pairs = import_ligand_receptor_pairs()
     
     if gene_names is None:
-        # Create dummy gene names if not provided
-        gene_names = [f"gene_{i}" for i in range(ces_matrix.shape[1])]
+        gene_names = [f"gene_{i}" for i in range(projected_matrices[0].shape[1])]
     
-    # Filter LR pairs to only include genes present in our data
-    valid_pairs = lr_pairs[
-        (lr_pairs['ligand'].isin(gene_names)) & 
-        (lr_pairs['receptor'].isin(gene_names))
-    ].copy().reset_index(drop=True)
+    # Convert matrices to DataFrames (genes as rows, cells as columns)
+    rnaseq_matrices = []
+    for matrix in projected_matrices:
+        df = pd.DataFrame(
+            matrix.T,
+            index=gene_names,
+            columns=[f"rank_{j}" for j in range(matrix.shape[0])]
+        )
+        rnaseq_matrices.append(df)
     
-    # If no valid pairs found with real gene names, create synthetic pairs for testing
-    if len(valid_pairs) == 0:
-        # Check if we're dealing with dummy gene names (gene_0, gene_1, etc.)
-        if all(name.startswith('gene_') for name in gene_names[:5]):  # Check first 5 names
-            # Create synthetic LR pairs for testing
-            n_genes = len(gene_names)
-            n_pairs = min(10, n_genes // 2)  # Create up to 10 pairs, but not more than half the genes
-            
-            synthetic_pairs = []
-            for i in range(n_pairs):
-                ligand_idx = i * 2
-                receptor_idx = i * 2 + 1
-                if receptor_idx < n_genes:
-                    synthetic_pairs.append({
-                        'ligand': gene_names[ligand_idx],
-                        'receptor': gene_names[receptor_idx]
-                    })
-            
-            valid_pairs = pd.DataFrame(synthetic_pairs)
-            print(f"Created {len(valid_pairs)} synthetic LR pairs for testing")
-        else:
-            # If no valid pairs with real gene names, return minimal tensor
-            return np.zeros((ces_matrix.shape[0], ces_matrix.shape[0], 1))
+    # Rename columns to match Cell2Cell convention
+    if 'ligand' in lr_pairs.columns and 'receptor' in lr_pairs.columns:
+        lr_pairs_renamed = lr_pairs.rename(columns={'ligand': 'A', 'receptor': 'B'})
+    else:
+        lr_pairs_renamed = lr_pairs.copy()
     
-    # Create gene name to index mapping
-    gene_to_idx = {gene: idx for idx, gene in enumerate(gene_names)}
+    # Filter to valid pairs
+    valid_mask = (lr_pairs_renamed['A'].isin(gene_names)) & (lr_pairs_renamed['B'].isin(gene_names))
+    valid_pairs = lr_pairs_renamed[valid_mask].reset_index(drop=True)
     
-    # Get indices for ligands and receptors
-    ligand_indices = [gene_to_idx[gene] for gene in valid_pairs['ligand']]
-    receptor_indices = [gene_to_idx[gene] for gene in valid_pairs['receptor']]
+    # Generate communication tensor for all contexts
+    tensors, _, _, _, _ = build_context_ccc_tensor(
+        rnaseq_matrices=rnaseq_matrices,
+        ppi_data=valid_pairs,
+        how="inner",
+        communication_score="expression_product",
+        complex_sep=None,
+        upper_letter_comparison=False,
+        interaction_columns=("A", "B"),
+        group_ppi_by=None,
+        group_ppi_method="gmean",
+        verbose=False
+    )
     
-    # Extract ligand and receptor expression matrices
-    ligand_expr = ces_matrix[:, ligand_indices]  # (rank, n_pairs)
-    receptor_expr = ces_matrix[:, receptor_indices]  # (rank, n_pairs)
-    
-    # Calculate communication scores using expression product
-    n_pairs = len(valid_pairs)
-    rank = ces_matrix.shape[0]
-    
-    interaction_tensor = np.zeros((rank, rank, n_pairs))
-    
-    for i in range(n_pairs):
-        # Get ligand expression for this pair across all projected cells
-        ligand_vec = ligand_expr[:, i]  # (rank,)
-        # Get receptor expression for this pair across all projected cells  
-        receptor_vec = receptor_expr[:, i]  # (rank,)
-        
-        # Compute outer product: ligand (sender) x receptor (receiver)
-        interaction_tensor[:, :, i] = np.outer(ligand_vec, receptor_vec)
+    # Convert to numpy and transpose to expected format
+    # From: (context, ppi_idx, rank, rank)
+    # To:   (context, rank, rank, ppi_idx)
+    interaction_tensor = np.array(tensors)
+    interaction_tensor = np.transpose(interaction_tensor, (0, 2, 3, 1))
     
     return interaction_tensor
 
@@ -102,9 +92,29 @@ def cc_pf2_redesigned(
 ) -> tuple[tuple, float]:
     """
     Redesigned cell-cell communication model using initial PARAFAC2
-    followed by CP decomposition
+    followed by CP decomposition.
+    
+    Parameters:
+    -----------
+    adata : anndata.AnnData
+        AnnData object with cells x genes expression data
+    rank : int
+        Rank of the decomposition
+    n_iter_max : int
+        Maximum number of iterations
+    tol : float
+        Convergence tolerance
+    random_state : int, optional
+        Random seed for reproducibility
+        
+    Returns:
+    --------
+    tuple[tuple, float]
+        ((cp_factors, projections), final_R2X)
     """
-
+    # Extract gene names from adata
+    gene_names = list(adata.var_names)
+    
     # Use anndata_to_list to get data matrices (returns CuPy arrays)
     X_list = np.array(anndata_to_list(adata))
 
@@ -117,7 +127,7 @@ def cc_pf2_redesigned(
     _, _, projections = pf2_output
 
     # Step 2: Project each matrix down to standardized dimension
-    projected_tensors = []
+    projected_matrices = []
     for i, tensor in enumerate(X_list):
         proj = projections[i]
         # Convert tensor to NumPy if it's a CuPy array
@@ -130,23 +140,22 @@ def cc_pf2_redesigned(
         else:
             tensor_np = tensor
             
-        projected_tensors.append(proj.T @ tensor_np)  # (rank x genes)
+        projected_matrices.append(proj.T @ tensor_np)  # (rank x genes)
 
-    # Step 3: Calculate cell-cell interaction scores for each sample
-    interaction_tensors = []
-    for _, ces_matrix in enumerate(projected_tensors):
-        # This creates (rank x rank x genes) tensors from (rank x genes) matrices
-        interaction_tensor = calc_communication_score(ces_matrix)
-        interaction_tensors.append(interaction_tensor)
-
-    interaction_tensors = np.stack(interaction_tensors)
+    # Step 3: Calculate cell-cell interaction scores for all samples at once
+    # Pass the actual gene names from the AnnData object
+    interaction_tensors = calc_communication_score(
+        projected_matrices, 
+        gene_names=gene_names
+    )
+    
     print(f"Interaction tensors shape: {interaction_tensors.shape}")
 
     # Step 4: Run standard CP decomposition on the interaction tensors
     cp_weights, cp_factors = parafac(
         interaction_tensors,
         rank,
-        n_iter_max=20,
+        n_iter_max=n_iter_max,
         tol=None,
         normalize_factors=False,
         random_state=random_state,  # Added for reproducibility
@@ -168,6 +177,21 @@ def cc_pf2_redesigned(
 def standardize_cc_pf2(
     factors: list[np.ndarray], projections: list[np.ndarray]
 ) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray]]:
+    """
+    Standardize CP factors and projections for better interpretability.
+    
+    Parameters:
+    -----------
+    factors : list[np.ndarray]
+        CP factors from cc_pf2_redesigned
+    projections : list[np.ndarray]
+        Projections from cc_pf2_redesigned
+        
+    Returns:
+    --------
+    tuple
+        (weights, factors, projections) after standardization
+    """
     # Order components by condition variance
     gini = np.var(factors[0], axis=0) / np.mean(factors[0], axis=0)
     gini_idx = np.argsort(gini)
@@ -190,8 +214,21 @@ def standardize_cc_pf2(
 
 
 def store_cc_pf2(X: anndata.AnnData, parafac2_output: tuple):
-    """Store the Pf2 results into the anndata object."""
-
+    """
+    Store CC-PF2 results into an AnnData object.
+    
+    Parameters:
+    -----------
+    X : anndata.AnnData
+        AnnData object to store results in
+    parafac2_output : tuple
+        Output from parafac2_nd
+        
+    Returns:
+    --------
+    anndata.AnnData
+        Updated AnnData with stored results
+    """
     X.uns["Pf2_weights"] = parafac2_output[0]
     X.uns["Pf2_A"], X.uns["Pf2_B"], X.uns["Pf2_C"], X.varm["Pf2_D"] = parafac2_output[1]
     projections = parafac2_output[2]
