@@ -29,12 +29,13 @@ def test_cc_pf2_real_data(test_rank, random_state):
     # Subset data for testing
     n_cells_per_condition = 100
     subset_cells = []
+    rng = np.random.RandomState(random_state)
     for condition in conditions:
         mask = adata_filtered.obs[condition_column] == condition
         condition_cells = np.where(mask)[0]
 
         if len(condition_cells) > n_cells_per_condition:
-            selected = np.random.RandomState(random_state).choice(
+            selected = rng.choice(
                 condition_cells, n_cells_per_condition, replace=False
             )
             subset_cells.extend(selected)
