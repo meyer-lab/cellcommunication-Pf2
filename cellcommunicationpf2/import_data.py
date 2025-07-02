@@ -2,7 +2,6 @@ import os
 import urllib.request
 
 import anndata
-import numpy as np
 import pandas as pd
 
 
@@ -36,8 +35,6 @@ def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
     if not os.path.exists(filename):
         print("Downloading data from Zenodo...")
         urllib.request.urlretrieve(url, filename)
-    else:
-        print("File already exists. Loading data...")
 
     return anndata.read_h5ad(filename)
 
@@ -52,8 +49,6 @@ def import_ligand_receptor_pairs(filename="./data/Human-2020-Jin-LR-pairs.csv"):
     if not os.path.exists(filename):
         print("Downloading data from GitHub...")
         urllib.request.urlretrieve(url, filename)
-    else:
-        print("File already exists. Loading data...")
 
     return pd.read_csv(filename)
 
@@ -72,13 +67,16 @@ def anndata_lrp_overlap(X: anndata.AnnData, df_lrp: pd.DataFrame):
     return X[:, genes_to_keep], df_lrp
 
 
-def add_cond_idxs(
-    X: anndata.AnnData,
-    condition_name: str,
-) -> anndata.AnnData:
-    """Add condition-specific indices to AnnData object"""
-    # Get the indices for subsetting the data
-    _, sgIndex = np.unique(X.obs_vector(condition_name), return_inverse=True)
-    X.obs["condition_unique_idxs"] = sgIndex
+def add_cond_idxs(X, condition_key):
+    """Add unique condition indices to an AnnData object."""
+    # Create a copy to avoid modifying a view
+    X = X.copy()
+
+    # Get unique conditions and map to indices
+    conditions = X.obs[condition_key].unique()
+    condition_map = {cond: i for i, cond in enumerate(conditions)}
+
+    # Add indices to obs
+    X.obs["condition_unique_idxs"] = X.obs[condition_key].map(condition_map).values
 
     return X

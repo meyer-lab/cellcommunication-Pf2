@@ -82,10 +82,7 @@ def plot_eigenstate_factors(data: anndata.AnnData, ax: Axes, factor_type: str):
     """Plots Pf2 eigenstate factors"""
     rank = data.uns["Pf2_B"].shape[1]
     xticks = np.arange(1, rank + 1)
-    if factor_type == "Pf2_B":
-        X = data.uns["Pf2_B"]
-    else:
-        X = data.uns["Pf2_C"]
+    X = data.uns["Pf2_B"] if factor_type == "Pf2_B" else data.uns["Pf2_C"]
     X = X / np.max(np.abs(np.array(X)))
     yt = np.arange(1, rank + 1)
 
