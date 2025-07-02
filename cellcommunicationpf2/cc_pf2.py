@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from parafac2.parafac2 import anndata_to_list, parafac2_nd
 from scipy.optimize import linear_sum_assignment
-from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
+from tensorly.cp_tensor import cp_flip_sign, cp_normalize
 from tensorly.decomposition import parafac
 
 from .ccc import build_context_ccc_tensor
@@ -118,15 +118,15 @@ def cc_pf2_redesigned(
     # Use anndata_to_list to get data matrices (returns CuPy arrays)
     X_list = np.array(anndata_to_list(adata))
 
-    # Call parafac2_nd with our constructed AnnData
-    pf2_output, _ = parafac2_nd(
+    # Call parafac2_nd
+    pf2_output, nd_r2x = parafac2_nd(
         adata, rank=rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
     )
 
     # Unpack results
     _, _, projections = pf2_output
 
-    # Step 2: Project each matrix down to standardized dimension
+    # Project each matrix down to standardized dimension
     projected_matrices = []
     for i, tensor in enumerate(X_list):
         proj = projections[i]
@@ -142,34 +142,26 @@ def cc_pf2_redesigned(
             
         projected_matrices.append(proj.T @ tensor_np)  # (rank x genes)
 
-    # Step 3: Calculate cell-cell interaction scores for all samples at once
+    # Calculate cell-cell interaction scores for all samples at once
     # Pass the actual gene names from the AnnData object
     interaction_tensors = calc_communication_score(
         projected_matrices, 
         gene_names=gene_names
     )
-    
-    print(f"Interaction tensors shape: {interaction_tensors.shape}")
 
-    # Step 4: Run standard CP decomposition on the interaction tensors
-    cp_weights, cp_factors = parafac(
+    # Run standard CP decomposition on the interaction tensors
+    (cp_weights, cp_factors), errs = parafac(
         interaction_tensors,
         rank,
         n_iter_max=n_iter_max,
         tol=None,
         normalize_factors=False,
-        random_state=random_state,  # Added for reproducibility
+        random_state=random_state,
+        return_errors=True
     )
 
-    # Calculate final R2X
-    reconstructed = cp_to_tensor((cp_weights, cp_factors))
-
-    # Calculate total variance and error
-    total_variance = np.sum(interaction_tensors**2)
-    error = np.sum((interaction_tensors - reconstructed) ** 2)
-
-    # Calculate R2X (1 - normalized error)
-    final_R2X = 1 - (error / total_variance) if total_variance > 0 else 0.0
+    # Calculate R2X (I am unsure if this is correct at the moment due to all the tranformations it will require some more thought)
+    final_R2X = nd_r2x * (1 - errs[-1] / np.sum(interaction_tensors ** 2))
 
     return (cp_factors, projections), final_R2X
 

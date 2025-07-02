@@ -35,8 +35,6 @@ def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
     if not os.path.exists(filename):
         print("Downloading data from Zenodo...")
         urllib.request.urlretrieve(url, filename)
-    else:
-        print("File already exists. Loading data...")
 
     return anndata.read_h5ad(filename)
 
@@ -51,8 +49,6 @@ def import_ligand_receptor_pairs(filename="./data/Human-2020-Jin-LR-pairs.csv"):
     if not os.path.exists(filename):
         print("Downloading data from GitHub...")
         urllib.request.urlretrieve(url, filename)
-    else:
-        print("File already exists. Loading data...")
 
     return pd.read_csv(filename)
 

@@ -52,7 +52,6 @@ def test_cc_pf2_real_data(test_rank, random_state):
         factors, projections = results
 
         # Validate factors
-        factor_names = ["Conditions", "Sender cells", "Receiver cells", "LR pairs"]
         assert len(factors) == 4, f"Expected 4 factors, got {len(factors)}"
 
         # Expected shapes for factors
@@ -71,6 +70,7 @@ def test_cc_pf2_real_data(test_rank, random_state):
 
         # Validate R2X
         assert 0 <= r2x <= 1.0, f"R2X should be between 0 and 1, got {r2x}"
+        print(f"Test passed with rank={rank}, random_state={random_state}, R2X={r2x:.4f}")
 
     except Exception as e:
         pytest.fail(f"Test failed with rank={rank}, random_state={random_state}: {e}")
