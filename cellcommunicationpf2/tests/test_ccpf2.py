@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from ..cc_pf2 import cc_pf2_redesigned
+from ..cc_pf2 import cc_pf2
 from ..import_data import (
     add_cond_idxs,
     anndata_lrp_overlap,
@@ -46,7 +46,7 @@ def test_cc_pf2_real_data(test_rank, random_state):
 
     try:
         # Run cc_pf2_redesigned
-        results, r2x = cc_pf2_redesigned(
+        results, r2x = cc_pf2(
             adata_subset, rank, n_iter_max, tol, random_state=random_state
         )
         factors, projections = results

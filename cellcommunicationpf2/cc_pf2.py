@@ -20,7 +20,7 @@ def calc_communication_score(
     
     Parameters:
     -----------
-    projected_tensors : list[np.ndarray]
+    projected_matrices : list[np.ndarray]
         List of matrices of shape (rank, genes) representing projected cell expressions
         across different conditions
     gene_names : list[str], optional
@@ -83,7 +83,7 @@ def calc_communication_score(
     return interaction_tensor
 
 
-def cc_pf2_redesigned(
+def cc_pf2(
     adata: anndata.AnnData,
     rank: int,
     n_iter_max: int,
