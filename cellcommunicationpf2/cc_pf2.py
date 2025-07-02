@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from parafac2.parafac2 import anndata_to_list, parafac2_nd
 from scipy.optimize import linear_sum_assignment
-from tensorly.cp_tensor import cp_flip_sign, cp_normalize
+from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
 from tensorly.decomposition import parafac
 
 from .ccc import build_context_ccc_tensor
@@ -112,56 +112,52 @@ def cc_pf2_redesigned(
     tuple[tuple, float]
         ((cp_factors, projections), final_R2X)
     """
-    # Extract gene names from adata
     gene_names = list(adata.var_names)
-    
-    # Use anndata_to_list to get data matrices (returns CuPy arrays)
     X_list = np.array(anndata_to_list(adata))
 
-    # Call parafac2_nd
-    pf2_output, nd_r2x = parafac2_nd(
+    # PARAFAC2 decomposition
+    pf2_output, _ = parafac2_nd(
         adata, rank=rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
     )
-
-    # Unpack results
     _, _, projections = pf2_output
 
-    # Project each matrix down to standardized dimension
+    # Project matrices
     projected_matrices = []
     for i, tensor in enumerate(X_list):
         proj = projections[i]
-        # Convert tensor to NumPy if it's a CuPy array
-        if hasattr(tensor, 'get'):  # CuPy arrays have a 'get' method
-            tensor_np = tensor.get()  # Convert to NumPy
-        elif hasattr(tensor, 'toarray'):  # For sparse matrices
+        # Convert tensor to NumPy
+        if hasattr(tensor, 'get'):
+            tensor_np = tensor.get()
+        elif hasattr(tensor, 'toarray'):
             tensor_np = tensor.toarray()
-            if hasattr(tensor_np, 'get'):  # If still CuPy
+            if hasattr(tensor_np, 'get'):
                 tensor_np = tensor_np.get()
         else:
             tensor_np = tensor
             
-        projected_matrices.append(proj.T @ tensor_np)  # (rank x genes)
+        projected_matrices.append(proj.T @ tensor_np)
 
-    # Calculate cell-cell interaction scores for all samples at once
-    # Pass the actual gene names from the AnnData object
+    # Calculate cell-cell communication scores
     interaction_tensors = calc_communication_score(
         projected_matrices, 
         gene_names=gene_names
     )
 
-    # Run standard CP decomposition on the interaction tensors
-    (cp_weights, cp_factors), errs = parafac(
+    # CP decomposition on the interaction tensors
+    cp_weights, cp_factors = parafac(
         interaction_tensors,
         rank,
         n_iter_max=n_iter_max,
         tol=None,
         normalize_factors=False,
-        random_state=random_state,
-        return_errors=True
+        random_state=random_state
     )
 
-    # Calculate R2X (I am unsure if this is correct at the moment due to all the tranformations it will require some more thought)
-    final_R2X = nd_r2x * (1 - errs[-1] / np.sum(interaction_tensors ** 2))
+    # Calculate R2X properly (following the approach in parafac2_nd)
+    reconstructed = cp_to_tensor((cp_weights, cp_factors))
+    total_variance = np.sum(interaction_tensors**2)
+    error = np.sum((interaction_tensors - reconstructed)**2)
+    final_R2X = 1 - (error / total_variance) if total_variance > 0 else 0.0
 
     return (cp_factors, projections), final_R2X
 
