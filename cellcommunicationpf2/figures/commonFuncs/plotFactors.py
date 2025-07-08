@@ -153,7 +153,16 @@ def plot_gene_factors_partial(
 
 
 def reorder_table(projs: np.ndarray):
-    """Reorder a table's rows using heirarchical clustering"""
-    assert projs.ndim == 2
-    Z = sch.linkage(projs, method="complete", metric="cosine", optimal_ordering=True)
+    """Reorder a table's rows using hierarchical clustering"""
+    
+    # Clean non-finite values
+    clean_projs = np.nan_to_num(projs, nan=0.0, posinf=0.0, neginf=0.0)
+    
+    # Ensure no zero vectors (which cause issues with cosine distance)
+    zero_rows = np.all(clean_projs == 0, axis=1)
+    if np.any(zero_rows):
+        # Add a small epsilon to zero rows to avoid cosine distance issues
+        clean_projs[zero_rows, :] = 1e-10
+
+    Z = sch.linkage(clean_projs, method="complete", metric="cosine", optimal_ordering=True)
     return sch.leaves_list(Z)
