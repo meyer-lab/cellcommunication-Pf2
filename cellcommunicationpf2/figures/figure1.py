@@ -45,7 +45,7 @@ def makeFigure():
     adata_filtered = add_cond_idxs(adata_filtered, condition_column)
     
     # Parameters for CC-PF2
-    rank = 10
+    rank = 6
     n_iter_max = 100
     tol = 1e-3
     random_state = 42

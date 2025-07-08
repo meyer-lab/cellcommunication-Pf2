@@ -165,31 +165,38 @@ def cc_pf2(
 
 
 def standardize_cc_pf2(
-    factors: list[np.ndarray], projections: list[np.ndarray]
+    factors: list[np.ndarray],
+    projections: list[np.ndarray],
+    weights: np.ndarray | None = None,
 ) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray]]:
     """
     Standardize CP factors and projections for better interpretability.
+    This function expects all inputs to be NumPy arrays on the CPU.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     factors : list[np.ndarray]
-        CP factors from cc_pf2_redesigned
+        CP factors from the decomposition.
     projections : list[np.ndarray]
-        Projections from cc_pf2_redesigned
+        Projections from the initial PARAFAC2 decomposition.
+    weights : np.ndarray, optional
+        Component weights from the CP decomposition. If None, they are initialized to ones.
 
-    Returns:
-    --------
+    Returns
+    -------
     tuple
-        (weights, factors, projections) after standardization
+        (weights, factors, projections) after standardization.
     """
     # Order components by condition variance
     gini = np.var(factors[0], axis=0) / np.mean(factors[0], axis=0)
     gini_idx = np.argsort(gini)
     factors = [f[:, gini_idx] for f in factors]
+    if weights is not None:
+        weights = weights[gini_idx]
 
-    weights, factors = cp_flip_sign(cp_normalize((None, factors)), mode=1)
+    weights, factors = cp_flip_sign(cp_normalize((weights, factors)), mode=1)
 
-    for i in [1, 2]:
+    for i in [1, 2]:  # For sender and receiver factors
         # Order eigen-cells to maximize the diagonal of B/C
         _, col_ind = linear_sum_assignment(np.abs(factors[i].T), maximize=True)
         factors[i] = factors[i][col_ind, :]
@@ -207,17 +214,17 @@ def store_cc_pf2(X: anndata.AnnData, parafac2_output: tuple):
     """
     Store CC-PF2 results into an AnnData object.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     X : anndata.AnnData
-        AnnData object to store results in
+        AnnData object to store results in.
     parafac2_output : tuple
-        Output from parafac2_nd
+        The standardized output from `standardize_cc_pf2`: (weights, factors, projections).
 
-    Returns:
-    --------
+    Returns
+    -------
     anndata.AnnData
-        Updated AnnData with stored results
+        Updated AnnData with stored results.
     """
     X.uns["Pf2_weights"] = parafac2_output[0]
     X.uns["Pf2_A"], X.uns["Pf2_B"], X.uns["Pf2_C"], X.varm["Pf2_D"] = parafac2_output[1]
