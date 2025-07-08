@@ -161,7 +161,7 @@ def cc_pf2(
     error = np.sum((interaction_tensors - reconstructed) ** 2)
     final_R2X = 1 - (error / total_variance) if total_variance > 0 else 0.0
 
-    return (cp_factors, projections), final_R2X
+    return ((cp_weights, cp_factors), projections), final_R2X
 
 
 def standardize_cc_pf2(
