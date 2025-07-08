@@ -23,26 +23,33 @@ def plot_condition_factors(
     yt = pd.Series(np.unique(data.obs[cond]))
     X = np.array(data.uns["Pf2_A"])
 
-    XX = X
-    X -= np.median(XX, axis=0)
-    X /= np.std(XX, axis=0)
+    X = X / np.max(np.abs(X))
 
     ind = reorder_table(X)
     X = X[ind]
     yt = yt.iloc[ind]
 
     if cond_group_labels is not None:
-        cond_group_labels = cond_group_labels.iloc[ind]
-        if group_cond is True:
-            ind = cond_group_labels.argsort()
-            cond_group_labels = cond_group_labels.iloc[ind]
-            X = X[ind]
-            yt = yt.iloc[ind]
+        # Try/except to handle potential alignment issues robustly
+        try:
+            # Align cond_group_labels with the reordered yt
+            cond_group_labels = cond_group_labels.loc[yt].reset_index(drop=True)
+            if group_cond is True:
+                ind = cond_group_labels.argsort()
+                cond_group_labels = cond_group_labels.iloc[ind]
+                X = X[ind]
+                yt = yt.iloc[ind]
+        except Exception as e:
+            print(f"Warning: Could not align condition labels: {e}")
+            # Fall back to original ordering if alignment fails
+            pass
+            
         ax.tick_params(axis="y", which="major", pad=20, length=0)
         if color_key is None:
+            # Use a colorblind-friendly palette with distinct colors
             colors = sns.color_palette(
-                n_colors=pd.Series(cond_group_labels).nunique()
-            ).as_hex()
+                "Set2", n_colors=pd.Series(cond_group_labels).nunique()
+            )
         else:
             colors = color_key
         lut = {}
@@ -50,12 +57,17 @@ def plot_condition_factors(
         for index, group in enumerate(pd.unique(cond_group_labels)):
             lut[group] = colors[index]
             legend_elements.append(Patch(color=colors[index], label=group))
-        row_colors = pd.Series(cond_group_labels).map(lut)
+        
+        # Convert labels to a simple list and map directly, avoiding MultiIndex issues
+        group_values = list(cond_group_labels)  # Extract values as a simple list
+        row_colors = [lut.get(val, "#cccccc") for val in group_values]  # Map with fallback color
+        
+        # Add colored rectangles for each row - MAKE THEM THINNER
         for iii, color in enumerate(row_colors):
             ax.add_patch(
                 plt.Rectangle(
-                    xy=(-0.05, iii),
-                    width=0.05,
+                    xy=(-0.02, iii),  # Changed from -0.05 to -0.02
+                    width=0.02,       # Changed from 0.05 to 0.02
                     height=1,
                     color=color,
                     lw=0,
@@ -63,7 +75,18 @@ def plot_condition_factors(
                     clip_on=False,
                 )
             )
-        ax.legend(handles=legend_elements, bbox_to_anchor=(0.18, 1.07))
+        
+        # Create a more visible, well-positioned legend
+        ax.legend(
+            handles=legend_elements,
+            loc='upper center', 
+            bbox_to_anchor=(0.5, 1.15),  # Moved from 1.35 to 1.15 to bring it closer to the plot
+            ncol=min(len(legend_elements), 3),  # Limit columns for readability
+            frameon=True,  # Add frame for better visibility
+            fontsize=12,   # Increase font size
+            title="Patient Condition",  
+            title_fontsize=14  # Larger title font
+        )
 
     xticks = np.arange(1, X.shape[1] + 1)
     sns.heatmap(
@@ -73,6 +96,8 @@ def plot_condition_factors(
         ax=ax,
         center=0,
         cmap=cmap,
+        vmin=-1,
+        vmax=1,
     )
     ax.tick_params(axis="y", rotation=0)
     ax.set(xlabel="Component")
@@ -101,9 +126,14 @@ def plot_eigenstate_factors(data: anndata.AnnData, ax: Axes, factor_type: str):
 
 def plot_lr_factors(data: anndata.AnnData, ax: Axes, trim=True, weight=0.08):
     """Plots Pf2 lr factors"""
-    rank = data.varm["Pf2_D"].shape[1]
-    X = np.array(data.varm["Pf2_D"])
-    yt = data.var.index.values
+    # Read the LR factor and pair information from .uns
+    X = np.array(data.uns["Pf2_D"])
+    lr_pairs = data.uns["Pf2_lr_pairs"]
+    rank = X.shape[1]
+
+    # Create labels from the ligand and receptor columns
+    yt = [f"{row['ligand']}-{row['receptor']}" for _, row in lr_pairs.iterrows()]
+    yt = np.array(yt)
 
     if trim is True:
         max_weight = np.max(np.abs(X), axis=1)
