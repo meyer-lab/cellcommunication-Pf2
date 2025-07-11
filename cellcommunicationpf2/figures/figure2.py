@@ -1,5 +1,8 @@
 """
-Figure S4
+Figure 2: Stability Analysis for CC-PF2
+
+This figure demonstrates the stability of CC-PF2 decompositions across
+data subsampling and different rank selections.
 """
 
 import anndata
@@ -22,8 +25,8 @@ from .common import getSetup, subplotLabel
 
 
 def makeFigure():
-    """Generate Figure S4 showing stability analyses for CC-PF2."""
-    ax, f = getSetup((10, 4), (1, 2))
+    """Generate Figure 2 showing stability analyses for CC-PF2."""
+    ax, f = getSetup((6, 4), (1, 2))
     subplotLabel(ax)
 
     # Import and prepare data
@@ -56,7 +59,7 @@ def makeFigure():
 def run_cc_pf2_analysis(
     adata: anndata.AnnData, rank: int, random_state: int = 42
 ) -> anndata.AnnData:
-    """Helper function to run and store CC-PF2 results."""
+    """Run CC-PF2 decomposition and store results in the AnnData object."""
     adata = adata.copy()
     results, r2x = cc_pf2(adata, rank, 100, 1e-3, random_state=random_state)
     cp_results, projections = results
@@ -73,15 +76,16 @@ def run_cc_pf2_analysis(
 
 
 def calculateFMS(A: anndata.AnnData, B: anndata.AnnData) -> float:
-    """Calculates FMS between 2 factors, accounting for the 4 factors from cc_pf2."""
-    # Factors are now A, B, C, D from .uns
+    """Calculate FMS between two CC-PF2 decompositions stored in AnnData objects.
+    
+    Skips comparison of sender/receiver factors (modes 1 and 2) as they are most variable.
+    """
     factors_A = [A.uns["Pf2_A"], A.uns["Pf2_B"], A.uns["Pf2_C"], A.uns["Pf2_D"]]
     A_CP = CPTensor((A.uns["Pf2_weights"], factors_A))
 
     factors_B = [B.uns["Pf2_A"], B.uns["Pf2_B"], B.uns["Pf2_C"], B.uns["Pf2_D"]]
     B_CP = CPTensor((B.uns["Pf2_weights"], factors_B))
 
-    # Skip sender/receiver cell factors (modes 1 and 2) as they are most variable
     return fms(A_CP, B_CP, consider_weights=False, skip_mode=[1, 2])
 
 
@@ -92,25 +96,29 @@ def plot_fms_percent_drop(
     runs: int,
     rank: int = 10,
 ):
-    """Plots FMS score when percentage is removed from data."""
-    # Use the new helper function for the reference decomposition
+    """Plot Factor Match Score when progressively removing data.
+    
+    Creates a reference decomposition and compares it with decompositions
+    of increasingly subsampled data.
+    """
+    # Generate reference decomposition once
     dataX = run_cc_pf2_analysis(X, rank=rank, random_state=42)
 
     data_list = []
     for j in range(runs):
-        # Add the score for 0% dropout (perfect match with itself)
+        # Add baseline case (0% dropout) with perfect FMS score
         data_list.append({"Run": j, "Percentage of Data Dropped": 0.0, "FMS": 1.0})
 
         for percent in percentList[1:]:
-            # Create a unique random state for this specific run and percentage
+            # Create deterministic but unique seeds for reproducibility
             unique_seed = j * 100 + int(percent)
             
+            # Subsample data based on the percent to drop
             sampled_data: anndata.AnnData = sc.pp.subsample(
                 X, fraction=1 - (percent / 100), random_state=unique_seed, copy=True
             )  # type: ignore
-            # Must re-add condition indices after subsampling for cc_pf2 to work
+            
             sampled_data = add_cond_idxs(sampled_data, "sample")
-            # Use a different unique seed for the decomposition
             sampledX = run_cc_pf2_analysis(sampled_data, rank=rank, random_state=unique_seed + 1)
 
             fmsScore = calculateFMS(dataX, sampledX)
@@ -128,22 +136,26 @@ def plot_fms_percent_drop(
     ax.set_xlim(np.min(percentList), np.max(percentList))
 
 
-def resample(data: anndata.AnnData) -> anndata.AnnData:
-    """Bootstrapping dataset by stratifying by sample."""
+def resample(data: anndata.AnnData, random_seed: int = None) -> anndata.AnnData:
+    """Perform stratified bootstrap sampling by resampling cells within each sample.
+    
+    This maintains the same number of cells per sample in the resampled dataset.
+    """
+    # Set random seed for reproducibility if provided
+    if random_seed is not None:
+        np.random.seed(random_seed)
+        
     resampled_indices = []
     for sample in data.obs["sample"].unique():
-        # Get the original indices for all cells in the current sample
+        # Get indices of cells in this sample
         sample_cell_indices = np.where(data.obs["sample"] == sample)[0]
         n_cells = len(sample_cell_indices)
 
-        # Generate random indices *within* this sample's cell list.
-        # This uses the same np.random.randint methodology as before.
+        # Sample with replacement within this sample's cells
         random_local_indices = np.random.randint(0, n_cells, size=n_cells)
-
-        # Select the original cell indices based on the random local indices
         resampled_indices.extend(sample_cell_indices[random_local_indices])
 
-    # Create new AnnData object from the stratified, resampled indices
+    # Create new AnnData from resampled indices
     resampled_data = data[resampled_indices].copy()
     resampled_data.obs_names_make_unique()
     return resampled_data
@@ -155,18 +167,26 @@ def plot_fms_diff_ranks(
     ranksList: list[int],
     runs: int,
 ):
-    """Plots FMS when using different Pf2 components"""
+    """Plot Factor Match Score across different rank values.
+    
+    For each rank, creates a reference decomposition and compares it with
+    decompositions of bootstrapped data samples.
+    """
     data_list = []
+    base_seed = 42  # Base seed for reproducibility
 
     for i in ranksList:
-        # Calculate the reference decomposition ONCE for this rank.
-        dataX = run_cc_pf2_analysis(X, rank=i, random_state=42)
-        for j in range(0, runs, 1):
-            # Compare each run against the single reference decomposition.
-            resampled_data = resample(X)
-            # Must re-add condition indices after resampling
+        # Calculate reference decomposition once per rank
+        dataX = run_cc_pf2_analysis(X, rank=i, random_state=base_seed)
+        
+        for j in range(runs):
+            # Use deterministic seeds for each run
+            run_seed = base_seed + j
+            
+            # Create bootstrapped sample with consistent stratification
+            resampled_data = resample(X, random_seed=run_seed)
             resampled_data = add_cond_idxs(resampled_data, "sample")
-            sampledX = run_cc_pf2_analysis(resampled_data, rank=i, random_state=j)
+            sampledX = run_cc_pf2_analysis(resampled_data, rank=i, random_state=run_seed)
 
             fmsScore = calculateFMS(dataX, sampledX)
             data_list.append({"Run": j, "Rank": i, "FMS": fmsScore})
