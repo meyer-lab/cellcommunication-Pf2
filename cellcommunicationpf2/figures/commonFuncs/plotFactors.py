@@ -19,7 +19,7 @@ def plot_condition_factors(
     group_cond=False,
 ):
     """Plots Pf2 condition factors"""
-    pd.set_option("display.max_rows", None)
+    
     yt = pd.Series(np.unique(data.obs[cond]))
     X = np.array(data.uns["Pf2_A"])
 
@@ -30,7 +30,6 @@ def plot_condition_factors(
     yt = yt.iloc[ind]
 
     if cond_group_labels is not None:
-        # Try/except to handle potential alignment issues robustly
         try:
             # Align cond_group_labels with the reordered yt
             cond_group_labels = cond_group_labels.loc[yt].reset_index(drop=True)
@@ -46,10 +45,9 @@ def plot_condition_factors(
             
         ax.tick_params(axis="y", which="major", pad=20, length=0)
         if color_key is None:
-            # Use a colorblind-friendly palette with distinct colors
             colors = sns.color_palette(
                 "Set2", n_colors=pd.Series(cond_group_labels).nunique()
-            )
+            ).as_hex()
         else:
             colors = color_key
         lut = {}
@@ -58,16 +56,15 @@ def plot_condition_factors(
             lut[group] = colors[index]
             legend_elements.append(Patch(color=colors[index], label=group))
         
-        # Convert labels to a simple list and map directly, avoiding MultiIndex issues
-        group_values = list(cond_group_labels)  # Extract values as a simple list
-        row_colors = [lut.get(val, "#cccccc") for val in group_values]  # Map with fallback color
+        group_values = list(cond_group_labels)
+        row_colors = [lut.get(val, "#cccccc") for val in group_values]
         
-        # Add colored rectangles for each row - MAKE THEM THINNER
+        # Add colored rectangles for each row
         for iii, color in enumerate(row_colors):
             ax.add_patch(
                 plt.Rectangle(
-                    xy=(-0.02, iii),  # Changed from -0.05 to -0.02
-                    width=0.02,       # Changed from 0.05 to 0.02
+                    xy=(-0.02, iii),
+                    width=0.02,
                     height=1,
                     color=color,
                     lw=0,
@@ -76,7 +73,7 @@ def plot_condition_factors(
                 )
             )
         
-        # Create a more visible, well-positioned legend outside the plot area
+        # Create legend outside the plot area
         ax.legend(
             handles=legend_elements,
             loc="upper left",
@@ -132,13 +129,12 @@ def plot_lr_factors(data: anndata.AnnData, ax: Axes, trim=True, weight=0.08):
 
     # Create labels from the ligand and receptor columns
     yt = [f"{row['ligand']}-{row['receptor']}" for _, row in lr_pairs.iterrows()]
-    yt = np.array(yt)
 
     if trim is True:
         max_weight = np.max(np.abs(X), axis=1)
         kept_idxs = max_weight > weight
         X = X[kept_idxs]
-        yt = yt[kept_idxs]
+        yt = [y for i, y in enumerate(yt) if kept_idxs[i]]
 
     ind = reorder_table(X)
     X = X[ind]
