@@ -48,21 +48,33 @@ def makeFigure():
     print(f"CC-PF2 decomposition R2X: {r2x:.4f}")
 
     # --- Prepare Data for Plotting ---
-    # Get the list of unique samples, ordered by their category codes
-    sample_order = adata_filtered.obs[condition_column].cat.categories
-
     # Get the condition factor (component weights per sample)
-    condition_factor = factors[0].flatten()
-
+    condition_factor = factors[0].flatten()  # First factor (A) contains condition weights
+    
     # Get the number of cells for each sample
     cell_counts = adata_filtered.obs[condition_column].value_counts()
-
-    # Create a DataFrame for plotting, ensuring correct alignment by sample name
-    plot_df = pd.DataFrame(
-        {"Component Weight": condition_factor}, index=sample_order
-    )
-    plot_df["Cell Count"] = cell_counts
-
+    
+    # Create mapping from condition_index to sample name
+    condition_to_sample = {}
+    for idx, sample in enumerate(adata_filtered.obs[condition_column].cat.categories):
+        condition_to_sample[idx] = sample
+    
+    # Verify the mapping is complete
+    print(f"Mapping condition indices to samples: {condition_to_sample}")
+    
+    # Create DataFrame with explicit mapping
+    plot_data = []
+    for idx, weight in enumerate(condition_factor):
+        sample = condition_to_sample[idx]
+        cell_count = cell_counts[sample]
+        plot_data.append({
+            'Sample': sample,
+            'Component Weight': weight,
+            'Cell Count': cell_count
+        })
+    
+    plot_df = pd.DataFrame(plot_data)
+    
     # --- Generate the Plot ---
     print("Generating plot...")
     sns.regplot(
