@@ -27,7 +27,7 @@ from .commonFuncs.plotFactors import (
 def makeFigure():
     """Generate Figure 1 showing CC-PF2 factor heatmaps using specialized plotting functions."""
     # Create figure with 4 subplots (2x2 grid) with constrained_layout
-    fig, axes = plt.subplots(2, 2, figsize=(18, 16), constrained_layout=True)
+    fig, axes = plt.subplots(2, 2, figsize=(14, 12), constrained_layout=True)
     ax = axes.flatten()
     subplotLabel(ax)
 
@@ -118,7 +118,7 @@ def makeFigure():
 
     # Add overall figure title with R2X information
     plt.suptitle(
-        f"CC-PF2 Decomposition (Rank {rank}, R²X = {r2x:.4f})", fontsize=16, y=0.995
+        f"CC-PF2 Decomposition (Rank {rank}, R²X = {r2x:.4f})", fontsize=16, y=0.98
     )
 
     print("Figure generation complete.")

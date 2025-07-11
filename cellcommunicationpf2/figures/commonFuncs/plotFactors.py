@@ -76,16 +76,15 @@ def plot_condition_factors(
                 )
             )
         
-        # Create a more visible, well-positioned legend
+        # Create a more visible, well-positioned legend outside the plot area
         ax.legend(
             handles=legend_elements,
-            loc='upper center', 
-            bbox_to_anchor=(0.5, 1.15),  # Moved from 1.35 to 1.15 to bring it closer to the plot
-            ncol=min(len(legend_elements), 3),  # Limit columns for readability
-            frameon=True,  # Add frame for better visibility
-            fontsize=12,   # Increase font size
-            title="Patient Condition",  
-            title_fontsize=14  # Larger title font
+            loc="upper left",
+            bbox_to_anchor=(1.02, 1),  # Position legend to the right of the plot
+            frameon=False,  # Remove frame for a cleaner look
+            fontsize=10,
+            title="Condition",
+            title_fontsize=12,
         )
 
     xticks = np.arange(1, X.shape[1] + 1)
