@@ -50,7 +50,8 @@ def test_cc_pf2_real_data(test_rank, random_state):
         results, r2x = cc_pf2(
             adata_subset, rank, n_iter_max, tol, random_state=random_state
         )
-        factors, projections = results
+        cp_results, projections = results
+        cp_weights, factors = cp_results
 
         # Validate factors
         assert len(factors) == 4, f"Expected 4 factors, got {len(factors)}"
