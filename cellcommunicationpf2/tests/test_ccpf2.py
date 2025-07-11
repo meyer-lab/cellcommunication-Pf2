@@ -21,8 +21,8 @@ def test_cc_pf2_real_data(test_rank, random_state):
     # Filter data to include only genes in the ligand-receptor pairs
     adata_filtered, lr_pairs_filtered = anndata_lrp_overlap(adata, lr_pairs)
 
-    # Get condition information and add indices
-    condition_column = "condition"
+    # Get condition information and add indices, using sample as the condition
+    condition_column = "sample"
     conditions = adata_filtered.obs[condition_column].unique()
     adata_filtered = add_cond_idxs(adata_filtered, condition_column)
 
@@ -50,7 +50,8 @@ def test_cc_pf2_real_data(test_rank, random_state):
         results, r2x = cc_pf2(
             adata_subset, rank, n_iter_max, tol, random_state=random_state
         )
-        factors, projections = results
+        cp_results, projections = results
+        cp_weights, factors = cp_results
 
         # Validate factors
         assert len(factors) == 4, f"Expected 4 factors, got {len(factors)}"

@@ -71,6 +71,7 @@ matplotlib==3.10.1
     # via plotnine
     # via scanpy
     # via seaborn
+    # via tensorly-viz
 mizani==0.13.5
     # via plotnine
 mudata==0.3.2
@@ -113,6 +114,7 @@ numpy==2.2.6
     # via seaborn
     # via statsmodels
     # via tensorly
+    # via tensorly-viz
     # via umap-learn
     # via xarray
 packaging==24.2
@@ -132,8 +134,9 @@ pandas==2.2.3
     # via scanpy
     # via seaborn
     # via statsmodels
+    # via tensorly-viz
     # via xarray
-parafac2 @ git+https://github.com/meyer-lab/parafac2.git@ccf708fe71c78a106151643e893ea006bba865d9
+parafac2 @ git+https://github.com/meyer-lab/parafac2.git@121c2e3d287091a8670ff089a9f60cbd4b74b12a
     # via cellcommunicationpf2
 param==2.2.0
     # via datashader
@@ -167,6 +170,7 @@ pyyaml==6.0.2
     # via pre-commit
 requests==2.32.3
     # via datashader
+    # via tensorly-viz
 scanpy==1.11.2
     # via liana
 scikit-learn==1.6.1
@@ -187,6 +191,7 @@ scipy==1.15.2
     # via scikit-learn
     # via statsmodels
     # via tensorly
+    # via tensorly-viz
     # via umap-learn
 seaborn==0.13.2
     # via cellcommunicationpf2
@@ -199,9 +204,12 @@ six==1.17.0
 statsmodels==0.14.4
     # via plotnine
     # via scanpy
+    # via tensorly-viz
 tensorly==0.9.0
     # via cellcommunicationpf2
     # via parafac2
+tensorly-viz==0.1.7
+    # via cellcommunicationpf2
 threadpoolctl==3.6.0
     # via scikit-learn
 toolz==1.0.0
@@ -223,3 +231,4 @@ virtualenv==20.31.2
     # via pre-commit
 xarray==2025.3.0
     # via datashader
+    # via tensorly-viz
