@@ -23,7 +23,7 @@ from .common import getSetup, subplotLabel
 
 def makeFigure():
     """Generate Figure S4 showing stability analyses for CC-PF2."""
-    ax, f = getSetup((10, 4), (1, 2))
+    ax, f = getSetup((6, 4), (1, 2))
     subplotLabel(ax)
 
     # Import and prepare data
