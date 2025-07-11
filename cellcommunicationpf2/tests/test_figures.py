@@ -1,10 +1,12 @@
 """Automatically run all figure generation scripts."""
 
-import os
 import importlib
-import pytest
+import os
 from unittest.mock import patch
+
 import matplotlib.pyplot as plt
+import pytest
+
 
 def get_all_figure_modules():
     """Dynamically discover all figure modules in the figures directory."""
