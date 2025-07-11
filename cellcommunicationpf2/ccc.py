@@ -158,7 +158,7 @@ def get_genes_from_complexes(ppi_data, complex_sep="&", interaction_columns=("A"
     complexes = dict()
     complex_a = set()
     complex_b = set()
-    for idx, row in ppi_data.iterrows():
+    for _, row in ppi_data.iterrows():
         prot_a = row[col_a]
         prot_b = row[col_b]
 
@@ -547,15 +547,9 @@ def build_context_ccc_tensor(
         )
 
     # Preserve order or sort new set (either inner or outer)
-    if set(df_idxs[0]) == genes:
-        genes = df_idxs[0]
-    else:
-        genes = sorted(list(genes))
+    genes = df_idxs[0] if set(df_idxs[0]) == genes else sorted(list(genes))
 
-    if set(df_cols[0]) == cells:
-        cells = df_cols[0]
-    else:
-        cells = sorted(list(cells))
+    cells = df_cols[0] if set(df_cols[0]) == cells else sorted(list(cells))
 
     # Filter PPI data for
     ppi_data_ = filter_ppi_by_proteins(
@@ -657,7 +651,7 @@ def generate_ccc_tensor(
     ppi_b = interaction_columns[1]
 
     ccc_tensor = []
-    for idx, ppi in ppi_data.iterrows():
+    for _, ppi in ppi_data.iterrows():
         v = rnaseq_data.loc[ppi[ppi_a], :].values
         w = rnaseq_data.loc[ppi[ppi_b], :].values
         ccc_tensor.append(
@@ -712,7 +706,7 @@ def aggregate_ccc_tensor(
     """
     tensor_ = np.array(ccc_tensor)
     aggregated_tensor = []
-    for group, df in ppi_data.groupby(group_ppi_by):
+    for _, df in ppi_data.groupby(group_ppi_by):
         lr_idx = list(df.index)
         ccc_matrices = tensor_[lr_idx]
         aggregated_tensor.append(
