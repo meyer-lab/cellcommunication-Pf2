@@ -34,7 +34,7 @@ def makeFigure():
     condition_column = "sample"
     adata_filtered = add_cond_idxs(adata_filtered, condition_column)
 
-    # --- Run a Rank-1 CC-PF2 Model ---
+    # Run a Rank-1 CC-PF2 Model
     rank = 1
     print(f"Running CC-PF2 with rank={rank}...")
     results, r2x = cc_pf2(
@@ -47,35 +47,24 @@ def makeFigure():
     _, factors, _ = standardize_cc_pf2(factors, projections, weights=cp_weights)
     print(f"CC-PF2 decomposition R2X: {r2x:.4f}")
 
-    # --- Prepare Data for Plotting ---
+    # Prepare Data for Plotting
     # Get the condition factor (component weights per sample)
-    condition_factor = factors[0].flatten()  # First factor (A) contains condition weights
+    condition_factor = factors[0].flatten()
     
     # Get the number of cells for each sample
     cell_counts = adata_filtered.obs[condition_column].value_counts()
     
     # Create mapping from condition_index to sample name
-    condition_to_sample = {}
-    for idx, sample in enumerate(adata_filtered.obs[condition_column].cat.categories):
-        condition_to_sample[idx] = sample
+    condition_to_sample = dict(enumerate(adata_filtered.obs[condition_column].cat.categories))
     
-    # Verify the mapping is complete
-    print(f"Mapping condition indices to samples: {condition_to_sample}")
+    samples = [condition_to_sample[idx] for idx in range(len(condition_factor))]
+    plot_df = pd.DataFrame({
+        'Sample': samples,
+        'Component Weight': condition_factor,
+        'Cell Count': [cell_counts[sample] for sample in samples]
+    })
     
-    # Create DataFrame with explicit mapping
-    plot_data = []
-    for idx, weight in enumerate(condition_factor):
-        sample = condition_to_sample[idx]
-        cell_count = cell_counts[sample]
-        plot_data.append({
-            'Sample': sample,
-            'Component Weight': weight,
-            'Cell Count': cell_count
-        })
-    
-    plot_df = pd.DataFrame(plot_data)
-    
-    # --- Generate the Plot ---
+    # Generate the Plot
     print("Generating plot...")
     sns.regplot(
         data=plot_df, x="Cell Count", y="Component Weight", ax=ax[0], ci=None
