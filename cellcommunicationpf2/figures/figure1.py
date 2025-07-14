@@ -47,7 +47,7 @@ def makeFigure():
     ).set_index(condition_column)[group_col]
 
     # Parameters for CC-PF2
-    rank = 20
+    rank = 10
     cp_rank = 1
     n_iter_max = 100
     tol = 1e-3
@@ -59,6 +59,7 @@ def makeFigure():
         adata_filtered,
         rank=rank,
         lr_pairs=lr_pairs_filtered,
+        cp_rank=cp_rank,
         n_iter_max=n_iter_max,
         tol=tol,
         random_state=random_state,

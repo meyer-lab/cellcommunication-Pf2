@@ -116,6 +116,7 @@ def run_cc_pf2_workflow(
     adata: anndata.AnnData,
     rank: int,
     lr_pairs: pd.DataFrame,
+    cp_rank: int | None = None,
     n_iter_max: int = 100,
     tol: float = 1e-3,
     random_state: int | None = None,
@@ -132,6 +133,8 @@ def run_cc_pf2_workflow(
         The rank for the decomposition.
     lr_pairs : pd.DataFrame
         The ligand-receptor pairs used in the decomposition.
+    cp_rank : int, optional
+        The rank for the final CP decomposition. If None, defaults to `rank`.
     n_iter_max : int
         Maximum number of iterations for the decomposition.
     tol : float
@@ -148,7 +151,12 @@ def run_cc_pf2_workflow(
 
     # 1. Run the CC-PF2 decomposition
     results, r2x = cc_pf2(
-        adata, rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
+        adata,
+        rank,
+        n_iter_max=n_iter_max,
+        tol=tol,
+        cp_rank=cp_rank,
+        random_state=random_state,
     )
     (cp_weights, factors), projections = results
 

@@ -147,6 +147,9 @@ def cc_pf2(
     )
     
     cp_rank = cp_rank if cp_rank is not None else rank
+    
+    # Print shape of interaction tensors
+    print(f"Interaction tensors shape: {interaction_tensors.shape}")
 
     # CP decomposition on the interaction tensors
     cp_weights, cp_factors = parafac(
