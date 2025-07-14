@@ -19,7 +19,7 @@ def plot_condition_factors(
     group_cond=False,
 ):
     """Plots Pf2 condition factors"""
-    
+
     yt = pd.Series(np.unique(data.obs[cond]))
     X = np.array(data.uns["Pf2_A"])
 
@@ -30,19 +30,14 @@ def plot_condition_factors(
     yt = yt.iloc[ind]
 
     if cond_group_labels is not None:
-        try:
-            # Align cond_group_labels with the reordered yt
-            cond_group_labels = cond_group_labels.loc[yt].reset_index(drop=True)
-            if group_cond is True:
-                ind = cond_group_labels.argsort()
-                cond_group_labels = cond_group_labels.iloc[ind]
-                X = X[ind]
-                yt = yt.iloc[ind]
-        except Exception as e:
-            print(f"Warning: Could not align condition labels: {e}")
-            # Fall back to original ordering if alignment fails
-            pass
-            
+        # Align cond_group_labels with the reordered yt
+        cond_group_labels = cond_group_labels.loc[yt].reset_index(drop=True)
+        if group_cond is True:
+            ind = cond_group_labels.argsort()
+            cond_group_labels = cond_group_labels.iloc[ind]
+            X = X[ind]
+            yt = yt.iloc[ind]
+
         ax.tick_params(axis="y", which="major", pad=20, length=0)
         if color_key is None:
             colors = sns.color_palette(
@@ -55,16 +50,17 @@ def plot_condition_factors(
         for index, group in enumerate(pd.unique(cond_group_labels)):
             lut[group] = colors[index]
             legend_elements.append(Patch(color=colors[index], label=group))
-        
+
         group_values = list(cond_group_labels)
         row_colors = [lut.get(val, "#cccccc") for val in group_values]
-        
+        ROW_RECTANGLE_X_OFFSET = -0.02
+        ROW_RECTANGLE_WIDTH = 0.02
         # Add colored rectangles for each row
         for iii, color in enumerate(row_colors):
             ax.add_patch(
                 plt.Rectangle(
-                    xy=(-0.02, iii),
-                    width=0.02,
+                    xy=(ROW_RECTANGLE_X_OFFSET, iii),
+                    width=ROW_RECTANGLE_WIDTH,
                     height=1,
                     color=color,
                     lw=0,
@@ -72,7 +68,7 @@ def plot_condition_factors(
                     clip_on=False,
                 )
             )
-        
+
         # Create legend outside the plot area
         ax.legend(
             handles=legend_elements,
