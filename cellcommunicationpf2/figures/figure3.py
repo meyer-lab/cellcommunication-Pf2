@@ -15,7 +15,8 @@ from ..import_data import (
     import_balf_covid,
     import_ligand_receptor_pairs,
 )
-from .common import getSetup, subplotLabel, run_cc_pf2_workflow
+from .common import getSetup, subplotLabel
+from ..utils import run_cc_pf2_workflow
 
 
 def makeFigure():
