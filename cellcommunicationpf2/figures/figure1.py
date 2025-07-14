@@ -7,14 +7,13 @@ of the BALF COVID-19 dataset.
 
 from matplotlib import pyplot as plt
 
-from ..cc_pf2 import cc_pf2, standardize_cc_pf2
 from ..import_data import (
     add_cond_idxs,
     anndata_lrp_overlap,
     import_balf_covid,
     import_ligand_receptor_pairs,
 )
-from .common import subplotLabel
+from .common import run_cc_pf2_workflow, subplotLabel
 from .commonFuncs.plotFactors import (
     plot_condition_factors,
     plot_eigenstate_factors,
@@ -53,27 +52,18 @@ def makeFigure():
     tol = 1e-3
     random_state = 42
 
-    # Run CC-PF2
-    print(f"Running CC-PF2 with rank={rank}...")
-    results, r2x = cc_pf2(
-        adata_filtered, rank, n_iter_max, tol, random_state=random_state
-    )
-    cp_results, projections = results
-    cp_weights, factors = cp_results
-
-    print("Standardizing factors...")
-    _, factors, projections = standardize_cc_pf2(
-        factors, projections, weights=cp_weights
+    # Run the complete CC-PF2 workflow
+    print(f"Running CC-PF2 workflow with rank={rank}...")
+    adata_filtered, r2x = run_cc_pf2_workflow(
+        adata_filtered,
+        rank=rank,
+        lr_pairs=lr_pairs_filtered,
+        n_iter_max=n_iter_max,
+        tol=tol,
+        random_state=random_state,
     )
 
     print(f"CC-PF2 decomposition R2X: {r2x:.4f}")
-
-    # Store factors in AnnData object for easy access by plotting functions
-    adata_filtered.uns["Pf2_A"] = factors[0]  # Condition factor
-    adata_filtered.uns["Pf2_B"] = factors[1]  # Sender cells factor
-    adata_filtered.uns["Pf2_C"] = factors[2]  # Receiver cells factor
-    adata_filtered.uns["Pf2_D"] = factors[3]  # LR pairs factor
-    adata_filtered.uns["Pf2_lr_pairs"] = lr_pairs_filtered.reset_index(drop=True)
 
     # Generate heatmaps for each factor
     print("Generating heatmaps...")
