@@ -102,10 +102,11 @@ def plot_condition_factors(
 def plot_eigenstate_factors(data: anndata.AnnData, ax: Axes, factor_type: str):
     """Plots Pf2 eigenstate factors"""
     rank = data.uns["Pf2_B"].shape[1]
+    cp_rank = data.uns["Pf2_B"].shape[0]
     xticks = np.arange(1, rank + 1)
     X = data.uns["Pf2_B"] if factor_type == "Pf2_B" else data.uns["Pf2_C"]
     X = X / np.max(np.abs(np.array(X)))
-    yt = np.arange(1, rank + 1)
+    yt = np.arange(1, cp_rank + 1)
 
     sns.heatmap(
         data=X,

@@ -48,15 +48,16 @@ def makeFigure():
     ).set_index(condition_column)[group_col]
 
     # Parameters for CC-PF2
-    rank = 10
+    rank = 20
+    cp_rank = 1
     n_iter_max = 100
     tol = 1e-3
     random_state = 42
 
     # Run CC-PF2
-    print(f"Running CC-PF2 with rank={rank}...")
+    print(f"Running CC-PF2 with rank={rank} and cp_rank={cp_rank}...")
     results, r2x = cc_pf2(
-        adata_filtered, rank, n_iter_max, tol, random_state=random_state
+        adata_filtered, rank, n_iter_max, tol, random_state=random_state, cp_rank=cp_rank
     )
     cp_results, projections = results
     cp_weights, factors = cp_results
