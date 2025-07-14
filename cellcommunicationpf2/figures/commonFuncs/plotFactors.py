@@ -26,6 +26,7 @@ def plot_condition_factors(
     XX = X
     X -= np.median(XX, axis=0)
     X /= np.std(XX, axis=0)
+    X /= np.max(np.abs(X))
 
     ind = reorder_table(X)
     X = X[ind]
