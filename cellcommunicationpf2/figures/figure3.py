@@ -36,13 +36,11 @@ def makeFigure():
 
     # Run a Rank-1 CC-PF2 Model
     rank = 10
-    cp_rank = 1
     print(f"Running CC-PF2 with rank={rank}...")
     adata_filtered, r2x = run_cc_pf2_workflow(
         adata_filtered,
         rank=rank,
         lr_pairs=lr_pairs_filtered,
-        cp_rank=cp_rank,
         n_iter_max=100,
         tol=1e-3,
         random_state=42,
