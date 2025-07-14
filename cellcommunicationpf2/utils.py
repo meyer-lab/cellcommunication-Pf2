@@ -28,7 +28,7 @@ def resample(data: anndata.AnnData, random_seed: int = None) -> anndata.AnnData:
     return resampled_data
 
 
-def calculateFMS(A: anndata.AnnData, B: anndata.AnnData) -> float:
+def calculate_fms(A: anndata.AnnData, B: anndata.AnnData) -> float:
     """Calculate FMS between two CC-PF2 decompositions stored in AnnData objects.
 
     Skips comparison of sender/receiver factors (modes 1 and 2) as they are most variable.
