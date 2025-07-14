@@ -11,7 +11,7 @@ import pandas as pd
 import scanpy as sc
 import seaborn as sns
 from matplotlib.axes import Axes
-from ..utils import resample, calculateFMS
+from ..utils import resample, calculate_fms
 
 from ..cc_pf2 import cc_pf2, standardize_cc_pf2
 from ..import_data import (
@@ -106,7 +106,7 @@ def plot_fms_percent_drop(
             sampled_data = add_cond_idxs(sampled_data, "sample")
             sampledX = run_cc_pf2_analysis(sampled_data, rank=rank, random_state=unique_seed + 1)
 
-            fmsScore = calculateFMS(dataX, sampledX)
+            fmsScore = calculate_fms(dataX, sampledX)
             data_list.append(
                 {
                     "Run": j,
@@ -148,7 +148,7 @@ def plot_fms_diff_ranks(
             resampled_data = add_cond_idxs(resampled_data, "sample")
             sampledX = run_cc_pf2_analysis(resampled_data, rank=i, random_state=run_seed)
 
-            fmsScore = calculateFMS(dataX, sampledX)
+            fmsScore = calculate_fms(dataX, sampledX)
             data_list.append({"Run": j, "Rank": i, "FMS": fmsScore})
 
     df = pd.DataFrame(data_list)
