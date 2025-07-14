@@ -3,6 +3,7 @@ import numpy as np
 from tensorly.cp_tensor import CPTensor
 from tlviz.factor_tools import factor_match_score as fms
 from .cc_pf2 import cc_pf2, standardize_cc_pf2
+from .import_data import add_cond_idxs
 from sklearn.linear_model import LinearRegression
 import pandas as pd
 
@@ -70,6 +71,7 @@ def run_cc_pf2_workflow(
     adata: anndata.AnnData,
     rank: int,
     lr_pairs: pd.DataFrame,
+    condition_column: str = "sample",
     n_iter_max: int = 100,
     tol: float = 1e-3,
     random_state: int | None = None,
@@ -86,6 +88,8 @@ def run_cc_pf2_workflow(
         The rank for the decomposition.
     lr_pairs : pd.DataFrame
         The ligand-receptor pairs used in the decomposition.
+    condition_column : str, default="sample"
+        The column in `adata.obs` that defines the conditions.
     n_iter_max : int
         Maximum number of iterations for the decomposition.
     tol : float
@@ -99,15 +103,21 @@ def run_cc_pf2_workflow(
         A tuple containing the updated AnnData object with stored results
         and the R2X value of the decomposition.
     """
+    # Ensure condition indices are present before running the model
+    adata = add_cond_idxs(adata, condition_column)
 
     # 1. Run the CC-PF2 decomposition
     results, r2x = cc_pf2(
-        adata, rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
+        adata,
+        rank,
+        n_iter_max=n_iter_max,
+        tol=tol,
+        random_state=random_state,
     )
     (cp_weights, factors), projections = results
 
     # 2. Standardize the factors for interpretability
-    _, factors, projections = standardize_cc_pf2(
+    weights, factors, projections = standardize_cc_pf2(
         factors, projections, weights=cp_weights
     )
 
@@ -125,7 +135,8 @@ def run_cc_pf2_workflow(
     adata.uns["Pf2_C"] = factors[2]  # Receiver cells factor
     adata.uns["Pf2_D"] = factors[3]  # LR pairs factor
 
-    # Store the LR pairs used in the decomposition, as this is not handled by the workflow
+    # Store the LR pairs and R2X
     adata.uns["Pf2_lr_pairs"] = lr_pairs.reset_index(drop=True)
+    adata.uns["Pf2_r2x"] = r2x
 
     return adata, r2x
