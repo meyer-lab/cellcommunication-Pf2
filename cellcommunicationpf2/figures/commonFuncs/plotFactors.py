@@ -19,13 +19,14 @@ def plot_condition_factors(
     group_cond=False,
 ):
     """Plots Pf2 condition factors"""
-    
+
     yt = pd.Series(np.unique(data.obs[cond]))
     X = np.array(data.uns["Pf2_A"])
 
     XX = X
     X -= np.median(XX, axis=0)
     X /= np.std(XX, axis=0)
+    X /= np.max(np.abs(X))
 
     ind = reorder_table(X)
     X = X[ind]
@@ -44,7 +45,7 @@ def plot_condition_factors(
             print(f"Warning: Could not align condition labels: {e}")
             # Fall back to original ordering if alignment fails
             pass
-            
+
         ax.tick_params(axis="y", which="major", pad=20, length=0)
         if color_key is None:
             colors = sns.color_palette(
@@ -57,10 +58,10 @@ def plot_condition_factors(
         for index, group in enumerate(pd.unique(cond_group_labels)):
             lut[group] = colors[index]
             legend_elements.append(Patch(color=colors[index], label=group))
-        
+
         group_values = list(cond_group_labels)
         row_colors = [lut.get(val, "#cccccc") for val in group_values]
-        
+
         # Add colored rectangles for each row
         for iii, color in enumerate(row_colors):
             ax.add_patch(
@@ -74,7 +75,7 @@ def plot_condition_factors(
                     clip_on=False,
                 )
             )
-        
+
         # Create legend outside the plot area
         ax.legend(
             handles=legend_elements,
