@@ -9,7 +9,6 @@ import pandas as pd
 import seaborn as sns
 from scipy.stats import pearsonr
 
-from ..cc_pf2 import cc_pf2, standardize_cc_pf2
 from ..import_data import (
     add_cond_idxs,
     anndata_lrp_overlap,
@@ -17,6 +16,7 @@ from ..import_data import (
     import_ligand_receptor_pairs,
 )
 from .common import getSetup, subplotLabel
+from ..utils import run_cc_pf2_workflow
 
 
 def makeFigure():
@@ -28,42 +28,42 @@ def makeFigure():
     print("Importing and preparing data...")
     adata = import_balf_covid()
     lr_pairs = import_ligand_receptor_pairs()
-    adata_filtered, _ = anndata_lrp_overlap(adata, lr_pairs)
+    adata_filtered, lr_pairs_filtered = anndata_lrp_overlap(adata, lr_pairs)
 
     # Add condition indices using patient sample as the condition
     condition_column = "sample"
     adata_filtered = add_cond_idxs(adata_filtered, condition_column)
 
     # Run a Rank-1 CC-PF2 Model
-    rank = 1
+    rank = 10
     print(f"Running CC-PF2 with rank={rank}...")
-    results, r2x = cc_pf2(
-        adata_filtered, rank, n_iter_max=100, tol=1e-3, random_state=42
+    adata_filtered, r2x = run_cc_pf2_workflow(
+        adata_filtered,
+        rank=rank,
+        lr_pairs=lr_pairs_filtered,
+        n_iter_max=100,
+        tol=1e-3,
+        random_state=42,
     )
-    cp_results, projections = results
-    cp_weights, factors = cp_results
-
-    # Standardize factors
-    _, factors, _ = standardize_cc_pf2(factors, projections, weights=cp_weights)
     print(f"CC-PF2 decomposition R2X: {r2x:.4f}")
 
     # Prepare Data for Plotting
     # Get the condition factor (component weights per sample)
-    condition_factor = factors[0].flatten()
-    
+    condition_factor = adata_filtered.uns["Pf2_A"].flatten()
+
     # Get the number of cells for each sample
     cell_counts = adata_filtered.obs[condition_column].value_counts()
-    
+
     # Create mapping from condition_index to sample name
     condition_to_sample = dict(enumerate(adata_filtered.obs[condition_column].cat.categories))
-    
+
     samples = [condition_to_sample[idx] for idx in range(len(condition_factor))]
     plot_df = pd.DataFrame({
         'Sample': samples,
         'Component Weight': condition_factor,
         'Cell Count': [cell_counts[sample] for sample in samples]
     })
-    
+
     # Generate the Plot
     print("Generating plot...")
     sns.regplot(

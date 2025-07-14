@@ -13,7 +13,8 @@ from ..import_data import (
     import_balf_covid,
     import_ligand_receptor_pairs,
 )
-from .common import run_cc_pf2_workflow, subplotLabel
+from .common import subplotLabel
+from ..utils import run_cc_pf2_workflow
 from .commonFuncs.plotFactors import (
     plot_condition_factors,
     plot_eigenstate_factors,
