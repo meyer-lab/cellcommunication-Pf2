@@ -84,3 +84,4 @@ def genFigure():
         )
 
     print(f"Figure {sys.argv[1]} is done after {time.time() - start} seconds.\n")
+
