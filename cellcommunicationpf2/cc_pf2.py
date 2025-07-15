@@ -222,7 +222,7 @@ def standardize_cc_pf2(
             factors[i] = factors[i][row_ind, :]
             projections = [p[row_ind, :] for p in projections]
 
-        # Flip the sign based on B/C
+        # Flip the sign based on the diagonal elements of the sender/receiver matrix (B/C)
         signn = np.sign(np.diag(factors[i][:k, :k]))
         # If the number of columns is larger, extend the sign vector with ones
         if len(signn) < M.shape[1]:
