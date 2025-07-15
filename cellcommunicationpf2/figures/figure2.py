@@ -45,7 +45,9 @@ def makeFigure():
 
     # Generate plots
     print("Plotting FMS vs. data dropout...")
-    plot_fms_percent_drop(X_filtered, ax[0], percentList=percentList, runs=runs, rank=10)
+    plot_fms_percent_drop(
+        X_filtered, ax[0], percentList=percentList, runs=runs, rank=10
+    )
     ax[0].set_title("Robustness to Data Subsampling")
 
     print("Plotting FMS vs. rank...")
@@ -82,7 +84,7 @@ def plot_fms_percent_drop(
     rank: int = 10,
 ):
     """Plot Factor Match Score when progressively removing data.
-    
+
     Creates a reference decomposition and compares it with decompositions
     of increasingly subsampled data.
     """
@@ -97,14 +99,16 @@ def plot_fms_percent_drop(
         for percent in percentList[1:]:
             # Create deterministic but unique seeds for reproducibility
             unique_seed = j * 100 + int(percent)
-            
+
             # Subsample data based on the percent to drop
             sampled_data: anndata.AnnData = sc.pp.subsample(
                 X, fraction=1 - (percent / 100), random_state=unique_seed, copy=True
             )  # type: ignore
-            
+
             sampled_data = add_cond_idxs(sampled_data, "sample")
-            sampledX = run_cc_pf2_analysis(sampled_data, rank=rank, random_state=unique_seed + 1)
+            sampledX = run_cc_pf2_analysis(
+                sampled_data, rank=rank, random_state=unique_seed + 1
+            )
 
             fmsScore = calculate_fms(dataX, sampledX)
             data_list.append(
@@ -128,7 +132,7 @@ def plot_fms_diff_ranks(
     runs: int,
 ):
     """Plot Factor Match Score across different rank values.
-    
+
     For each rank, creates a reference decomposition and compares it with
     decompositions of bootstrapped data samples.
     """
@@ -138,15 +142,17 @@ def plot_fms_diff_ranks(
     for i in ranksList:
         # Calculate reference decomposition once per rank
         dataX = run_cc_pf2_analysis(X, rank=i, random_state=base_seed)
-        
+
         for j in range(runs):
             # Use deterministic seeds for each run
             run_seed = base_seed + j
-            
+
             # Create bootstrapped sample with consistent stratification
             resampled_data = resample(X, random_seed=run_seed)
             resampled_data = add_cond_idxs(resampled_data, "sample")
-            sampledX = run_cc_pf2_analysis(resampled_data, rank=i, random_state=run_seed)
+            sampledX = run_cc_pf2_analysis(
+                resampled_data, rank=i, random_state=run_seed
+            )
 
             fmsScore = calculate_fms(dataX, sampledX)
             data_list.append({"Run": j, "Rank": i, "FMS": fmsScore})

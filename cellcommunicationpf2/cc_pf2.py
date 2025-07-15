@@ -114,7 +114,7 @@ def cc_pf2(
     Returns:
     --------
     tuple[tuple, float]
-        ((cp_factors, projections), final_R2X)
+        (((cp_weights, cp_factors), projections), final_R2X)
     """
     gene_names = list(adata.var_names)
     X_list = np.array(anndata_to_list(adata))

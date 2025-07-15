@@ -3,8 +3,10 @@ import numpy as np
 from tensorly.cp_tensor import CPTensor
 from tlviz.factor_tools import factor_match_score as fms
 from .cc_pf2 import cc_pf2, standardize_cc_pf2
+from .import_data import add_cond_idxs
 from sklearn.linear_model import LinearRegression
 import pandas as pd
+
 
 def resample(data: anndata.AnnData, random_seed: int = None) -> anndata.AnnData:
     """Perform stratified bootstrap sampling by resampling cells within each sample.
@@ -71,6 +73,7 @@ def run_cc_pf2_workflow(
     rank: int,
     lr_pairs: pd.DataFrame,
     cp_rank: int | None = None,
+    condition_column: str = "sample",
     n_iter_max: int = 100,
     tol: float = 1e-3,
     random_state: int | None = None,
@@ -89,6 +92,8 @@ def run_cc_pf2_workflow(
         The ligand-receptor pairs used in the decomposition.
     cp_rank : int, optional
         The rank for the final CP decomposition. If None, defaults to `rank`.
+    condition_column : str, default="sample"
+        The column in `adata.obs` that defines the conditions.
     n_iter_max : int
         Maximum number of iterations for the decomposition.
     tol : float
@@ -102,6 +107,8 @@ def run_cc_pf2_workflow(
         A tuple containing the updated AnnData object with stored results
         and the R2X value of the decomposition.
     """
+    # Ensure condition indices are present before running the model
+    adata = add_cond_idxs(adata, condition_column)
 
     # 1. Run the CC-PF2 decomposition
     results, r2x = cc_pf2(
@@ -115,7 +122,7 @@ def run_cc_pf2_workflow(
     (cp_weights, factors), projections = results
 
     # 2. Standardize the factors for interpretability
-    _, factors, projections = standardize_cc_pf2(
+    weights, factors, projections = standardize_cc_pf2(
         factors, projections, weights=cp_weights
     )
 
@@ -133,7 +140,8 @@ def run_cc_pf2_workflow(
     adata.uns["Pf2_C"] = factors[2]  # Receiver cells factor
     adata.uns["Pf2_D"] = factors[3]  # LR pairs factor
 
-    # Store the LR pairs used in the decomposition, as this is not handled by the workflow
+    # Store the LR pairs and R2X
     adata.uns["Pf2_lr_pairs"] = lr_pairs.reset_index(drop=True)
+    adata.uns["Pf2_r2x"] = r2x
 
     return adata, r2x

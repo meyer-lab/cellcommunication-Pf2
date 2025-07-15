@@ -4,9 +4,9 @@ from collections import Counter
 import numpy as np
 from scipy.stats.mstats import gmean
 
-'''
+"""
 This file is entirely methods taken from Tensor Cell2Cell
-'''
+"""
 
 
 def aggregate_ccc_matrices(ccc_matrices, method="gmean"):

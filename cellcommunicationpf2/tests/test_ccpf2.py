@@ -35,9 +35,7 @@ def test_cc_pf2_real_data(test_rank, random_state):
         condition_cells = np.where(mask)[0]
 
         if len(condition_cells) > n_cells_per_condition:
-            selected = rng.choice(
-                condition_cells, n_cells_per_condition, replace=False
-            )
+            selected = rng.choice(condition_cells, n_cells_per_condition, replace=False)
             subset_cells.extend(selected)
 
     adata_subset = adata_filtered[subset_cells]
@@ -57,18 +55,30 @@ def test_cc_pf2_real_data(test_rank, random_state):
         assert len(factors) == 4, f"Expected 4 factors, got {len(factors)}"
 
         # Expected shapes for factors
-        assert factors[0].shape == (len(conditions), rank), f"Factor 0 (Conditions) shape mismatch: expected {(len(conditions), rank)}, got {factors[0].shape}"
-        assert factors[1].shape == (rank, rank), f"Factor 1 (Sender cells) shape mismatch: expected {(rank, rank)}, got {factors[1].shape}"
-        assert factors[2].shape == (rank, rank), f"Factor 2 (Receiver cells) shape mismatch: expected {(rank, rank)}, got {factors[2].shape}"
-        assert factors[3].shape == (len(lr_pairs_filtered), rank), f"Factor 3 (LR pairs) shape mismatch: expected {(len(lr_pairs_filtered), rank)}, got {factors[3].shape}"
+        assert (
+            factors[0].shape == (len(conditions), rank)
+        ), f"Factor 0 (Conditions) shape mismatch: expected {(len(conditions), rank)}, got {factors[0].shape}"
+        assert (
+            factors[1].shape == (rank, rank)
+        ), f"Factor 1 (Sender cells) shape mismatch: expected {(rank, rank)}, got {factors[1].shape}"
+        assert (
+            factors[2].shape == (rank, rank)
+        ), f"Factor 2 (Receiver cells) shape mismatch: expected {(rank, rank)}, got {factors[2].shape}"
+        assert (
+            factors[3].shape == (len(lr_pairs_filtered), rank)
+        ), f"Factor 3 (LR pairs) shape mismatch: expected {(len(lr_pairs_filtered), rank)}, got {factors[3].shape}"
         # Check for NaN values in all factors
         for i, factor in enumerate(factors):
             assert not np.isnan(factor).any(), f"Factor {i} contains NaN values"
 
         # Validate projections
-        assert len(projections) == len(conditions), f"Expected {len(conditions)} projections, got {len(projections)}"
+        assert len(projections) == len(
+            conditions
+        ), f"Expected {len(conditions)} projections, got {len(projections)}"
         for i, proj in enumerate(projections):
-            assert proj.shape[1] == rank, f"Projection {i} should have {rank} columns, got {proj.shape[1]}"
+            assert (
+                proj.shape[1] == rank
+            ), f"Projection {i} should have {rank} columns, got {proj.shape[1]}"
 
         # Validate R2X
         assert 0 <= r2x <= 1.0, f"R2X should be between 0 and 1, got {r2x}"
