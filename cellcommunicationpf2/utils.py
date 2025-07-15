@@ -70,7 +70,7 @@ def correct_conditions(X: anndata.AnnData):
 
 def run_cc_pf2_workflow(
     adata: anndata.AnnData,
-    rank: int,
+    rise_rank: int,
     lr_pairs: pd.DataFrame,
     cp_rank: int | None = None,
     condition_column: str = "sample",
@@ -113,7 +113,7 @@ def run_cc_pf2_workflow(
     # 1. Run the CC-PF2 decomposition
     results, r2x = cc_pf2(
         adata,
-        rank,
+        rise_rank,
         n_iter_max=n_iter_max,
         tol=tol,
         cp_rank=cp_rank,

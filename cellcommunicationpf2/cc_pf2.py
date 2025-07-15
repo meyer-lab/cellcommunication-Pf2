@@ -88,7 +88,7 @@ def calc_communication_score(
 
 def cc_pf2(
     adata: anndata.AnnData,
-    rank: int,
+    rise_rank: int,
     n_iter_max: int,
     tol: float,
     cp_rank: int | None = None,
@@ -121,7 +121,7 @@ def cc_pf2(
 
     # PARAFAC2 decomposition
     pf2_output, _ = parafac2_nd(
-        adata, rank=rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
+        adata, rank=rise_rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
     )
     _, _, projections = pf2_output
 
@@ -146,7 +146,7 @@ def cc_pf2(
         projected_matrices, gene_names=gene_names
     )
 
-    cp_rank = cp_rank if cp_rank is not None else rank
+    cp_rank = cp_rank if cp_rank is not None else rise_rank
 
     # Print shape of interaction tensors
     print(f"Interaction tensors shape: {interaction_tensors.shape}")

@@ -36,7 +36,7 @@ def makeFigure():
     print(f"Running CC-PF2 with rank={rank}...")
     adata_filtered, r2x = run_cc_pf2_workflow(
         adata_filtered,
-        rank=rank,
+        rise_rank=rank,
         lr_pairs=lr_pairs_filtered,
         n_iter_max=100,
         tol=1e-3,
