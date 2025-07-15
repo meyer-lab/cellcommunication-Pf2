@@ -145,9 +145,9 @@ def cc_pf2(
     interaction_tensors = calc_communication_score(
         projected_matrices, gene_names=gene_names
     )
-    
+
     cp_rank = cp_rank if cp_rank is not None else rank
-    
+
     # Print shape of interaction tensors
     print(f"Interaction tensors shape: {interaction_tensors.shape}")
 
@@ -209,7 +209,7 @@ def standardize_cc_pf2(
         # Truncate to square matrix
         if rows != cols:
             M = M[:k, :k]
-        
+
         # Handle the ordering and sign flipping based on whether rows or columns are larger
         if rows > cols:
             # Order eigen-cells to maximize the diagonal of B/C
