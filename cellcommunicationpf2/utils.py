@@ -7,6 +7,7 @@ from .import_data import add_cond_idxs
 from sklearn.linear_model import LinearRegression
 import pandas as pd
 
+
 def resample(data: anndata.AnnData, random_seed: int = None) -> anndata.AnnData:
     """Perform stratified bootstrap sampling by resampling cells within each sample.
 

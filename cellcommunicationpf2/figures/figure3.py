@@ -52,20 +52,22 @@ def makeFigure():
     cell_counts = adata_filtered.obs[condition_column].value_counts()
 
     # Create mapping from condition_index to sample name
-    condition_to_sample = dict(enumerate(adata_filtered.obs[condition_column].cat.categories))
+    condition_to_sample = dict(
+        enumerate(adata_filtered.obs[condition_column].cat.categories)
+    )
 
     samples = [condition_to_sample[idx] for idx in range(len(condition_factor))]
-    plot_df = pd.DataFrame({
-        'Sample': samples,
-        'Component Weight': condition_factor,
-        'Cell Count': [cell_counts[sample] for sample in samples]
-    })
+    plot_df = pd.DataFrame(
+        {
+            "Sample": samples,
+            "Component Weight": condition_factor,
+            "Cell Count": [cell_counts[sample] for sample in samples],
+        }
+    )
 
     # Generate the Plot
     print("Generating plot...")
-    sns.regplot(
-        data=plot_df, x="Cell Count", y="Component Weight", ax=ax[0], ci=None
-    )
+    sns.regplot(data=plot_df, x="Cell Count", y="Component Weight", ax=ax[0], ci=None)
 
     # Calculate and display Pearson correlation
     r, p = pearsonr(plot_df["Cell Count"], plot_df["Component Weight"])
