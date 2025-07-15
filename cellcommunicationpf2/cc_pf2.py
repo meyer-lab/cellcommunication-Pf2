@@ -91,6 +91,7 @@ def cc_pf2(
     rank: int,
     n_iter_max: int,
     tol: float,
+    cp_rank: int | None = None,
     random_state: int | None = None,
 ) -> tuple[tuple, float]:
     """
@@ -144,11 +145,16 @@ def cc_pf2(
     interaction_tensors = calc_communication_score(
         projected_matrices, gene_names=gene_names
     )
+    
+    cp_rank = cp_rank if cp_rank is not None else rank
+    
+    # Print shape of interaction tensors
+    print(f"Interaction tensors shape: {interaction_tensors.shape}")
 
     # CP decomposition on the interaction tensors
     cp_weights, cp_factors = parafac(
         interaction_tensors,
-        rank,
+        cp_rank,
         n_iter_max=n_iter_max,
         tol=None,
         normalize_factors=False,
@@ -197,13 +203,31 @@ def standardize_cc_pf2(
     weights, factors = cp_flip_sign(cp_normalize((weights, factors)), mode=1)
 
     for i in [1, 2]:  # For sender and receiver factors
-        # Order eigen-cells to maximize the diagonal of B/C
-        _, col_ind = linear_sum_assignment(np.abs(factors[i].T), maximize=True)
-        factors[i] = factors[i][col_ind, :]
-        projections = [p[:, col_ind] for p in projections]
+        M = factors[i]
+        rows, cols = M.shape
+        k = min(rows, cols)
+        # Truncate to square matrix
+        if rows != cols:
+            M = M[:k, :k]
+        
+        # Handle the ordering and sign flipping based on whether rows or columns are larger
+        if rows > cols:
+            # Order eigen-cells to maximize the diagonal of B/C
+            _, col_ind = linear_sum_assignment(np.abs(M), maximize=True)
+            factors[i] = factors[i][:, col_ind]
+            projections = [p[:, col_ind] for p in projections]
+        else:
+            # Order eigen-cells to maximize the diagonal of B/C
+            _, row_ind = linear_sum_assignment(np.abs(M.T), maximize=True)
+            factors[i] = factors[i][row_ind, :]
+            projections = [p[row_ind, :] for p in projections]
 
         # Flip the sign based on B/C
-        signn = np.sign(np.diag(factors[i]))
+        signn = np.sign(np.diag(factors[i][:k, :k]))
+        # If the number of columns is larger, extend the sign vector with ones
+        if len(signn) < M.shape[1]:
+            signn = np.concatenate([signn, np.ones(M.shape[1] - len(signn))])
+        # Apply the sign to both factors and projections
         factors[i] *= signn[:, np.newaxis]
         projections = [p * signn for p in projections]
 
