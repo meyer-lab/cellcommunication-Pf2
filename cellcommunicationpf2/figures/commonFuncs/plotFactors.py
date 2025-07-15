@@ -19,29 +19,32 @@ def plot_condition_factors(
     group_cond=False,
 ):
     """Plots Pf2 condition factors"""
-    pd.set_option("display.max_rows", None)
+
     yt = pd.Series(np.unique(data.obs[cond]))
     X = np.array(data.uns["Pf2_A"])
 
     XX = X
     X -= np.median(XX, axis=0)
     X /= np.std(XX, axis=0)
+    X /= np.max(np.abs(X))
 
     ind = reorder_table(X)
     X = X[ind]
     yt = yt.iloc[ind]
 
     if cond_group_labels is not None:
-        cond_group_labels = cond_group_labels.iloc[ind]
+        # Align cond_group_labels with the reordered yt
+        cond_group_labels = cond_group_labels.loc[yt].reset_index(drop=True)
         if group_cond is True:
             ind = cond_group_labels.argsort()
             cond_group_labels = cond_group_labels.iloc[ind]
             X = X[ind]
             yt = yt.iloc[ind]
+
         ax.tick_params(axis="y", which="major", pad=20, length=0)
         if color_key is None:
             colors = sns.color_palette(
-                n_colors=pd.Series(cond_group_labels).nunique()
+                "Set2", n_colors=pd.Series(cond_group_labels).nunique()
             ).as_hex()
         else:
             colors = color_key
@@ -50,12 +53,17 @@ def plot_condition_factors(
         for index, group in enumerate(pd.unique(cond_group_labels)):
             lut[group] = colors[index]
             legend_elements.append(Patch(color=colors[index], label=group))
-        row_colors = pd.Series(cond_group_labels).map(lut)
+
+        group_values = list(cond_group_labels)
+        row_colors = [lut.get(val, "#cccccc") for val in group_values]
+        ROW_RECTANGLE_X_OFFSET = -0.02
+        ROW_RECTANGLE_WIDTH = 0.02
+        # Add colored rectangles for each row
         for iii, color in enumerate(row_colors):
             ax.add_patch(
                 plt.Rectangle(
-                    xy=(-0.05, iii),
-                    width=0.05,
+                    xy=(ROW_RECTANGLE_X_OFFSET, iii),
+                    width=ROW_RECTANGLE_WIDTH,
                     height=1,
                     color=color,
                     lw=0,
@@ -63,7 +71,17 @@ def plot_condition_factors(
                     clip_on=False,
                 )
             )
-        ax.legend(handles=legend_elements, bbox_to_anchor=(0.18, 1.07))
+
+        # Create legend outside the plot area
+        ax.legend(
+            handles=legend_elements,
+            loc="upper left",
+            bbox_to_anchor=(1.02, 1),  # Position legend to the right of the plot
+            frameon=False,  # Remove frame for a cleaner look
+            fontsize=10,
+            title="Condition",
+            title_fontsize=12,
+        )
 
     xticks = np.arange(1, X.shape[1] + 1)
     sns.heatmap(
@@ -73,6 +91,8 @@ def plot_condition_factors(
         ax=ax,
         center=0,
         cmap=cmap,
+        vmin=-1,
+        vmax=1,
     )
     ax.tick_params(axis="y", rotation=0)
     ax.set(xlabel="Component")
@@ -101,15 +121,19 @@ def plot_eigenstate_factors(data: anndata.AnnData, ax: Axes, factor_type: str):
 
 def plot_lr_factors(data: anndata.AnnData, ax: Axes, trim=True, weight=0.08):
     """Plots Pf2 lr factors"""
-    rank = data.varm["Pf2_D"].shape[1]
-    X = np.array(data.varm["Pf2_D"])
-    yt = data.var.index.values
+    # Read the LR factor and pair information from .uns
+    X = np.array(data.uns["Pf2_D"])
+    lr_pairs = data.uns["Pf2_lr_pairs"]
+    rank = X.shape[1]
+
+    # Create labels from the ligand and receptor columns
+    yt = [f"{row['ligand']}-{row['receptor']}" for _, row in lr_pairs.iterrows()]
 
     if trim is True:
         max_weight = np.max(np.abs(X), axis=1)
         kept_idxs = max_weight > weight
         X = X[kept_idxs]
-        yt = yt[kept_idxs]
+        yt = [y for i, y in enumerate(yt) if kept_idxs[i]]
 
     ind = reorder_table(X)
     X = X[ind]
@@ -153,7 +177,18 @@ def plot_gene_factors_partial(
 
 
 def reorder_table(projs: np.ndarray):
-    """Reorder a table's rows using heirarchical clustering"""
-    assert projs.ndim == 2
-    Z = sch.linkage(projs, method="complete", metric="cosine", optimal_ordering=True)
+    """Reorder a table's rows using hierarchical clustering"""
+
+    # Clean non-finite values
+    clean_projs = np.nan_to_num(projs, nan=0.0, posinf=0.0, neginf=0.0)
+
+    # Ensure no zero vectors (which cause issues with cosine distance)
+    zero_rows = np.all(clean_projs == 0, axis=1)
+    if np.any(zero_rows):
+        # Add a small epsilon to zero rows to avoid cosine distance issues
+        clean_projs[zero_rows, :] = 1e-10
+
+    Z = sch.linkage(
+        clean_projs, method="complete", metric="cosine", optimal_ordering=True
+    )
     return sch.leaves_list(Z)

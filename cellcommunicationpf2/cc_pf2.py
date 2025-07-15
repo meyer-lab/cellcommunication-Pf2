@@ -10,14 +10,14 @@ from .ccc import build_context_ccc_tensor
 
 
 def calc_communication_score(
-    projected_matrices: list[np.ndarray], 
-    gene_names: list[str] = None, 
-    lr_pairs: pd.DataFrame = None
+    projected_matrices: list[np.ndarray],
+    gene_names: list[str] = None,
+    lr_pairs: pd.DataFrame = None,
 ) -> np.ndarray:
     """
-    Calculate cell-cell communication scores using build_context_ccc_tensor 
+    Calculate cell-cell communication scores using build_context_ccc_tensor
     from Tensor Cell2Cell for all conditions at once.
-    
+
     Parameters:
     -----------
     projected_matrices : list[np.ndarray]
@@ -27,7 +27,7 @@ def calc_communication_score(
         List of gene names corresponding to columns in the matrices
     lr_pairs : pd.DataFrame, optional
         DataFrame with 'ligand' and 'receptor' columns
-        
+
     Returns:
     --------
     np.ndarray
@@ -35,31 +35,34 @@ def calc_communication_score(
     """
     if lr_pairs is None:
         from .import_data import import_ligand_receptor_pairs
+
         lr_pairs = import_ligand_receptor_pairs()
-    
+
     if gene_names is None:
         gene_names = [f"gene_{i}" for i in range(projected_matrices[0].shape[1])]
-    
+
     # Convert matrices to DataFrames (genes as rows, cells as columns)
     rnaseq_matrices = []
     for matrix in projected_matrices:
         df = pd.DataFrame(
             matrix.T,
             index=gene_names,
-            columns=[f"rank_{j}" for j in range(matrix.shape[0])]
+            columns=[f"rank_{j}" for j in range(matrix.shape[0])],
         )
         rnaseq_matrices.append(df)
-    
+
     # Rename columns to match Cell2Cell convention
-    if 'ligand' in lr_pairs.columns and 'receptor' in lr_pairs.columns:
-        lr_pairs_renamed = lr_pairs.rename(columns={'ligand': 'A', 'receptor': 'B'})
+    if "ligand" in lr_pairs.columns and "receptor" in lr_pairs.columns:
+        lr_pairs_renamed = lr_pairs.rename(columns={"ligand": "A", "receptor": "B"})
     else:
         lr_pairs_renamed = lr_pairs.copy()
-    
+
     # Filter to valid pairs
-    valid_mask = (lr_pairs_renamed['A'].isin(gene_names)) & (lr_pairs_renamed['B'].isin(gene_names))
+    valid_mask = (lr_pairs_renamed["A"].isin(gene_names)) & (
+        lr_pairs_renamed["B"].isin(gene_names)
+    )
     valid_pairs = lr_pairs_renamed[valid_mask].reset_index(drop=True)
-    
+
     # Generate communication tensor for all contexts
     tensors, _, _, _, _ = build_context_ccc_tensor(
         rnaseq_matrices=rnaseq_matrices,
@@ -71,15 +74,15 @@ def calc_communication_score(
         interaction_columns=("A", "B"),
         group_ppi_by=None,
         group_ppi_method="gmean",
-        verbose=False
+        verbose=False,
     )
-    
+
     # Convert to numpy and transpose to expected format
     # From: (context, ppi_idx, rank, rank)
     # To:   (context, rank, rank, ppi_idx)
     interaction_tensor = np.array(tensors)
     interaction_tensor = np.transpose(interaction_tensor, (0, 2, 3, 1))
-    
+
     return interaction_tensor
 
 
@@ -93,7 +96,7 @@ def cc_pf2(
     """
     Redesigned cell-cell communication model using initial PARAFAC2
     followed by CP decomposition.
-    
+
     Parameters:
     -----------
     adata : anndata.AnnData
@@ -106,11 +109,11 @@ def cc_pf2(
         Convergence tolerance
     random_state : int, optional
         Random seed for reproducibility
-        
+
     Returns:
     --------
     tuple[tuple, float]
-        ((cp_factors, projections), final_R2X)
+        (((cp_weights, cp_factors), projections), final_R2X)
     """
     gene_names = list(adata.var_names)
     X_list = np.array(anndata_to_list(adata))
@@ -126,21 +129,20 @@ def cc_pf2(
     for i, tensor in enumerate(X_list):
         proj = projections[i]
         # Convert tensor to NumPy
-        if hasattr(tensor, 'get'):
+        if hasattr(tensor, "get"):
             tensor_np = tensor.get()
-        elif hasattr(tensor, 'toarray'):
+        elif hasattr(tensor, "toarray"):
             tensor_np = tensor.toarray()
-            if hasattr(tensor_np, 'get'):
+            if hasattr(tensor_np, "get"):
                 tensor_np = tensor_np.get()
         else:
             tensor_np = tensor
-            
+
         projected_matrices.append(proj.T @ tensor_np)
 
     # Calculate cell-cell communication scores
     interaction_tensors = calc_communication_score(
-        projected_matrices, 
-        gene_names=gene_names
+        projected_matrices, gene_names=gene_names
     )
 
     # CP decomposition on the interaction tensors
@@ -150,44 +152,51 @@ def cc_pf2(
         n_iter_max=n_iter_max,
         tol=None,
         normalize_factors=False,
-        random_state=random_state
+        random_state=random_state,
     )
 
     # Calculate R2X properly (following the approach in parafac2_nd)
     reconstructed = cp_to_tensor((cp_weights, cp_factors))
     total_variance = np.sum(interaction_tensors**2)
-    error = np.sum((interaction_tensors - reconstructed)**2)
+    error = np.sum((interaction_tensors - reconstructed) ** 2)
     final_R2X = 1 - (error / total_variance) if total_variance > 0 else 0.0
 
-    return (cp_factors, projections), final_R2X
+    return ((cp_weights, cp_factors), projections), final_R2X
 
 
 def standardize_cc_pf2(
-    factors: list[np.ndarray], projections: list[np.ndarray]
+    factors: list[np.ndarray],
+    projections: list[np.ndarray],
+    weights: np.ndarray | None = None,
 ) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray]]:
     """
     Standardize CP factors and projections for better interpretability.
-    
-    Parameters:
-    -----------
+    This function expects all inputs to be NumPy arrays on the CPU.
+
+    Parameters
+    ----------
     factors : list[np.ndarray]
-        CP factors from cc_pf2_redesigned
+        CP factors from the decomposition.
     projections : list[np.ndarray]
-        Projections from cc_pf2_redesigned
-        
-    Returns:
-    --------
+        Projections from the initial PARAFAC2 decomposition.
+    weights : np.ndarray, optional
+        Component weights from the CP decomposition. If None, they are initialized to ones.
+
+    Returns
+    -------
     tuple
-        (weights, factors, projections) after standardization
+        (weights, factors, projections) after standardization.
     """
     # Order components by condition variance
     gini = np.var(factors[0], axis=0) / np.mean(factors[0], axis=0)
     gini_idx = np.argsort(gini)
     factors = [f[:, gini_idx] for f in factors]
+    if weights is not None:
+        weights = weights[gini_idx]
 
-    weights, factors = cp_flip_sign(cp_normalize((None, factors)), mode=1)
+    weights, factors = cp_flip_sign(cp_normalize((weights, factors)), mode=1)
 
-    for i in [1, 2]:
+    for i in [1, 2]:  # For sender and receiver factors
         # Order eigen-cells to maximize the diagonal of B/C
         _, col_ind = linear_sum_assignment(np.abs(factors[i].T), maximize=True)
         factors[i] = factors[i][col_ind, :]
@@ -204,18 +213,18 @@ def standardize_cc_pf2(
 def store_cc_pf2(X: anndata.AnnData, parafac2_output: tuple):
     """
     Store CC-PF2 results into an AnnData object.
-    
-    Parameters:
-    -----------
+
+    Parameters
+    ----------
     X : anndata.AnnData
-        AnnData object to store results in
+        AnnData object to store results in.
     parafac2_output : tuple
-        Output from parafac2_nd
-        
-    Returns:
-    --------
+        The standardized output from `standardize_cc_pf2`: (weights, factors, projections).
+
+    Returns
+    -------
     anndata.AnnData
-        Updated AnnData with stored results
+        Updated AnnData with stored results.
     """
     X.uns["Pf2_weights"] = parafac2_output[0]
     X.uns["Pf2_A"], X.uns["Pf2_B"], X.uns["Pf2_C"], X.varm["Pf2_D"] = parafac2_output[1]
