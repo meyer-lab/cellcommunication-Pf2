@@ -122,9 +122,7 @@ def run_cc_pf2_workflow(
     (cp_weights, factors), projections = results
 
     # 2. Standardize the factors for interpretability
-    weights, factors = standardize_cc_pf2(
-        factors, weights=cp_weights
-    )
+    weights, factors = standardize_cc_pf2(factors, weights=cp_weights)
 
     # 3. Correct the condition factors
     # Temporarily store the condition factor to be used by the correction function
