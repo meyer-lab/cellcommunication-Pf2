@@ -188,7 +188,7 @@ def standardize_cc_pf2(
     Returns
     -------
     tuple
-        (weights, factors, projections) after standardization.
+        (weights, factors) after standardization.
     """
     # Order components by condition variance
     gini = np.var(factors[0], axis=0) / np.mean(factors[0], axis=0)
