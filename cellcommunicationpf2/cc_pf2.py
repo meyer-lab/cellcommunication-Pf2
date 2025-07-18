@@ -151,12 +151,27 @@ def cc_pf2(
     # Print shape of interaction tensors
     print(f"Interaction tensors shape: {interaction_tensors.shape}")
 
-    # CP decomposition on the interaction tensors
+    # Create random initialization to avoid memory-intensive SVD
+    np.random.seed(random_state)  # Ensure reproducibility
+
+    # Create four factor matrices, one for each tensor mode
+    init_factors = [
+        np.random.rand(interaction_tensors.shape[0], cp_rank),  # Conditions factor
+        np.random.rand(interaction_tensors.shape[1], cp_rank),  # Sender cells factor
+        np.random.rand(interaction_tensors.shape[2], cp_rank),  # Receiver cells factor
+        np.random.rand(interaction_tensors.shape[3], cp_rank),  # LR pairs factor
+    ]
+
+    # Set initial weights to ones
+    init_weights = np.ones(cp_rank)
+
+    # CP decomposition with explicit random initialization
     cp_weights, cp_factors = parafac(
         interaction_tensors,
         cp_rank,
         n_iter_max=n_iter_max,
         tol=None,
+        init=(init_weights, init_factors),  # Use random initialization
         normalize_factors=False,
         random_state=random_state,
     )
