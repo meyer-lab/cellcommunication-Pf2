@@ -33,7 +33,7 @@ def resample(data: anndata.AnnData, random_seed: int = None) -> anndata.AnnData:
     return resampled_data
 
 
-def calculateFMS(A: anndata.AnnData, B: anndata.AnnData) -> float:
+def calculate_fms(A: anndata.AnnData, B: anndata.AnnData) -> float:
     """Calculate FMS between two CC-PF2 decompositions stored in AnnData objects.
 
     Skips comparison of sender/receiver factors (modes 1 and 2) as they are most variable.
@@ -70,8 +70,9 @@ def correct_conditions(X: anndata.AnnData):
 
 def run_cc_pf2_workflow(
     adata: anndata.AnnData,
-    rank: int,
+    rise_rank: int,
     lr_pairs: pd.DataFrame,
+    cp_rank: int | None = None,
     condition_column: str = "sample",
     n_iter_max: int = 100,
     tol: float = 1e-3,
@@ -89,6 +90,8 @@ def run_cc_pf2_workflow(
         The rank for the decomposition.
     lr_pairs : pd.DataFrame
         The ligand-receptor pairs used in the decomposition.
+    cp_rank : int, optional
+        The rank for the final CP decomposition. If None, defaults to `rank`.
     condition_column : str, default="sample"
         The column in `adata.obs` that defines the conditions.
     n_iter_max : int
@@ -110,17 +113,16 @@ def run_cc_pf2_workflow(
     # 1. Run the CC-PF2 decomposition
     results, r2x = cc_pf2(
         adata,
-        rank,
+        rise_rank,
         n_iter_max=n_iter_max,
         tol=tol,
+        cp_rank=cp_rank,
         random_state=random_state,
     )
     (cp_weights, factors), projections = results
 
     # 2. Standardize the factors for interpretability
-    weights, factors, projections = standardize_cc_pf2(
-        factors, projections, weights=cp_weights
-    )
+    weights, factors = standardize_cc_pf2(factors, weights=cp_weights)
 
     # 3. Correct the condition factors
     # Temporarily store the condition factor to be used by the correction function

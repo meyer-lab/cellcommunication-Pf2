@@ -88,9 +88,10 @@ def calc_communication_score(
 
 def cc_pf2(
     adata: anndata.AnnData,
-    rank: int,
+    rise_rank: int,
     n_iter_max: int,
     tol: float,
+    cp_rank: int | None = None,
     random_state: int | None = None,
 ) -> tuple[tuple, float]:
     """
@@ -120,7 +121,7 @@ def cc_pf2(
 
     # PARAFAC2 decomposition
     pf2_output, _ = parafac2_nd(
-        adata, rank=rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
+        adata, rank=rise_rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
     )
     _, _, projections = pf2_output
 
@@ -145,12 +146,18 @@ def cc_pf2(
         projected_matrices, gene_names=gene_names
     )
 
-    # CP decomposition on the interaction tensors
+    cp_rank = cp_rank if cp_rank is not None else rise_rank
+
+    # Print shape of interaction tensors
+    print(f"Interaction tensors shape: {interaction_tensors.shape}")
+
+    # CP decomposition with explicit random initialization
     cp_weights, cp_factors = parafac(
         interaction_tensors,
-        rank,
+        cp_rank,
         n_iter_max=n_iter_max,
         tol=None,
+        init="random",  # Use random initialization
         normalize_factors=False,
         random_state=random_state,
     )
@@ -166,7 +173,6 @@ def cc_pf2(
 
 def standardize_cc_pf2(
     factors: list[np.ndarray],
-    projections: list[np.ndarray],
     weights: np.ndarray | None = None,
 ) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray]]:
     """
@@ -177,15 +183,13 @@ def standardize_cc_pf2(
     ----------
     factors : list[np.ndarray]
         CP factors from the decomposition.
-    projections : list[np.ndarray]
-        Projections from the initial PARAFAC2 decomposition.
     weights : np.ndarray, optional
         Component weights from the CP decomposition. If None, they are initialized to ones.
 
     Returns
     -------
     tuple
-        (weights, factors, projections) after standardization.
+        (weights, factors) after standardization.
     """
     # Order components by condition variance
     gini = np.var(factors[0], axis=0) / np.mean(factors[0], axis=0)
@@ -196,18 +200,7 @@ def standardize_cc_pf2(
 
     weights, factors = cp_flip_sign(cp_normalize((weights, factors)), mode=1)
 
-    for i in [1, 2]:  # For sender and receiver factors
-        # Order eigen-cells to maximize the diagonal of B/C
-        _, col_ind = linear_sum_assignment(np.abs(factors[i].T), maximize=True)
-        factors[i] = factors[i][col_ind, :]
-        projections = [p[:, col_ind] for p in projections]
-
-        # Flip the sign based on B/C
-        signn = np.sign(np.diag(factors[i]))
-        factors[i] *= signn[:, np.newaxis]
-        projections = [p * signn for p in projections]
-
-    return weights, factors, projections
+    return weights, factors
 
 
 def store_cc_pf2(X: anndata.AnnData, parafac2_output: tuple):
