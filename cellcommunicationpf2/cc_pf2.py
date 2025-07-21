@@ -9,7 +9,6 @@ from .ccc import build_context_ccc_tensor
 from .import_data import import_ligand_receptor_pairs
 
 
-
 def calc_communication_score(
     projected_matrices: list[np.ndarray],
     gene_names: list[str] = None,
