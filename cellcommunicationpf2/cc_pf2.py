@@ -2,11 +2,12 @@ import anndata
 import numpy as np
 import pandas as pd
 from parafac2.parafac2 import anndata_to_list, parafac2_nd
-from scipy.optimize import linear_sum_assignment
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
 from tensorly.decomposition import parafac
 
 from .ccc import build_context_ccc_tensor
+from .import_data import import_ligand_receptor_pairs
+
 
 
 def calc_communication_score(
@@ -34,8 +35,6 @@ def calc_communication_score(
         4D interaction tensor of shape (conditions, rank, rank, n_lr_pairs)
     """
     if lr_pairs is None:
-        from .import_data import import_ligand_receptor_pairs
-
         lr_pairs = import_ligand_receptor_pairs()
 
     if gene_names is None:
