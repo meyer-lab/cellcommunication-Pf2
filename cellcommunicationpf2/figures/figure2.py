@@ -16,7 +16,6 @@ from ..utils import resample, calculate_fms
 from ..cc_pf2 import cc_pf2, standardize_cc_pf2
 from ..import_data import (
     add_cond_idxs,
-    anndata_lrp_overlap,
     import_balf_covid,
     import_ligand_receptor_pairs,
 )
@@ -32,11 +31,10 @@ def makeFigure():
     print("Importing and preparing data for Figure 2...")
     X = import_balf_covid()
     lr_pairs = import_ligand_receptor_pairs()
-    X_filtered, _ = anndata_lrp_overlap(X, lr_pairs)
 
     # Add condition indices using sample as the condition
     condition_column = "sample"
-    X_filtered = add_cond_idxs(X_filtered, condition_column)
+    X_filtered = add_cond_idxs(X, condition_column)
 
     # Parameters for stability plots
     percentList = np.arange(0.0, 25.0, 5.0)
@@ -62,7 +60,7 @@ def run_cc_pf2_analysis(
 ) -> anndata.AnnData:
     """Run CC-PF2 decomposition and store results in the AnnData object."""
     adata = adata.copy()
-    results, r2x = cc_pf2(adata, rank, 100, 1e-3, random_state=random_state)
+    results, r2x, lr_pairs_filtered = cc_pf2(adata, rank, 100, 1e-3, random_state=random_state)
     cp_results, projections = results
     cp_weights, factors = cp_results
 

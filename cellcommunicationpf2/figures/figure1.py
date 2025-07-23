@@ -9,7 +9,6 @@ from matplotlib import pyplot as plt
 
 from ..import_data import (
     add_cond_idxs,
-    anndata_lrp_overlap,
     import_balf_covid,
     import_ligand_receptor_pairs,
 )
@@ -33,12 +32,9 @@ def makeFigure():
     adata = import_balf_covid()
     lr_pairs = import_ligand_receptor_pairs()
 
-    print("Filtering data...")
-    adata_filtered, lr_pairs_filtered = anndata_lrp_overlap(adata, lr_pairs)
-
     # Add numerical indices for each patient sample, which is the primary condition
     condition_column = "sample"
-    adata_filtered = add_cond_idxs(adata_filtered, condition_column)
+    adata_filtered = add_cond_idxs(adata, condition_column)
 
     # Create a mapping from each sample to its corresponding condition (e.g., 'severe')
     # This will be used for grouping and coloring the heatmap
@@ -48,7 +44,7 @@ def makeFigure():
     ).set_index(condition_column)[group_col]
 
     # Parameters for CC-PF2
-    rank = 5
+    rank = 10
     cp_rank = 10
     n_iter_max = 100
     tol = 1e-3
@@ -59,7 +55,7 @@ def makeFigure():
     adata_filtered, r2x = run_cc_pf2_workflow(
         adata_filtered,
         rise_rank=rank,
-        lr_pairs=lr_pairs_filtered,
+        lr_pairs=lr_pairs,
         cp_rank=cp_rank,
         n_iter_max=n_iter_max,
         tol=tol,

@@ -20,7 +20,10 @@ def plot_condition_factors(
 ):
     """Plots Pf2 condition factors"""
 
-    yt = pd.Series(np.unique(data.obs[cond]))
+    # Get sample names in the order of condition_unique_idxs (as used by anndata_to_list)
+    idxs = np.argsort(data.obs["condition_unique_idxs"].unique())
+    yt = pd.Series(data.obs[cond].unique())[idxs]
+
     X = np.array(data.uns["Pf2_A"])
 
     XX = X

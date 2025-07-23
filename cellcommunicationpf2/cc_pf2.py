@@ -32,6 +32,8 @@ def calc_communication_score(
     --------
     np.ndarray
         4D interaction tensor of shape (conditions, rank, rank, n_lr_pairs)
+    pd.DataFrame
+        The filtered ligand-receptor pairs that correspond to the tensor's last dimension.
     """
     if lr_pairs is None:
         lr_pairs = import_ligand_receptor_pairs()
@@ -56,7 +58,7 @@ def calc_communication_score(
         lr_pairs_renamed = lr_pairs
 
     # Generate communication tensor for all contexts
-    tensors, _, _, _, _ = build_context_ccc_tensor(
+    tensors, _, _, ppi_names, _ = build_context_ccc_tensor(
         rnaseq_matrices=rnaseq_matrices,
         ppi_data=lr_pairs_renamed,
         how="inner",
@@ -69,13 +71,17 @@ def calc_communication_score(
         verbose=False,
     )
 
+    # Filter the original lr_pairs to match the pairs used in the tensor
+    lr_pair_names = lr_pairs["ligand"] + "^" + lr_pairs["receptor"]
+    filtered_lr_pairs = lr_pairs[lr_pair_names.isin(ppi_names)].reset_index(drop=True)
+
     # Convert to numpy and transpose to expected format
     # From: (context, ppi_idx, rank, rank)
     # To:   (context, rank, rank, ppi_idx)
     interaction_tensor = np.array(tensors)
     interaction_tensor = np.transpose(interaction_tensor, (0, 2, 3, 1))
 
-    return interaction_tensor
+    return interaction_tensor, filtered_lr_pairs
 
 
 def cc_pf2(
@@ -85,34 +91,39 @@ def cc_pf2(
     tol: float,
     cp_rank: int | None = None,
     random_state: int | None = None,
-) -> tuple[tuple, float]:
+) -> tuple[tuple, float, pd.DataFrame]:
     """
-    Redesigned cell-cell communication model using initial PARAFAC2
-    followed by CP decomposition.
+    Perform PARAFAC2 decomposition on an AnnData object, followed by
+    CP decomposition on the resulting interaction tensor.
 
     Parameters:
     -----------
     adata : anndata.AnnData
-        AnnData object with cells x genes expression data
-    rank : int
-        Rank of the decomposition
+        Annotated data object with expression data in `.X`
+    rise_rank : int
+        Rank for the PARAFAC2 decomposition (RISE)
     n_iter_max : int
-        Maximum number of iterations
+        Maximum number of iterations for PARAFAC2
     tol : float
-        Convergence tolerance
+        Convergence tolerance for PARAFAC2
+    cp_rank : int, optional
+        Rank for the CP decomposition. If None, defaults to `rise_rank`.
     random_state : int, optional
-        Random seed for reproducibility
+        Seed for reproducibility
 
     Returns:
     --------
-    tuple[tuple, float]
-        (((cp_weights, cp_factors), projections), final_R2X)
+    tuple
+        A tuple containing:
+        - A nested tuple with CP results and projections: ((cp_weights, cp_factors), projections)
+        - The R2X (variance explained) of the CP decomposition on the interaction tensor.
+        - The filtered ligand-receptor pairs DataFrame used in the analysis.
     """
     gene_names = list(adata.var_names)
     X_list = anndata_to_list(adata)
 
     # PARAFAC2 decomposition
-    pf2_output, pf2_r2x = parafac2_nd(
+    pf2_output, _ = parafac2_nd(
         adata, rank=rise_rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
     )
     _, _, projections = pf2_output
@@ -127,7 +138,7 @@ def cc_pf2(
         projected_matrices.append(proj.T @ tensor_np)
 
     # Calculate cell-cell communication scores
-    interaction_tensors = calc_communication_score(
+    interaction_tensors, filtered_lr_pairs = calc_communication_score(
         projected_matrices, gene_names=gene_names
     )
 
@@ -147,12 +158,13 @@ def cc_pf2(
         random_state=random_state,
     )
 
+    # Calculate R2X for the CP decomposition of the interaction tensor
     reconstructed = cp_to_tensor((cp_weights, cp_factors))
     total_variance = np.sum(interaction_tensors**2)
     error = np.sum((interaction_tensors - reconstructed) ** 2)
     final_R2X = 1 - (error / total_variance) if total_variance > 0 else 0.0
 
-    return ((cp_weights, cp_factors), projections), final_R2X
+    return ((cp_weights, cp_factors), projections), final_R2X, filtered_lr_pairs
 
 
 def standardize_cc_pf2(

@@ -111,7 +111,7 @@ def run_cc_pf2_workflow(
     adata = add_cond_idxs(adata, condition_column)
 
     # 1. Run the CC-PF2 decomposition
-    results, r2x = cc_pf2(
+    results, r2x, filtered_lr_pairs = cc_pf2(
         adata,
         rise_rank,
         n_iter_max=n_iter_max,
@@ -124,14 +124,6 @@ def run_cc_pf2_workflow(
     # 2. Standardize the factors for interpretability
     weights, factors = standardize_cc_pf2(factors, weights=cp_weights)
 
-    # 3. Correct the condition factors
-    # Temporarily store the condition factor to be used by the correction function
-    adata.uns["Pf2_A"] = factors[0]
-    # Run the correction
-    corrected_factor_A = correct_conditions(adata)
-    # Replace the original factor with the corrected one
-    factors[0] = corrected_factor_A
-
     # Store factors in AnnData object for easy access by plotting functions
     adata.uns["Pf2_A"] = factors[0]  # Condition factor
     adata.uns["Pf2_B"] = factors[1]  # Sender cells factor
@@ -139,7 +131,9 @@ def run_cc_pf2_workflow(
     adata.uns["Pf2_D"] = factors[3]  # LR pairs factor
 
     # Store the LR pairs and R2X
-    adata.uns["Pf2_lr_pairs"] = lr_pairs.reset_index(drop=True)
+    adata.uns["Pf2_lr_pairs"] = filtered_lr_pairs
     adata.uns["Pf2_r2x"] = r2x
+    adata.uns["Pf2_weights"] = weights
+    adata.uns["Pf2_projections"] = projections
 
     return adata, r2x

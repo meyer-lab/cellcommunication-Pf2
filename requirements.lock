@@ -136,7 +136,7 @@ pandas==2.2.3
     # via statsmodels
     # via tensorly-viz
     # via xarray
-parafac2 @ git+https://github.com/meyer-lab/parafac2.git@121c2e3d287091a8670ff089a9f60cbd4b74b12a
+parafac2 @ git+https://github.com/meyer-lab/parafac2.git@1c214868031d61297505d95bdf056dfce33262a5
     # via cellcommunicationpf2
 param==2.2.0
     # via datashader
