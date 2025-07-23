@@ -53,18 +53,12 @@ def calc_communication_score(
     if "ligand" in lr_pairs.columns and "receptor" in lr_pairs.columns:
         lr_pairs_renamed = lr_pairs.rename(columns={"ligand": "A", "receptor": "B"})
     else:
-        lr_pairs_renamed = lr_pairs.copy()
-
-    # Filter to valid pairs
-    valid_mask = (lr_pairs_renamed["A"].isin(gene_names)) & (
-        lr_pairs_renamed["B"].isin(gene_names)
-    )
-    valid_pairs = lr_pairs_renamed[valid_mask].reset_index(drop=True)
+        lr_pairs_renamed = lr_pairs
 
     # Generate communication tensor for all contexts
     tensors, _, _, _, _ = build_context_ccc_tensor(
         rnaseq_matrices=rnaseq_matrices,
-        ppi_data=valid_pairs,
+        ppi_data=lr_pairs_renamed,
         how="inner",
         communication_score="expression_product",
         complex_sep=None,
@@ -115,10 +109,10 @@ def cc_pf2(
         (((cp_weights, cp_factors), projections), final_R2X)
     """
     gene_names = list(adata.var_names)
-    X_list = np.array(anndata_to_list(adata))
+    X_list = anndata_to_list(adata)
 
     # PARAFAC2 decomposition
-    pf2_output, _ = parafac2_nd(
+    pf2_output, pf2_r2x = parafac2_nd(
         adata, rank=rise_rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
     )
     _, _, projections = pf2_output
@@ -128,14 +122,7 @@ def cc_pf2(
     for i, tensor in enumerate(X_list):
         proj = projections[i]
         # Convert tensor to NumPy
-        if hasattr(tensor, "get"):
-            tensor_np = tensor.get()
-        elif hasattr(tensor, "toarray"):
-            tensor_np = tensor.toarray()
-            if hasattr(tensor_np, "get"):
-                tensor_np = tensor_np.get()
-        else:
-            tensor_np = tensor
+        tensor_np = tensor.get()
 
         projected_matrices.append(proj.T @ tensor_np)
 
@@ -160,7 +147,6 @@ def cc_pf2(
         random_state=random_state,
     )
 
-    # Calculate R2X properly (following the approach in parafac2_nd)
     reconstructed = cp_to_tensor((cp_weights, cp_factors))
     total_variance = np.sum(interaction_tensors**2)
     error = np.sum((interaction_tensors - reconstructed) ** 2)

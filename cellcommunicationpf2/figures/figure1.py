@@ -48,7 +48,7 @@ def makeFigure():
     ).set_index(condition_column)[group_col]
 
     # Parameters for CC-PF2
-    rank = 10
+    rank = 5
     cp_rank = 10
     n_iter_max = 100
     tol = 1e-3

@@ -4,6 +4,9 @@ import urllib.request
 import anndata
 import pandas as pd
 
+# Module-level cache for ligand-receptor pairs
+_lr_pairs_cache = None
+
 
 # The below code is taken directly from https://github.com/earmingol/cell2cell/blob/master/cell2cell/datasets/anndata.py
 def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"):
@@ -40,17 +43,33 @@ def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
 
 
 def import_ligand_receptor_pairs(filename="./data/Human-2020-Jin-LR-pairs.csv"):
-    """Import ligand-receptor pairs from CellChat
-    CellChat (Jin et al. 2021, Nature Communications"""
+    """Import ligand-receptor pairs from CellChat with caching
+    CellChat (Jin et al. 2021, Nature Communications)
+
+    The data is cached in memory after first load for improved performance.
+    """
+    global _lr_pairs_cache
+
+    # Return cached version if available
+    if _lr_pairs_cache is not None:
+        print("Using cached ligand-receptor pairs data")
+        return _lr_pairs_cache.copy()
 
     url = "https://raw.githubusercontent.com/LewisLabUCSD/Ligand-Receptor-Pairs/refs/heads/master/Human/Human-2020-Jin-LR-pairs.csv"
     os.makedirs(os.path.dirname(filename), exist_ok=True)
 
     if not os.path.exists(filename):
-        print("Downloading data from GitHub...")
+        print("Downloading ligand-receptor pairs from GitHub...")
         urllib.request.urlretrieve(url, filename)
 
-    return pd.read_csv(filename)
+    print("Loading ligand-receptor pairs data...")
+    df = pd.read_csv(filename)
+
+    # Cache the loaded data
+    _lr_pairs_cache = df
+    print(f"Cached {len(df)} ligand-receptor pairs")
+
+    return df
 
 
 def anndata_lrp_overlap(X: anndata.AnnData, df_lrp: pd.DataFrame):
