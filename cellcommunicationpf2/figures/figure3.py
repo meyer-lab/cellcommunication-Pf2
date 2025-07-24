@@ -32,7 +32,7 @@ def makeFigure():
     condition_column = "sample"
 
     # Run a Rank-1 CC-PF2 Model
-    
+
     rise_rank = 30
     cp_rank = 1
 
