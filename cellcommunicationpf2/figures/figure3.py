@@ -34,7 +34,7 @@ def makeFigure():
     # Run a Rank-1 CC-PF2 Model
     rise_rank = 20
     cp_rank = 1
-    
+
     adata_filtered, r2x = run_cc_pf2_workflow(
         adata,
         rise_rank=rise_rank,
@@ -72,13 +72,13 @@ def makeFigure():
     # Add sample name labels to each point
     for _, row in plot_df.iterrows():
         ax[0].annotate(
-            row["Sample"], 
+            row["Sample"],
             (row["Cell Count"], row["Component Weight"]),
             xytext=(3, 3),  # offset from point in pixels
-            textcoords='offset points',
+            textcoords="offset points",
             fontsize=6,  # tiny text
             alpha=0.7,
-            ha='left'
+            ha="left",
         )
 
     # Calculate and display Pearson correlation
@@ -96,7 +96,6 @@ def makeFigure():
     ax[0].set_xlabel("Cell Count")
     ax[0].set_ylabel("Component Weight")
     ax[0].set_title("Component Weight vs Cell Count")
-
 
     # Generate the Condition Factor Heatmap
     print("Generating condition factor heatmap...")

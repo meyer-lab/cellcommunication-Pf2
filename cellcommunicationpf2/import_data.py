@@ -4,6 +4,7 @@ import urllib.request
 import anndata
 import pandas as pd
 import numpy as np
+from parafac2.normalize import prepare_dataset
 
 # Module-level cache for ligand-receptor pairs
 _lr_pairs_cache = None
@@ -42,11 +43,12 @@ def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
 
     print("Loading BALF COVID data (preserving sparse format)...")
     adata = anndata.read_h5ad(filename)
-    
+
     # Ensure X matrix stays sparse
-    if not hasattr(adata.X, 'nnz'):  # Check if it's not already sparse
+    if not hasattr(adata.X, "nnz"):  # Check if it's not already sparse
         print("Warning: Data was loaded as dense, converting to sparse...")
         import scipy.sparse as sp
+
         adata.X = sp.csr_matrix(adata.X)
         # Calculate sparsity for dense matrix
         zeros = (adata.X == 0).sum()
@@ -57,14 +59,14 @@ def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
         total_elements = adata.n_obs * adata.n_vars
         non_zero_pct = (adata.X.nnz / total_elements) * 100
         zero_pct = 100 - non_zero_pct
-        
+
         print(f"Data loaded as sparse matrix: {type(adata.X).__name__}")
         print(f"  Non-zero elements: {adata.X.nnz:,} ({non_zero_pct:.2f}%)")
         print(f"  Zero elements: {total_elements - adata.X.nnz:,} ({zero_pct:.2f}%)")
         print(f"  Sparsity: {zero_pct:.2f}%")
-    
+
     adata.obs_names_make_unique()  # Ensure unique cell names
-    return filter_genes_by_threshold(adata)
+    return prepare_dataset(adata, condition_name="condition", geneThreshold=0.01)
 
 
 def import_ligand_receptor_pairs(filename="./data/Human-2020-Jin-LR-pairs.csv"):
@@ -110,30 +112,3 @@ def add_cond_idxs(X, condition_key):
     X.obs["condition_unique_idxs"] = X.obs[condition_key].map(condition_map).values
 
     return X
-
-def filter_genes_by_threshold(adata, threshold=0):
-    """
-    Remove genes where all values are <= threshold.
-    
-    Parameters
-    ----------
-    adata : anndata.AnnData
-        Input AnnData object
-    threshold : float, default=0
-        Remove genes where ALL values are <= this threshold
-        
-    Returns
-    -------
-    anndata.AnnData
-        Filtered AnnData object with genes removed
-    """
-    
-    # Get max absolute value per gene and convert to a 1D numpy array
-    gene_max = np.abs(adata.X).max(axis=0).toarray().flatten()
-
-    genes_to_keep = gene_max > threshold
-    
-    # Total kept genes
-    print(f"Keeping {np.sum(genes_to_keep)} genes with max value > {threshold}")
-    
-    return adata[:, genes_to_keep]

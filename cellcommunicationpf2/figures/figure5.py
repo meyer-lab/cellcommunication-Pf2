@@ -6,27 +6,27 @@ to identify the optimal rank where R²X begins to flatline.
 """
 
 import numpy as np
-from matplotlib import pyplot as plt
 from parafac2.parafac2 import parafac2_nd
 
 from ..import_data import (
     add_cond_idxs,
     import_balf_covid,
 )
-from .common import getSetup, subplotLabel
+from .common import getSetup
 
 
 def makeFigure():
     """Generate Figure 5 showing RISE rank selection analysis."""
-    ax, f = getSetup((10, 6), (1, 1))
+    ax, f = getSetup((6, 3), (1, 1))
 
     print("Importing and preparing data for Figure 5...")
     adata = import_balf_covid()
     adata_filtered = add_cond_idxs(adata, "sample")
     print(f"Data shape: {adata_filtered.shape}")
 
-    ranks = list(range(1, 51))
-    print(f"Testing ranks 1-50...")
+    # Test ranks from 1 to 100, every 5 (i.e., 1, 6, 11, ..., 96)
+    ranks = list(range(1, 101, 5))
+    print(f"Testing ranks {ranks[0]}-{ranks[-1]} in steps of 5...")
 
     n_iter_max = 100
     tol = 1e-6
@@ -34,7 +34,7 @@ def makeFigure():
 
     r2x_results = {}
     prev_r2x = None
-    marginal_threshold = 0.003
+    marginal_threshold = 0.0005
     consecutive_marginal = 0
     max_consecutive = 5
 
@@ -46,7 +46,7 @@ def makeFigure():
                 rank=rank,
                 n_iter_max=n_iter_max,
                 tol=tol,
-                random_state=random_state
+                random_state=random_state,
             )
             r2x_results[rank] = r2x
             print(f"  Rank {rank}: R²X = {r2x:.6f}")
@@ -57,7 +57,9 @@ def makeFigure():
                 if improvement < marginal_threshold:
                     consecutive_marginal += 1
                     if consecutive_marginal >= max_consecutive:
-                        print(f"\nBreaking early: Marginal improvement < {marginal_threshold} for {max_consecutive} consecutive ranks (at rank {rank})")
+                        print(
+                            f"\nBreaking early: Marginal improvement < {marginal_threshold} for {max_consecutive} consecutive ranks (at rank {rank})"
+                        )
                         break
                 else:
                     consecutive_marginal = 0
@@ -73,42 +75,14 @@ def makeFigure():
     r2x_values = [valid_results[r] for r in ranks]
 
     # Plot R²X curve
-    ax[0].plot(ranks, r2x_values, 'o-', linewidth=2, markersize=6, color='steelblue')
-    ax[0].set_xlabel('RISE Rank', fontsize=14)
-    ax[0].set_ylabel('R²X', fontsize=14)
-    ax[0].set_title('PARAFAC2 (RISE) Rank Selection Analysis', fontsize=16)
+    ax[0].plot(ranks, r2x_values, "o-", linewidth=2, markersize=6, color="steelblue")
+    ax[0].set_xlabel("RISE Rank", fontsize=14)
+    ax[0].set_ylabel("R²X", fontsize=14)
+    ax[0].set_title("PARAFAC2 (RISE) Rank Selection Analysis", fontsize=16)
     ax[0].grid(True, alpha=0.3)
+    
+    # Set y min and max to 0 - 0.2
+    ax[0].set_ylim(0, 0.2)
 
-    # Find flatline point (where marginal improvement becomes minimal)
-    flatline_rank = find_flatline_rank(ranks, r2x_values, threshold=0.001)
-    
-    if flatline_rank:
-        ax[0].axvline(x=flatline_rank, color='red', linestyle='--', linewidth=2, 
-                   label=f'Flatline at Rank {flatline_rank}')
-        ax[0].legend()
-        print(f"\nRecommendation: R²X begins to flatline around rank {flatline_rank}")
-        print(f"R²X at rank {flatline_rank}: {valid_results[flatline_rank]:.6f}")
-    
     print("Figure 5 generation complete.")
     return f
-
-
-def find_flatline_rank(ranks, r2x_values, threshold=0.001):
-    """Find the rank where R²X improvement becomes consistently minimal."""
-    # Calculate marginal improvements
-    improvements = []
-    for i in range(1, len(ranks)):
-        improvement = r2x_values[i] - r2x_values[i-1]
-        improvements.append(improvement)
-    
-    # Find first rank where 3 consecutive improvements are below threshold
-    consecutive_count = 0
-    for i, improvement in enumerate(improvements):
-        if improvement < threshold:
-            consecutive_count += 1
-            if consecutive_count >= 3:
-                return ranks[i - 1]  # Return the start of the flatline
-        else:
-            consecutive_count = 0
-    
-    return None

@@ -60,7 +60,9 @@ def run_cc_pf2_analysis(
 ) -> anndata.AnnData:
     """Run CC-PF2 decomposition and store results in the AnnData object."""
     adata = adata.copy()
-    results, r2x, lr_pairs_filtered = cc_pf2(adata, rank, 100, 1e-3, random_state=random_state)
+    results, r2x, lr_pairs_filtered = cc_pf2(
+        adata, rank, 100, 1e-3, random_state=random_state
+    )
     cp_results, projections = results
     cp_weights, factors = cp_results
 
