@@ -66,7 +66,7 @@ def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
         print(f"  Sparsity: {zero_pct:.2f}%")
 
     adata.obs_names_make_unique()  # Ensure unique cell names
-    return prepare_dataset(adata, condition_name="condition", geneThreshold=0.01)
+    return prepare_dataset(adata, condition_name="condition", geneThreshold=0)
 
 
 def import_ligand_receptor_pairs(filename="./data/Human-2020-Jin-LR-pairs.csv"):

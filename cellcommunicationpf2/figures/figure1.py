@@ -44,17 +44,17 @@ def makeFigure():
     ).set_index(condition_column)[group_col]
 
     # Parameters for CC-PF2
-    rank = 10
+    rise_rank = 30
     cp_rank = 10
     n_iter_max = 100
-    tol = 1e-3
+    tol = 1e-6
     random_state = 42
 
     # Run CC-PF2
-    print(f"Running CC-PF2 with rank={rank} and cp_rank={cp_rank}...")
+    print(f"Running CC-PF2 with rank={rise_rank} and cp_rank={cp_rank}...")
     adata_filtered, r2x = run_cc_pf2_workflow(
         adata_filtered,
-        rise_rank=rank,
+        rise_rank=rise_rank,
         lr_pairs=lr_pairs,
         cp_rank=cp_rank,
         n_iter_max=n_iter_max,
@@ -91,7 +91,7 @@ def makeFigure():
 
     # Add overall figure title with R2X information
     plt.suptitle(
-        f"CC-PF2 Decomposition (Rank {rank}, R²X = {r2x:.4f})", fontsize=16, y=0.98
+        f"CC-PF2 Decomposition (Rank {rise_rank}, R²X = {r2x:.4f})", fontsize=16, y=0.98
     )
     print("Figure generation complete.")
     return fig

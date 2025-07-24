@@ -32,7 +32,8 @@ def makeFigure():
     condition_column = "sample"
 
     # Run a Rank-1 CC-PF2 Model
-    rise_rank = 20
+    
+    rise_rank = 30
     cp_rank = 1
 
     adata_filtered, r2x = run_cc_pf2_workflow(
