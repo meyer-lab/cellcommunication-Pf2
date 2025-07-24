@@ -33,10 +33,6 @@ def makeFigure():
     random_state = 42
 
     r2x_results = {}
-    prev_r2x = None
-    marginal_threshold = 0.0005
-    consecutive_marginal = 0
-    max_consecutive = 5
 
     for i, rank in enumerate(ranks):
         print(f"Testing rank {rank} ({i+1}/{len(ranks)})...")
@@ -50,20 +46,6 @@ def makeFigure():
             )
             r2x_results[rank] = r2x
             print(f"  Rank {rank}: R²X = {r2x:.6f}")
-
-            # Marginal improvement check
-            if prev_r2x is not None:
-                improvement = r2x - prev_r2x
-                if improvement < marginal_threshold:
-                    consecutive_marginal += 1
-                    if consecutive_marginal >= max_consecutive:
-                        print(
-                            f"\nBreaking early: Marginal improvement < {marginal_threshold} for {max_consecutive} consecutive ranks (at rank {rank})"
-                        )
-                        break
-                else:
-                    consecutive_marginal = 0
-            prev_r2x = r2x
 
         except Exception as e:
             print(f"  Rank {rank}: Failed - {e}")
