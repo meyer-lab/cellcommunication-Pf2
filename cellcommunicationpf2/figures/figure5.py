@@ -62,7 +62,7 @@ def makeFigure():
     ax[0].set_ylabel("R²X", fontsize=14)
     ax[0].set_title("PARAFAC2 (RISE) Rank Selection Analysis", fontsize=16)
     ax[0].grid(True, alpha=0.3)
-    
+
     # Set y min and max to 0 - 0.2
     ax[0].set_ylim(0, 0.2)
 
