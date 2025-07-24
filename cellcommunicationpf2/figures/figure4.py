@@ -31,7 +31,7 @@ def makeFigure():
     adata_filtered, lr_pairs_filtered = anndata_lrp_overlap(adata, lr_pairs)
 
     # Define parameter ranges to test
-    rise_ranks = [5, 10, 15, 20, 30, 40, 50]  # PARAFAC2 ranks to test
+    rise_ranks = [5, 10, 15, 20]  # PARAFAC2 ranks to test
     cp_ranks = [1, 5, 10, 15, 20]  # CP ranks to test
 
     print(f"Testing {len(rise_ranks)} rise ranks and {len(cp_ranks)} CP ranks...")
