@@ -21,7 +21,7 @@ from ..utils import run_cc_pf2_workflow
 
 def makeFigure():
     """Generate Figure 4, showing R2X values across different rank combinations."""
-    ax, f = getSetup((16, 6), (1, 2))
+    ax, f = getSetup((8, 6), (1, 1))  # Only one plot now
     subplotLabel(ax)
 
     # Import and prepare data
@@ -86,27 +86,10 @@ def makeFigure():
     # Convert results to DataFrame
     results_df = pd.DataFrame(results)
 
-    # Create pivot table for heatmap
-    heatmap_data = results_df.pivot(index="rise_rank", columns="cp_rank", values="r2x")
-
-    # Plot 1: Heatmap of R2X values
-    sns.heatmap(
-        heatmap_data,
-        annot=True,
-        fmt=".3f",
-        cmap="viridis",
-        ax=ax[0],
-        cbar_kws={"label": "R²X Value"},
-    )
-    ax[0].set_title("R²X Values Across Rank Combinations")
-    ax[0].set_xlabel("CP Rank")
-    ax[0].set_ylabel("Rise Rank (PARAFAC2)")
-
-    # Plot 2: Line plot showing trends
-    # Create separate lines for each rise rank
+    # Plot: Line plot showing trends for each rise rank
     for rise_rank in rise_ranks:
         subset = results_df[results_df["rise_rank"] == rise_rank]
-        ax[1].plot(
+        ax[0].plot(
             subset["cp_rank"],
             subset["r2x"],
             marker="o",
@@ -115,30 +98,11 @@ def makeFigure():
             markersize=6,
         )
 
-    ax[1].set_xlabel("CP Rank")
-    ax[1].set_ylabel("R²X Value")
-    ax[1].set_title("R²X Trends by CP Rank")
-    ax[1].legend(title="Rise Rank", bbox_to_anchor=(1.05, 1), loc="upper left")
-    ax[1].grid(True, alpha=0.3)
-
-    # Find and highlight best combination
-    best_idx = results_df["r2x"].idxmax()
-    if not pd.isna(best_idx):
-        best_result = results_df.loc[best_idx]
-        print(
-            f"\nBest combination: Rise Rank = {best_result['rise_rank']}, "
-            f"CP Rank = {best_result['cp_rank']}, R²X = {best_result['r2x']:.4f}"
-        )
-
-        # Add annotation for best point
-        ax[1].annotate(
-            f"Best: ({best_result['cp_rank']}, {best_result['r2x']:.3f})",
-            xy=(best_result["cp_rank"], best_result["r2x"]),
-            xytext=(10, 10),
-            textcoords="offset points",
-            bbox=dict(boxstyle="round,pad=0.5", fc="yellow", alpha=0.7),
-            arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0"),
-        )
+    ax[0].set_xlabel("CP Rank")
+    ax[0].set_ylabel("R²X Value")
+    ax[0].set_title("R²X Trends by CP Rank")
+    ax[0].legend(title="Rise Rank", bbox_to_anchor=(1.05, 1), loc="upper left")
+    ax[0].grid(True, alpha=0.3)
 
     # Add overall figure title
     plt.suptitle("CC-PF2 R²X Optimization Study", fontsize=16, y=0.98)
