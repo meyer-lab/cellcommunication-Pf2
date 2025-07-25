@@ -1,13 +1,12 @@
 import os
-import urllib.request
+import io
+import zstandard as zstd
+from functools import lru_cache
 
 import anndata
 import pandas as pd
 import numpy as np
 from parafac2.normalize import prepare_dataset
-
-# Module-level cache for ligand-receptor pairs
-_lr_pairs_cache = None
 
 
 # The below code is taken directly from https://github.com/earmingol/cell2cell/blob/master/cell2cell/datasets/anndata.py
@@ -44,58 +43,31 @@ def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
     print("Loading BALF COVID data (preserving sparse format)...")
     adata = anndata.read_h5ad(filename)
 
-    # Ensure X matrix stays sparse
-    if not hasattr(adata.X, "nnz"):  # Check if it's not already sparse
-        print("Warning: Data was loaded as dense, converting to sparse...")
-        import scipy.sparse as sp
+    assert hasattr(adata.X, "nnz"), "adata.X should be a sparse matrix"
 
-        adata.X = sp.csr_matrix(adata.X)
-        # Calculate sparsity for dense matrix
-        zeros = (adata.X == 0).sum()
-        sparsity = (zeros / adata.X.size) * 100
-        print(f"Converted to sparse: {sparsity:.2f}% zeros (sparse)")
-    else:
-        # Calculate correct sparsity percentage
-        total_elements = adata.n_obs * adata.n_vars
-        non_zero_pct = (adata.X.nnz / total_elements) * 100
-        zero_pct = 100 - non_zero_pct
-
-        print(f"Data loaded as sparse matrix: {type(adata.X).__name__}")
-        print(f"  Non-zero elements: {adata.X.nnz:,} ({non_zero_pct:.2f}%)")
-        print(f"  Zero elements: {total_elements - adata.X.nnz:,} ({zero_pct:.2f}%)")
-        print(f"  Sparsity: {zero_pct:.2f}%")
-
-    adata.obs_names_make_unique()  # Ensure unique cell names
     return prepare_dataset(adata, condition_name="condition", geneThreshold=0)
 
 
-def import_ligand_receptor_pairs(filename="./data/Human-2020-Jin-LR-pairs.csv"):
-    """Import ligand-receptor pairs from CellChat with caching
-    CellChat (Jin et al. 2021, Nature Communications)
+@lru_cache(maxsize=1)
+def import_ligand_receptor_pairs(filename="./Human-2020-Jin-LR-pairs.csv.zst"):
+    """Import ligand-receptor pairs from a zstd-compressed CSV with caching.
 
     The data is cached in memory after first load for improved performance.
     """
-    global _lr_pairs_cache
-
-    # Return cached version if available
-    if _lr_pairs_cache is not None:
-        print("Using cached ligand-receptor pairs data")
-        return _lr_pairs_cache.copy()
-
-    url = "https://raw.githubusercontent.com/LewisLabUCSD/Ligand-Receptor-Pairs/refs/heads/master/Human/Human-2020-Jin-LR-pairs.csv"
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
-
     if not os.path.exists(filename):
-        print("Downloading ligand-receptor pairs from GitHub...")
-        urllib.request.urlretrieve(url, filename)
+        raise FileNotFoundError(
+            f"Ligand-receptor pairs file not found: {filename}\n"
+            "Please ensure the compressed file is present in the repository."
+        )
 
-    print("Loading ligand-receptor pairs data...")
-    df = pd.read_csv(filename)
+    print("Loading ligand-receptor pairs data (zstd compressed)...")
+    with open(filename, "rb") as f:
+        dctx = zstd.ZstdDecompressor()
+        with dctx.stream_reader(f) as reader:
+            text_stream = io.TextIOWrapper(reader, encoding="utf-8")
+            df = pd.read_csv(text_stream)
 
-    # Cache the loaded data
-    _lr_pairs_cache = df
     print(f"Cached {len(df)} ligand-receptor pairs")
-
     return df
 
 
