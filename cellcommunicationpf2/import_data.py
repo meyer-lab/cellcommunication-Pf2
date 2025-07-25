@@ -2,6 +2,7 @@ import os
 import io
 import zstandard as zstd
 from functools import lru_cache
+import urllib
 
 import anndata
 import pandas as pd
