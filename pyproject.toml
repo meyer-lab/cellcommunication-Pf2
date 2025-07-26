@@ -16,9 +16,10 @@ dependencies = [
     "seaborn~=0.13.2",
     "datashader>=0.17.0",
     "pacmap>=0.8.0",
-    "parafac2 @ git+https://github.com/meyer-lab/parafac2.git@main",
     "liana>=1.5.1",
     "tensorly-viz>=0.1.7",
+    "parafac2 @ git+https://github.com/meyer-lab/parafac2.git@main",
+    "zstandard>=0.23.0",
 ]
 
 readme = "README.md"

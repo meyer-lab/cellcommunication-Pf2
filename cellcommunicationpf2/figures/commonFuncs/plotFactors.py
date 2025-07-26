@@ -20,7 +20,10 @@ def plot_condition_factors(
 ):
     """Plots Pf2 condition factors"""
 
-    yt = pd.Series(np.unique(data.obs[cond]))
+    # Get sample names in the order of condition_unique_idxs (as used by anndata_to_list)
+    idxs = np.argsort(data.obs["condition_unique_idxs"].unique())
+    yt = pd.Series(data.obs[cond].unique())[idxs]
+
     X = np.array(data.uns["Pf2_A"])
 
     XX = X
@@ -100,11 +103,12 @@ def plot_condition_factors(
 
 def plot_eigenstate_factors(data: anndata.AnnData, ax: Axes, factor_type: str):
     """Plots Pf2 eigenstate factors"""
-    rank = data.uns["Pf2_B"].shape[1]
-    xticks = np.arange(1, rank + 1)
+    cp_rank = data.uns["Pf2_B"].shape[1]
+    xticks = np.arange(1, cp_rank + 1)
     X = data.uns["Pf2_B"] if factor_type == "Pf2_B" else data.uns["Pf2_C"]
     X = X / np.max(np.abs(np.array(X)))
-    yt = np.arange(1, rank + 1)
+    rise_rank = data.uns["Pf2_B"].shape[0]
+    yt = np.arange(1, rise_rank + 1)
 
     sns.heatmap(
         data=X,

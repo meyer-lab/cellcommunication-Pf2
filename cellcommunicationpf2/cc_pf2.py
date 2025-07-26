@@ -2,11 +2,11 @@ import anndata
 import numpy as np
 import pandas as pd
 from parafac2.parafac2 import anndata_to_list, parafac2_nd
-from scipy.optimize import linear_sum_assignment
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
 from tensorly.decomposition import parafac
 
 from .ccc import build_context_ccc_tensor
+from .import_data import import_ligand_receptor_pairs
 
 
 def calc_communication_score(
@@ -32,10 +32,10 @@ def calc_communication_score(
     --------
     np.ndarray
         4D interaction tensor of shape (conditions, rank, rank, n_lr_pairs)
+    pd.DataFrame
+        The filtered ligand-receptor pairs that correspond to the tensor's last dimension.
     """
     if lr_pairs is None:
-        from .import_data import import_ligand_receptor_pairs
-
         lr_pairs = import_ligand_receptor_pairs()
 
     if gene_names is None:
@@ -55,18 +55,12 @@ def calc_communication_score(
     if "ligand" in lr_pairs.columns and "receptor" in lr_pairs.columns:
         lr_pairs_renamed = lr_pairs.rename(columns={"ligand": "A", "receptor": "B"})
     else:
-        lr_pairs_renamed = lr_pairs.copy()
-
-    # Filter to valid pairs
-    valid_mask = (lr_pairs_renamed["A"].isin(gene_names)) & (
-        lr_pairs_renamed["B"].isin(gene_names)
-    )
-    valid_pairs = lr_pairs_renamed[valid_mask].reset_index(drop=True)
+        lr_pairs_renamed = lr_pairs
 
     # Generate communication tensor for all contexts
-    tensors, _, _, _, _ = build_context_ccc_tensor(
+    tensors, _, _, ppi_names, _ = build_context_ccc_tensor(
         rnaseq_matrices=rnaseq_matrices,
-        ppi_data=valid_pairs,
+        ppi_data=lr_pairs_renamed,
         how="inner",
         communication_score="expression_product",
         complex_sep=None,
@@ -77,13 +71,17 @@ def calc_communication_score(
         verbose=False,
     )
 
+    # Filter the original lr_pairs to match the pairs used in the tensor
+    lr_pair_names = lr_pairs["ligand"] + "^" + lr_pairs["receptor"]
+    filtered_lr_pairs = lr_pairs[lr_pair_names.isin(ppi_names)].reset_index(drop=True)
+
     # Convert to numpy and transpose to expected format
     # From: (context, ppi_idx, rank, rank)
     # To:   (context, rank, rank, ppi_idx)
     interaction_tensor = np.array(tensors)
     interaction_tensor = np.transpose(interaction_tensor, (0, 2, 3, 1))
 
-    return interaction_tensor
+    return interaction_tensor, filtered_lr_pairs
 
 
 def cc_pf2(
@@ -93,31 +91,36 @@ def cc_pf2(
     tol: float,
     cp_rank: int | None = None,
     random_state: int | None = None,
-) -> tuple[tuple, float]:
+) -> tuple[tuple, float, pd.DataFrame]:
     """
-    Redesigned cell-cell communication model using initial PARAFAC2
-    followed by CP decomposition.
+    Perform PARAFAC2 decomposition on an AnnData object, followed by
+    CP decomposition on the resulting interaction tensor.
 
     Parameters:
     -----------
     adata : anndata.AnnData
-        AnnData object with cells x genes expression data
-    rank : int
-        Rank of the decomposition
+        Annotated data object with expression data in `.X`
+    rise_rank : int
+        Rank for the PARAFAC2 decomposition (RISE)
     n_iter_max : int
-        Maximum number of iterations
+        Maximum number of iterations for PARAFAC2
     tol : float
-        Convergence tolerance
+        Convergence tolerance for PARAFAC2
+    cp_rank : int, optional
+        Rank for the CP decomposition. If None, defaults to `rise_rank`.
     random_state : int, optional
-        Random seed for reproducibility
+        Seed for reproducibility
 
     Returns:
     --------
-    tuple[tuple, float]
-        (((cp_weights, cp_factors), projections), final_R2X)
+    tuple
+        A tuple containing:
+        - A nested tuple with CP results and projections: ((cp_weights, cp_factors), projections)
+        - The R2X (variance explained) of the CP decomposition on the interaction tensor.
+        - The filtered ligand-receptor pairs DataFrame used in the analysis.
     """
     gene_names = list(adata.var_names)
-    X_list = np.array(anndata_to_list(adata))
+    X_list = anndata_to_list(adata)
 
     # PARAFAC2 decomposition
     pf2_output, _ = parafac2_nd(
@@ -130,19 +133,12 @@ def cc_pf2(
     for i, tensor in enumerate(X_list):
         proj = projections[i]
         # Convert tensor to NumPy
-        if hasattr(tensor, "get"):
-            tensor_np = tensor.get()
-        elif hasattr(tensor, "toarray"):
-            tensor_np = tensor.toarray()
-            if hasattr(tensor_np, "get"):
-                tensor_np = tensor_np.get()
-        else:
-            tensor_np = tensor
+        tensor_np = tensor.get()
 
         projected_matrices.append(proj.T @ tensor_np)
 
     # Calculate cell-cell communication scores
-    interaction_tensors = calc_communication_score(
+    interaction_tensors, filtered_lr_pairs = calc_communication_score(
         projected_matrices, gene_names=gene_names
     )
 
@@ -162,13 +158,13 @@ def cc_pf2(
         random_state=random_state,
     )
 
-    # Calculate R2X properly (following the approach in parafac2_nd)
+    # Calculate R2X for the CP decomposition of the interaction tensor
     reconstructed = cp_to_tensor((cp_weights, cp_factors))
     total_variance = np.sum(interaction_tensors**2)
     error = np.sum((interaction_tensors - reconstructed) ** 2)
     final_R2X = 1 - (error / total_variance) if total_variance > 0 else 0.0
 
-    return ((cp_weights, cp_factors), projections), final_R2X
+    return ((cp_weights, cp_factors), projections), final_R2X, filtered_lr_pairs
 
 
 def standardize_cc_pf2(

@@ -1,8 +1,13 @@
 import os
-import urllib.request
+import io
+import zstandard as zstd
+from functools import lru_cache
+import urllib
 
 import anndata
 import pandas as pd
+import numpy as np
+from parafac2.normalize import prepare_dataset
 
 
 # The below code is taken directly from https://github.com/earmingol/cell2cell/blob/master/cell2cell/datasets/anndata.py
@@ -28,7 +33,7 @@ def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
 
     Returns
     -------
-        Annotated data matrix.
+        Annotated data matrix with sparse X matrix preserved.
     """
     url = "https://zenodo.org/record/7535867/files/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
     os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -36,35 +41,35 @@ def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
         print("Downloading data from Zenodo...")
         urllib.request.urlretrieve(url, filename)
 
-    return anndata.read_h5ad(filename)
+    print("Loading BALF COVID data (preserving sparse format)...")
+    adata = anndata.read_h5ad(filename)
+
+    assert hasattr(adata.X, "nnz"), "adata.X should be a sparse matrix"
+
+    return prepare_dataset(adata, condition_name="condition", geneThreshold=0.01)
 
 
-def import_ligand_receptor_pairs(filename="./data/Human-2020-Jin-LR-pairs.csv"):
-    """Import ligand-receptor pairs from CellChat
-    CellChat (Jin et al. 2021, Nature Communications"""
+@lru_cache(maxsize=1)
+def import_ligand_receptor_pairs(filename="./Human-2020-Jin-LR-pairs.csv.zst"):
+    """Import ligand-receptor pairs from a zstd-compressed CSV with caching.
 
-    url = "https://raw.githubusercontent.com/LewisLabUCSD/Ligand-Receptor-Pairs/refs/heads/master/Human/Human-2020-Jin-LR-pairs.csv"
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
-
+    The data is cached in memory after first load for improved performance.
+    """
     if not os.path.exists(filename):
-        print("Downloading data from GitHub...")
-        urllib.request.urlretrieve(url, filename)
+        raise FileNotFoundError(
+            f"Ligand-receptor pairs file not found: {filename}\n"
+            "Please ensure the compressed file is present in the repository."
+        )
 
-    return pd.read_csv(filename)
+    print("Loading ligand-receptor pairs data (zstd compressed)...")
+    with open(filename, "rb") as f:
+        dctx = zstd.ZstdDecompressor()
+        with dctx.stream_reader(f) as reader:
+            text_stream = io.TextIOWrapper(reader, encoding="utf-8")
+            df = pd.read_csv(text_stream)
 
-
-def anndata_lrp_overlap(X: anndata.AnnData, df_lrp: pd.DataFrame):
-    """Filter anndata to  include genes present in the ligand-receptor pairs data"""
-    df_lrp = df_lrp[["ligand", "receptor"]]
-
-    valid_mask = (df_lrp["ligand"].isin(X.var_names)) & (
-        df_lrp["receptor"].isin(X.var_names)
-    )
-    df_lrp = df_lrp[valid_mask].copy().reset_index(drop=True)
-
-    genes_to_keep = list(set(df_lrp["ligand"]) | set(df_lrp["receptor"]))
-
-    return X[:, genes_to_keep], df_lrp
+    print(f"Cached {len(df)} ligand-receptor pairs")
+    return df
 
 
 def add_cond_idxs(X, condition_key):
