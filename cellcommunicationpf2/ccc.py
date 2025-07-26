@@ -650,10 +650,18 @@ def generate_ccc_tensor(
     ppi_a = interaction_columns[0]
     ppi_b = interaction_columns[1]
 
+    # Convert DataFrame to NumPy arrays for faster indexing
+    gene_index = {gene: i for i, gene in enumerate(rnaseq_data.index)}
+    data_array = rnaseq_data.values  # Convert to NumPy once
+
     ccc_tensor = []
     for _, ppi in ppi_data.iterrows():
-        v = rnaseq_data.loc[ppi[ppi_a], :].values
-        w = rnaseq_data.loc[ppi[ppi_b], :].values
+        # Use NumPy indexing instead of pandas .loc
+        gene_a_idx = gene_index[ppi[ppi_a]]
+        gene_b_idx = gene_index[ppi[ppi_b]]
+
+        v = data_array[gene_a_idx, :]
+        w = data_array[gene_b_idx, :]
 
         ccc_tensor.append(
             compute_ccc_matrix(
