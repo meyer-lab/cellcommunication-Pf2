@@ -15,6 +15,7 @@ from ..import_data import (
 from .common import subplotLabel
 from ..utils import run_cc_pf2_workflow
 
+
 def makeFigure():
     """Generate Figure 6 showing CP rank selection analysis with fixed RISE rank."""
     fig, ax = plt.subplots(1, 1, figsize=(8, 6), constrained_layout=True)
@@ -29,7 +30,9 @@ def makeFigure():
 
     rise_rank = 30
     cp_ranks = list(range(10, 101, 10))
-    print(f"Testing CP ranks {cp_ranks[0]}-{cp_ranks[-1]} in steps of 5 (RISE rank fixed at {rise_rank})...")
+    print(
+        f"Testing CP ranks {cp_ranks[0]}-{cp_ranks[-1]} in steps of 5 (RISE rank fixed at {rise_rank})..."
+    )
 
     n_iter_max = 100
     tol = 1e-6
@@ -54,7 +57,7 @@ def makeFigure():
 
         except Exception as e:
             print(f"  CP Rank {cp_rank}: Failed - {e}")
-            r2x_results[cp_rank] = float('nan')
+            r2x_results[cp_rank] = float("nan")
 
     # Filter valid results and plot
     valid_results = {k: v for k, v in r2x_results.items() if not (v is None or v != v)}
