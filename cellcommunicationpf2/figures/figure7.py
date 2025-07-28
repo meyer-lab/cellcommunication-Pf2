@@ -25,16 +25,22 @@ def makeFigure():
 
     # Run RISE (pf2_nd)
     print("Running RISE...")
-    pf2_output, _ = parafac2_nd(adata, rank=rank, n_iter_max=100, tol=1e-6, random_state=42)
+    pf2_output, _ = parafac2_nd(
+        adata, rank=rank, n_iter_max=100, tol=1e-6, random_state=42
+    )
     _, _, projections = pf2_output
-    stacked = np.concatenate([proj.T for proj in projections], axis=1)  # (rank, total_cells)
+    stacked = np.concatenate(
+        [proj.T for proj in projections], axis=1
+    )  # (rank, total_cells)
     print(f"Stacked projections shape: {stacked.shape}")
 
     # Get cell type labels for all cells (in the same order as stacking)
-    celltype_labels = np.concatenate([
-        adata.obs.loc[adata.obs["condition_unique_idxs"] == i, "celltype"].values
-        for i in range(len(projections))
-    ])
+    celltype_labels = np.concatenate(
+        [
+            adata.obs.loc[adata.obs["condition_unique_idxs"] == i, "celltype"].values
+            for i in range(len(projections))
+        ]
+    )
     unique_celltypes = pd.Categorical(celltype_labels).categories
 
     # Compute global min and max for all cell types and ranks
