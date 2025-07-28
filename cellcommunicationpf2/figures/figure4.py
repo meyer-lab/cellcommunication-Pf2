@@ -7,11 +7,9 @@ rise rank (PARAFAC2 rank) and CP rank parameters in the CC-PF2 decomposition.
 
 import numpy as np
 import pandas as pd
-import seaborn as sns
 from matplotlib import pyplot as plt
 
 from ..import_data import (
-    anndata_lrp_overlap,
     import_balf_covid,
     import_ligand_receptor_pairs,
 )
