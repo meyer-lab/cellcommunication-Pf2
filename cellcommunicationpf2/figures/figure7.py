@@ -56,7 +56,7 @@ def makeFigure():
         values = stacked[r, :]
         data = [values[celltype_labels == ct] for ct in unique_celltypes]
         ax[r].boxplot(data, vert=False, labels=unique_celltypes, showfliers=False)
-        # Remove subplot title, clarify axis label  
+        # Remove subplot title, clarify axis label
         if r % ncols == 0:
             ax[r].set_ylabel("Cell Type")
         else:
