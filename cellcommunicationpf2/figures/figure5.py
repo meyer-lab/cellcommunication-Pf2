@@ -24,7 +24,7 @@ def makeFigure():
     adata_filtered = add_cond_idxs(adata, "sample")
     print(f"Data shape: {adata_filtered.shape}")
 
-    ranks = list(range(1, 21, 5))
+    ranks = list(range(1, 41, 5))
     print(f"Testing ranks {ranks[0]}-{ranks[-1]} in steps of 5...")
 
     n_iter_max = 100
