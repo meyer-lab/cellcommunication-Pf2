@@ -1,7 +1,7 @@
 """
 Figure 7: RISE Projection Boxplots by Cell Type
 
-This figure runs RISE (pf2_nd), stacks the projections, and for each eigen-state,
+This figure runs RISE stacks the projections, and for each eigen-state,
 plots boxplots of the projection values for each cell type.
 """
 
@@ -56,12 +56,12 @@ def makeFigure():
         values = stacked[r, :]
         data = [values[celltype_labels == ct] for ct in unique_celltypes]
         ax[r].boxplot(data, vert=False, labels=unique_celltypes, showfliers=False)
-        # Remove subplot title, clarify axis label
+        # Remove subplot title, clarify axis label  
         if r % ncols == 0:
             ax[r].set_ylabel("Cell Type")
         else:
             ax[r].set_yticklabels([])
-        ax[r].set_xlabel("Eigen-state Projection Value")
+        ax[r].set_xlabel(f"Eigen-state {r+1} Projection Value")
         ax[r].set_xlim(min_val, max_val)
 
     # Remove the overall figure title for a cleaner look
