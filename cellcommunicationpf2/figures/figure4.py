@@ -28,7 +28,7 @@ def makeFigure():
     lr_pairs = import_ligand_receptor_pairs()
 
     # Define parameter ranges to test
-    rise_ranks = [5, 10, 15, 20]  # PARAFAC2 ranks to test
+    rise_ranks = [5, 10, 15, 20, 30]  # PARAFAC2 ranks to test
     cp_ranks = [1, 5, 10, 15, 20]  # CP ranks to test
 
     print(f"Testing {len(rise_ranks)} rise ranks and {len(cp_ranks)} CP ranks...")
