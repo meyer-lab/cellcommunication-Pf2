@@ -7,11 +7,9 @@ rise rank (PARAFAC2 rank) and CP rank parameters in the CC-PF2 decomposition.
 
 import numpy as np
 import pandas as pd
-import seaborn as sns
 from matplotlib import pyplot as plt
 
 from ..import_data import (
-    anndata_lrp_overlap,
     import_balf_covid,
     import_ligand_receptor_pairs,
 )
@@ -28,7 +26,6 @@ def makeFigure():
     print("Importing and preparing data...")
     adata = import_balf_covid()
     lr_pairs = import_ligand_receptor_pairs()
-    adata_filtered, lr_pairs_filtered = anndata_lrp_overlap(adata, lr_pairs)
 
     # Define parameter ranges to test
     rise_ranks = [5, 10, 15, 20]  # PARAFAC2 ranks to test
@@ -60,11 +57,11 @@ def makeFigure():
 
             try:
                 # Run CC-PF2 with current parameters
-                adata_copy = adata_filtered.copy()  # Create a copy to avoid conflicts
+                adata_copy = adata.copy()  # Create a copy to avoid conflicts
                 _, r2x = run_cc_pf2_workflow(
                     adata_copy,
                     rise_rank=rise_rank,
-                    lr_pairs=lr_pairs_filtered,
+                    lr_pairs=lr_pairs,
                     cp_rank=cp_rank,
                     n_iter_max=n_iter_max,
                     tol=tol,
