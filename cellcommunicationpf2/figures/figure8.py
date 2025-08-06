@@ -58,7 +58,7 @@ def makeFigure():
 
     # Store both the raw projections and weighted projections
     adata_filtered.obsm["Pf2_cell_projections"] = stacked_projections
-    adata_filtered.obsm["Pf2_cell_cell_weighted_projections"] = weighted_projections
+    adata_filtered.obsm["Pf2_cell_cell_weighted_projections"] = stacked_projections
 
     # Compute PaCMAP with n_neighbors=13
     print("Computing PaCMAP with n_neighbors=13...")
@@ -84,7 +84,6 @@ def makeFigure():
         ax=ax_celltype,
         cmap="tab20"
     )
-    ax_celltype.set_title("Cell Types (n_neighbors=13)", fontsize=16)
 
     # Smaller component plots
     ax_components = []
@@ -99,16 +98,9 @@ def makeFigure():
             adata_filtered,
             cmp=comp,
             ax=ax_comp,
-            cbarMax=np.max(np.abs(weighted_projections[:, comp - 1])),
+            cbarMax=0.2
         )
         ax_comp.set_title(f"Eigenstate {comp}", fontsize=10)
-
-    # Add overall figure title
-    plt.suptitle(
-        f"PaCMAP Analysis: Cell Types & Component Weights (R²X = {r2x:.4f})",
-        fontsize=18,
-        y=0.98
-    )
 
     print("Figure generation complete.")
     return fig

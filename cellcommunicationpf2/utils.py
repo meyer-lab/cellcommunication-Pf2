@@ -2,6 +2,7 @@ import anndata
 import numpy as np
 from tensorly.cp_tensor import CPTensor
 from tlviz.factor_tools import factor_match_score as fms
+from parafac2.parafac2 import parafac2_nd, store_pf2
 from .cc_pf2 import cc_pf2, standardize_cc_pf2
 from .import_data import add_cond_idxs
 from sklearn.linear_model import LinearRegression
@@ -137,3 +138,62 @@ def run_cc_pf2_workflow(
     adata.uns["Pf2_projections"] = projections
 
     return adata, r2x
+
+
+def run_and_store_parafac2_rank30(
+    adata: anndata.AnnData,
+    condition_column: str = "sample",
+    n_iter_max: int = 100,
+    tol: float = 1e-6,
+    random_state: int = 42,
+    save_path: str = "output/balf_covid_pf2_rank30.h5ad",
+) -> tuple[anndata.AnnData, float]:
+    """
+    Run PARAFAC2 decomposition with rank 30 and store results in AnnData object.
+
+    Parameters
+    ----------
+    adata : anndata.AnnData
+        The input AnnData object with expression data.
+    condition_column : str, default="sample"
+        The column in `adata.obs` that defines the conditions.
+    n_iter_max : int, default=100
+        Maximum number of iterations for the decomposition.
+    tol : float, default=1e-6
+        Convergence tolerance for the decomposition.
+    random_state : int, default=42
+        Random seed for reproducibility.
+    save_path : str, default="output/balf_covid_pf2_rank30.h5ad"
+        Path to save the AnnData object with stored results.
+
+    Returns
+    -------
+    tuple[anndata.AnnData, float]
+        A tuple containing the AnnData object with stored PARAFAC2 results
+        and the R2X value of the decomposition.
+    """
+    # Ensure condition indices are present
+    adata_filtered = add_cond_idxs(adata, condition_column)
+
+    print("Running PARAFAC2 decomposition with rank 30...")
+    pf2_output, r2x = parafac2_nd(
+        adata_filtered,
+        rank=30,
+        n_iter_max=n_iter_max,
+        tol=tol,
+        random_state=random_state,
+    )
+
+    print(f"PARAFAC2 decomposition R²X: {r2x:.6f}")
+
+    # Store the PF2 results in the AnnData object
+    print("Storing PARAFAC2 results in AnnData object...")
+    adata_with_pf2 = store_pf2(adata_filtered, pf2_output)
+
+    # Save the modified AnnData object to disk
+    if save_path:
+        print(f"Saving AnnData with PARAFAC2 results to {save_path}...")
+        adata_with_pf2.write(save_path)
+        print(f"Successfully saved AnnData to {save_path}")
+
+    return adata_with_pf2, r2x
