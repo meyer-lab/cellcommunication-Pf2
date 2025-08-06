@@ -45,7 +45,7 @@ def makeFigure():
 
     # Parameters for CC-PF2
     rise_rank = 30
-    cp_rank = 10
+    cp_rank = 30
     n_iter_max = 100
     tol = 1e-6
     random_state = 42
