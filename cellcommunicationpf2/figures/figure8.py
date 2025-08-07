@@ -53,9 +53,6 @@ def makeFigure():
     # We stack them to get (total_cells, rank)
     stacked_projections = np.vstack(projections)
 
-    eigenstate_factor = factors[1]  # This should be (rank x rank)
-    weighted_projections = stacked_projections @ eigenstate_factor
-
     # Store both the raw projections and weighted projections
     adata_filtered.obsm["Pf2_cell_projections"] = stacked_projections
     adata_filtered.obsm["Pf2_cell_cell_weighted_projections"] = stacked_projections
