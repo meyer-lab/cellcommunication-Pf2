@@ -2,7 +2,7 @@ import anndata
 import numpy as np
 from tensorly.cp_tensor import CPTensor
 from tlviz.factor_tools import factor_match_score as fms
-from .cc_pf2 import cc_pf2, standardize_cc_pf2
+from .cc_pf2 import cc_pf2, standardize_cp_decomposition
 from .import_data import add_cond_idxs
 from sklearn.linear_model import LinearRegression
 import pandas as pd
@@ -122,7 +122,7 @@ def run_cc_pf2_workflow(
     (cp_weights, factors), projections = results
 
     # 2. Standardize the factors for interpretability
-    weights, factors = standardize_cc_pf2(factors, weights=cp_weights)
+    weights, factors = standardize_cp_decomposition(factors, weights=cp_weights)
 
     # Store factors in AnnData object for easy access by plotting functions
     adata.uns["Pf2_A"] = factors[0]  # Condition factor
@@ -137,3 +137,54 @@ def run_cc_pf2_workflow(
     adata.uns["Pf2_projections"] = projections
 
     return adata, r2x
+
+
+def pseudobulk_X(X: anndata, condition_name: str, groupby: str) -> list[pd.DataFrame]:
+    """
+    Calculate average gene expression for each groupby in each sample
+    """
+    
+    # Get unique samples and cell types
+    samples = X.obs[condition_name].unique()
+    groupby_names = X.obs[groupby].unique()
+    gene_names = X.var_names
+
+    # Initialize results dictionary
+    total_df = []
+    
+    for sample in samples:
+        # Subset to current sample
+        sample_mask = X.obs[condition_name] == sample
+        X_sample = X[sample_mask, :]
+        results = []
+        for group_name in groupby_names:
+            # Subset to current groupby
+            group_mask = X_sample.obs[groupby] == group_name
+            adata_subset = X_sample[group_mask, :]
+
+            # Calculate mean expression
+            mean_expression = np.mean(adata_subset.X.toarray(), axis=0)
+            
+            # Store results
+            result_dict = {}
+            
+            if adata_subset.n_obs > 0:
+                # Calculate mean expression for existing cells
+                mean_expression = np.mean(adata_subset.X.toarray(), axis=0)
+                for i, gene in enumerate(gene_names):
+                    result_dict[gene] = mean_expression[i]
+            else:
+                # Set zero expression for missing combinations
+                for gene in gene_names:
+                    result_dict[gene] = 0.0
+
+            results.append(result_dict)
+            
+        # Dataframe with genes as rows and groupby as columns
+        results_df = pd.DataFrame(results, columns=gene_names, index=groupby_names)
+        total_df.append(results_df.T)
+    
+    
+    return total_df
+
+
