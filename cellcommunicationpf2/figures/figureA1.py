@@ -1,9 +1,10 @@
 """
-Figure 1: CC-PF2 Factor Visualization
+Figure A1: XXXX
 
 XXXX
 """
 
+import numpy as np
 from ..import_data import (
     add_cond_idxs,
     import_balf_covid,
@@ -19,7 +20,6 @@ from ..utils import (
 from ..cc_pf2 import (
     calc_communication_score_pseudobulk,
     pseudobulk_nncp_decomposition,
-    standardize_cp_decomposition
 )
 from .commonFuncs.plotFactors import (
     plot_condition_factors,
@@ -30,7 +30,6 @@ from .commonFuncs.plotFactors import (
 
 
 def makeFigure():
-    """Get a list of the axis objects and create a figure."""
     ax, f = getSetup((18, 18), (2, 2))
     subplotLabel(ax)
 
@@ -59,7 +58,9 @@ def makeFigure():
     print(filtered_lr_pairs)
 
     cpd_weights, cpd_factors, r2x = pseudobulk_nncp_decomposition(interaction_tensor, cp_rank=10, n_iter_max=10000, tol=1e-9)
-    # cpd_weights, cpd_factors = standardize_cp_decomposition(cpd_weights, cpd_factors)
+    # Confirm cpd factors are only positive
+    for factor in cpd_factors:
+        assert np.all(factor >= 0), "CPD factors contain negative values"
 
     plot_condition_factors(
         data=cpd_factors[0],
@@ -68,7 +69,7 @@ def makeFigure():
         cond=group_col,
         cond_group_labels=sample_to_group,
         group_cond=True,
-        vmin=0
+        vmin=-1
     )
   
 
@@ -77,7 +78,7 @@ def makeFigure():
         ax=ax[1],
         factor_type="Sender Cell Type",
         labels=X.obs[groupby].unique(),
-        vmin=0
+        vmin=-1
     )
     
     plot_eigenstate_factors(
@@ -85,7 +86,7 @@ def makeFigure():
         ax=ax[2],
         factor_type="Receiver Cell Type",
         labels=X.obs[groupby].unique(),
-        vmin=0 
+        vmin=-1
     )
 
     plot_lr_factors(
@@ -93,8 +94,9 @@ def makeFigure():
         ax=ax[3],
         lr_pairs=filtered_lr_pairs,
         weight=0.04,
-        vmin=0
+        vmin=-1
     )
+    
     
     ax[0].set_title("Conditions Factor")
     ax[1].set_title("Sender Cell Type Factor")

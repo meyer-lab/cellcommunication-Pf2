@@ -259,7 +259,7 @@ def pseudobulk_nncp_decomposition(
         A tuple containing the CP decomposition results, the R2X value,
         and the filtered ligand-receptor pairs.
     """
-    # Nonnegative CP decomposition with explicit random initialization
+    # Nonnegative CP decomposition
     nncp_weights, nncp_factors = non_negative_parafac(
         interaction_tensors,
         cp_rank,

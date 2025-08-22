@@ -54,11 +54,11 @@ def plot_condition_factors(
     if not isinstance(condition_labels, pd.Series):
         condition_labels = pd.Series(condition_labels)
     
-    # Normalize data
-    XX = X.copy()
-    X = X - np.median(XX, axis=0)
-    X = X / np.std(XX, axis=0)
-    X = X / np.max(np.abs(X))
+    # # Normalize data
+    # XX = X.copy()
+    # X = X - np.median(XX, axis=0)
+    # X = X / np.std(XX, axis=0)
+    # X = X / np.max(np.abs(X))
     
     # Reorder
     ind = reorder_table(X)
