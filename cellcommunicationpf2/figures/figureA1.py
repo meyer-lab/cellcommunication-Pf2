@@ -1,12 +1,9 @@
 """
 Figure 1: CC-PF2 Factor Visualization
 
-This figure shows the factors from a rank-10 CC-PF2 decomposition
-of the BALF COVID-19 dataset.
+XXXX
 """
 
-import numpy as np 
-import pandas as pd
 from ..import_data import (
     add_cond_idxs,
     import_balf_covid,
@@ -17,24 +14,24 @@ from .common import (
     getSetup,
 )
 from ..utils import (
-    run_cc_pf2_workflow,
     pseudobulk_X
 )
 from ..cc_pf2 import (
     calc_communication_score_pseudobulk,
-    pseudobulk_cp_decomposition,
+    pseudobulk_nncp_decomposition,
     standardize_cp_decomposition
 )
 from .commonFuncs.plotFactors import (
     plot_condition_factors,
     plot_eigenstate_factors,
     plot_lr_factors,
+    rotate_yaxis
 )
 
 
 def makeFigure():
     """Get a list of the axis objects and create a figure."""
-    ax, f = getSetup((8, 8), (2, 2))
+    ax, f = getSetup((18, 18), (2, 2))
     subplotLabel(ax)
 
     # Import and prepare data
@@ -61,8 +58,8 @@ def makeFigure():
     print(interaction_tensor.shape)
     print(filtered_lr_pairs)
 
-    cpd_weights, cpd_factors, r2x = pseudobulk_cp_decomposition(interaction_tensor, cp_rank=10, n_iter_max=100, tol=1e-6, random_state=42)
-    cpd_weights, cpd_factors = standardize_cp_decomposition(cpd_weights, cpd_factors)
+    cpd_weights, cpd_factors, r2x = pseudobulk_nncp_decomposition(interaction_tensor, cp_rank=10, n_iter_max=10000, tol=1e-9)
+    # cpd_weights, cpd_factors = standardize_cp_decomposition(cpd_weights, cpd_factors)
 
     plot_condition_factors(
         data=cpd_factors[0],
@@ -70,9 +67,41 @@ def makeFigure():
         condition_labels=X.obs[condition_column].unique(),
         cond=group_col,
         cond_group_labels=sample_to_group,
-        group_cond=True
+        group_cond=True,
+        vmin=0
     )
-    # ax[0].set_title("Factor 0: Patient Conditions")
+  
+
+    plot_eigenstate_factors(
+        data=cpd_factors[1],
+        ax=ax[1],
+        factor_type="Sender Cell Type",
+        labels=X.obs[groupby].unique(),
+        vmin=0
+    )
+    
+    plot_eigenstate_factors(
+        data=cpd_factors[2],
+        ax=ax[2],
+        factor_type="Receiver Cell Type",
+        labels=X.obs[groupby].unique(),
+        vmin=0 
+    )
+
+    plot_lr_factors(
+        data=cpd_factors[3],
+        ax=ax[3],
+        lr_pairs=filtered_lr_pairs,
+        weight=0.04,
+        vmin=0
+    )
+    
+    ax[0].set_title("Conditions Factor")
+    ax[1].set_title("Sender Cell Type Factor")
+    ax[2].set_title("Receiver Cell Type Factor")
+    ax[3].set_title("Ligand-Receptor Factor")
+    rotate_yaxis(ax[1], rotation=0)
+    rotate_yaxis(ax[2], rotation=0)
 
     return f
 

@@ -27,7 +27,7 @@ def plot_condition_factors(
     condition_labels: Optional[Union[pd.Series, List[str], np.ndarray]] = None,
     color_key=None,
     group_cond=False,
-    **kwargs
+    vmin=0
 ):
     """Plots condition factors from Pf2 or similar decomposition"""
     
@@ -136,7 +136,6 @@ def plot_condition_factors(
         )
     
     xticks = np.arange(1, X.shape[1] + 1)
-    cmap = kwargs.get('cmap', 'RdBu_r')
     
     sns.heatmap(
         data=X,
@@ -145,7 +144,7 @@ def plot_condition_factors(
         ax=ax,
         center=0,
         cmap=cmap,
-        vmin=-1,
+        vmin=vmin,
         vmax=1,
     )
     ax.tick_params(axis="y", rotation=0)
@@ -158,6 +157,7 @@ def plot_eigenstate_factors(
     ax: Axes, 
     factor_type: str = "B" or None,
     labels: Optional[Union[List[str], np.ndarray]] = None,
+    vmin: float = 0,
 ):
     """Plots eigenstate factors from Pf2 or similar decomposition"""
     
@@ -181,7 +181,7 @@ def plot_eigenstate_factors(
         ax=ax,
         center=0,
         cmap=cmap,
-        vmin=-1,
+        vmin=vmin,
         vmax=1,
     )
     ax.set(xlabel="Component")
@@ -193,6 +193,7 @@ def plot_lr_factors(
     lr_pairs: Optional[pd.DataFrame] = None,
     trim: bool = True, 
     weight: float = 0.08,
+    vmin: float = 0
 ):
     """Plots ligand-receptor factors from Pf2 or similar decomposition"""
     
@@ -226,7 +227,7 @@ def plot_lr_factors(
         ax=ax,
         center=0,
         cmap=cmap,
-        vmin=-1,
+        vmin=vmin,
         vmax=1,
     )
     ax.set(xlabel="Component")
@@ -270,3 +271,15 @@ def reorder_table(projs: np.ndarray):
         clean_projs, method="complete", metric="cosine", optimal_ordering=True
     )
     return sch.leaves_list(Z)
+
+
+def rotate_xaxis(ax, rotation=90):
+    """Rotates text by 90 degrees for x-axis"""
+    ax.set_xticks(ax.get_xticks())
+    ax.set_xticklabels(labels=ax.get_xticklabels(), rotation=rotation)
+
+
+def rotate_yaxis(ax, rotation=90):
+    """Rotates text by 90 degrees for y-axis"""
+    ax.set_yticks(ax.get_yticks())
+    ax.set_yticklabels(labels=ax.get_yticklabels(), rotation=rotation)

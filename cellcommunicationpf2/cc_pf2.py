@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from parafac2.parafac2 import anndata_to_list, parafac2_nd
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
-from tensorly.decomposition import parafac
+from tensorly.decomposition import parafac, non_negative_parafac
 
 from .ccc import build_context_ccc_tensor
 from .import_data import import_ligand_receptor_pairs
@@ -230,7 +230,7 @@ def calc_communication_score_pseudobulk(
     return interaction_tensor, filtered_lr_pairs
 
 
-def pseudobulk_cp_decomposition(
+def pseudobulk_nncp_decomposition(
     interaction_tensors: np.ndarray,
     cp_rank: int,
     n_iter_max: int,
@@ -238,7 +238,7 @@ def pseudobulk_cp_decomposition(
     random_state: int | None = None,
 ) -> tuple[tuple[np.ndarray, list[np.ndarray]], float, pd.DataFrame]:
     """
-    Perform CP decomposition on the pseudobulk interaction tensors.
+    Perform non-negative CP decomposition on the pseudobulk interaction tensors.
 
     Parameters
     ----------
@@ -259,24 +259,24 @@ def pseudobulk_cp_decomposition(
         A tuple containing the CP decomposition results, the R2X value,
         and the filtered ligand-receptor pairs.
     """
-    # CP decomposition with explicit random initialization
-    cp_weights, cp_factors = parafac(
+    # Nonnegative CP decomposition with explicit random initialization
+    nncp_weights, nncp_factors = non_negative_parafac(
         interaction_tensors,
         cp_rank,
         n_iter_max=n_iter_max,
-        tol=None,
+        tol=tol,
         init="random",  # Use random initialization
-        normalize_factors=False,
+        normalize_factors=True,
         random_state=random_state,
     )
 
     # Calculate R2X for the CP decomposition of the interaction tensor
-    reconstructed = cp_to_tensor((cp_weights, cp_factors))
+    reconstructed = cp_to_tensor((nncp_weights, nncp_factors))
     total_variance = np.sum(interaction_tensors**2)
     error = np.sum((interaction_tensors - reconstructed) ** 2)
     r2x = 1 - (error / total_variance) if total_variance > 0 else 0.0
 
-    return cp_weights, cp_factors, r2x
+    return nncp_weights, nncp_factors, r2x
 
 
 
