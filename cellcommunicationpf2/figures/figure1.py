@@ -76,18 +76,22 @@ def makeFigure():
         group_cond=True,  # Sort samples by their condition group
     )
     ax[0].set_title("Factor 0: Patient Conditions")
+    ax[0].set_ylabel("Patient Samples", fontsize=12)
 
     # Factor 1: Sender Cell Eigenstates
     plot_eigenstate_factors(adata_filtered, ax[1], factor_type="Pf2_B")
     ax[1].set_title("Factor 1: Sender Cell Eigenstates")
+    ax[1].set_ylabel("Sender Cell Eigenstates", fontsize=12)
 
     # Factor 2: Receiver Cell Eigenstates
     plot_eigenstate_factors(adata_filtered, ax[2], factor_type="Pf2_C")
     ax[2].set_title("Factor 2: Receiver Cell Eigenstates")
+    ax[2].set_ylabel("Receiver Cell Eigenstates", fontsize=12)
 
     # Factor 3: Ligand-Receptor Pairs
-    plot_lr_factors(adata_filtered, ax[3], trim=True)
+    plot_lr_factors(adata_filtered, ax[3], trim=True, weight=0.25)
     ax[3].set_title("Factor 3: LR Pairs")
+    ax[3].set_ylabel("Ligand-Receptor Pairs", fontsize=12)
 
     # Add overall figure title with R2X information
     plt.suptitle(
