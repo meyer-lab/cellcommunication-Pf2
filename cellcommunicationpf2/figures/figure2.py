@@ -13,7 +13,7 @@ import seaborn as sns
 from matplotlib.axes import Axes
 from ..utils import resample, calculate_fms
 
-from ..cc_pf2 import cc_pf2, standardize_cc_pf2
+from ..cc_pf2 import cc_pf2, standardize_cp_decomposition
 from ..import_data import (
     add_cond_idxs,
     import_balf_covid,
@@ -38,15 +38,15 @@ def makeFigure():
 
     # Parameters for stability plots
     percentList = np.arange(0.0, 25.0, 5.0)
-    ranks = [3, 5, 7, 9]
+    ranks = list(range(1, 51, 5))
     runs = 3
 
     # Generate plots
-    print("Plotting FMS vs. data dropout...")
-    plot_fms_percent_drop(
-        X_filtered, ax[0], percentList=percentList, runs=runs, rank=10
-    )
-    ax[0].set_title("Robustness to Data Subsampling")
+    # print("Plotting FMS vs. data dropout...")
+    # plot_fms_percent_drop(
+    #     X_filtered, ax[0], percentList=percentList, runs=runs, rank=10
+    # )
+    # ax[0].set_title("Robustness to Data Subsampling")
 
     print("Plotting FMS vs. rank...")
     plot_fms_diff_ranks(X_filtered, ax[1], ranksList=ranks, runs=runs)
@@ -66,7 +66,7 @@ def run_cc_pf2_analysis(
     cp_results, projections = results
     cp_weights, factors = cp_results
 
-    _, factors = standardize_cc_pf2(factors, weights=cp_weights)
+    _, factors = standardize_cp_decomposition(cp_weights, factors)
 
     adata.uns["Pf2_A"] = factors[0]
     adata.uns["Pf2_B"] = factors[1]

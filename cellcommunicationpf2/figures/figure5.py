@@ -24,11 +24,11 @@ def makeFigure():
     adata_filtered = add_cond_idxs(adata, "sample")
     print(f"Data shape: {adata_filtered.shape}")
 
-    ranks = list(range(1, 41, 5))
+    ranks = list(range(1, 51, 5))
     print(f"Testing ranks {ranks[0]}-{ranks[-1]} in steps of 5...")
 
-    n_iter_max = 100
-    tol = 1e-6
+    n_iter_max = 1000
+    tol = 1e-8
     random_state = 42
 
     r2x_results = {}
@@ -56,13 +56,13 @@ def makeFigure():
     r2x_values = [valid_results[r] for r in ranks]
 
     # Plot R²X curve
-    ax[0].plot(ranks, r2x_values, "o-", linewidth=2, markersize=6, color="steelblue")
-    ax[0].set_xlabel("RISE Rank", fontsize=14)
-    ax[0].set_ylabel("R²X", fontsize=14)
-    ax[0].set_title("PARAFAC2 (RISE) Rank Selection Analysis", fontsize=16)
-    ax[0].grid(True, alpha=0.3)
+    ax[0].plot(ranks, r2x_values, "o-", color="steelblue")
+    ax[0].set_xlabel("RISE Rank")
+    ax[0].set_ylabel("R²X")
+    ax[0].set_title("PARAFAC2 (RISE) Rank Selection Analysis")
+    # ax[0].grid(True, alpha=0.3)
 
-    # Set y min and max to 0 - 0.2
+    # Set y min and max to 0 - 1.0
     ax[0].set_ylim(0, 0.2)
 
     print("Figure 5 generation complete.")

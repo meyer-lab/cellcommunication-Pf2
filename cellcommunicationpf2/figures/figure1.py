@@ -42,6 +42,8 @@ def makeFigure():
     sample_to_group = adata_filtered.obs.drop_duplicates(
         subset=[condition_column, group_col]
     ).set_index(condition_column)[group_col]
+    
+    print(sample_to_group)
 
     # Parameters for CC-PF2
     rise_rank = 30
@@ -61,12 +63,15 @@ def makeFigure():
         tol=tol,
         random_state=random_state,
     )
+    
+    
 
     print(f"CC-PF2 decomposition R2X: {r2x:.4f}")
 
     # Generate heatmaps for each factor
     print("Generating heatmaps...")
 
+    print(sample_to_group   )
     # Factor 0: Patient Conditions (Samples)
     plot_condition_factors(
         adata_filtered,
@@ -76,22 +81,25 @@ def makeFigure():
         group_cond=True,  # Sort samples by their condition group
     )
     ax[0].set_title("Factor 0: Patient Conditions")
+    
 
-    # Factor 1: Sender Cell Eigenstates
-    plot_eigenstate_factors(adata_filtered, ax[1], factor_type="Pf2_B")
-    ax[1].set_title("Factor 1: Sender Cell Eigenstates")
+    # # Factor 1: Sender Cell Eigenstates
+    # plot_eigenstate_factors(adata_filtered, ax[1], factor_type="B", vmin=-1)
+    # ax[1].set_title("Factor 1: Sender Cell Eigen-State")
+    # ax[1].set_ylabel("Sender Eigen-State")
 
-    # Factor 2: Receiver Cell Eigenstates
-    plot_eigenstate_factors(adata_filtered, ax[2], factor_type="Pf2_C")
-    ax[2].set_title("Factor 2: Receiver Cell Eigenstates")
+    # # Factor 2: Receiver Cell Eigenstates
+    # plot_eigenstate_factors(adata_filtered, ax[2], factor_type="C", vmin=-1)
+    # ax[2].set_title("Factor 2: Receiver Cell Eigen-State")
+    # ax[2].set_ylabel("Receiver Eigen-State")
 
-    # Factor 3: Ligand-Receptor Pairs
-    plot_lr_factors(adata_filtered, ax[3], trim=True)
-    ax[3].set_title("Factor 3: LR Pairs")
+    # # Factor 3: Ligand-Receptor Pairs
+    # plot_lr_factors(adata_filtered, ax[3], trim=True, vmin=-1)
+    # ax[3].set_title("Factor 3: LR Pairs")
 
-    # Add overall figure title with R2X information
-    plt.suptitle(
-        f"CC-PF2 Decomposition (Rank {rise_rank}, R²X = {r2x:.4f})", fontsize=16, y=0.98
-    )
-    print("Figure generation complete.")
+    # # Add overall figure title with R2X information
+    # plt.suptitle(
+    #     f"CC-PF2 Decomposition (Rank {rise_rank}, R²X = {r2x:.4f})", fontsize=16, y=0.98
+    # )
+    # print("Figure generation complete.")
     return fig

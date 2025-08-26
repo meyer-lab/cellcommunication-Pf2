@@ -122,7 +122,7 @@ def run_cc_pf2_workflow(
     (cp_weights, factors), projections = results
 
     # 2. Standardize the factors for interpretability
-    weights, factors = standardize_cp_decomposition(factors, weights=cp_weights)
+    weights, factors = standardize_cp_decomposition(cp_weights, factors)
 
     # Store factors in AnnData object for easy access by plotting functions
     adata.uns["Pf2_A"] = factors[0]  # Condition factor
@@ -162,17 +162,21 @@ def pseudobulk_X(X: anndata, condition_name: str, groupby: str) -> list[pd.DataF
             group_mask = X_sample.obs[groupby] == group_name
             adata_subset = X_sample[group_mask, :]
 
-            # Calculate mean expression
-            mean_expression = np.mean(adata_subset.X.toarray(), axis=0)
+            # # Calculate mean expression
+            # mean_expression = np.mean(adata_subset.X.toarray(), axis=0)
             
             # Store results
             result_dict = {}
             
             if adata_subset.n_obs > 0:
                 # Calculate mean expression for existing cells
-                mean_expression = np.mean(adata_subset.X.toarray(), axis=0)
+                # mean_expression = np.mean(adata_subset.X.toarray(), axis=0)
+                # for i, gene in enumerate(gene_names):
+                #     result_dict[gene] = mean_expression[i]
+                ct_df = adata_subset.X.toarray()
+                cell_fraction = ((ct_df > 0).sum(axis=0) / ct_df.shape[0])
                 for i, gene in enumerate(gene_names):
-                    result_dict[gene] = mean_expression[i]
+                    result_dict[gene] = cell_fraction[i]
             else:
                 # Set zero expression for missing combinations
                 for gene in gene_names:

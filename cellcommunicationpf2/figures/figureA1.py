@@ -48,11 +48,20 @@ def makeFigure():
     sample_to_group = X_filtered.obs.drop_duplicates(
         subset=[condition_column, group_col]
     ).set_index(condition_column)[group_col]
+    # idx = np.argsort(sample_to_group.index.values)
+    # print(sample_to_group.index)
+    # sample_to_group = sample_to_group[idx]
+    
+    
+    print(sample_to_group)
 
     print(X_filtered)
     groupby = "celltype"
+    
+    groupby_names = X.obs[groupby].unique()
     appended_pseudobulk  = pseudobulk_X(X_filtered, condition_name=condition_column, groupby=groupby)
-    interaction_tensor, filtered_lr_pairs = calc_communication_score_pseudobulk(appended_pseudobulk)
+    interaction_tensor, filtered_lr_pairs = calc_communication_score_pseudobulk(appended_pseudobulk, lr_pairs=lr_pairs)
+
 
     print(interaction_tensor.shape)
     print(filtered_lr_pairs)
@@ -61,40 +70,46 @@ def makeFigure():
     # Confirm cpd factors are only positive
     for factor in cpd_factors:
         assert np.all(factor >= 0), "CPD factors contain negative values"
-
+        
+        
+    X_filtered.uns["Pf2_A"] = cpd_factors[0]  # Condition factor
+    X_filtered.uns["Pf2_B"] = cpd_factors[1]  # Sender cells factor
+    X_filtered.uns["Pf2_C"] = cpd_factors[2]  # Receiver cells factor
+    X_filtered.uns["Pf2_D"] = cpd_factors[3]  # LR pairs factor
+    
+    X_filtered.uns["Pf2_lr_pairs"] = filtered_lr_pairs  # LR pairs factor
+    
+    # f.suptitle("Pseudobulk Gene Exp")
+    
+    print(sample_to_group)
     plot_condition_factors(
-        data=cpd_factors[0],
+        data=X_filtered,
         ax=ax[0],
-        condition_labels=X.obs[condition_column].unique(),
-        cond=group_col,
+        cond=condition_column,
         cond_group_labels=sample_to_group,
         group_cond=True,
-        vmin=-1
     )
   
 
     plot_eigenstate_factors(
-        data=cpd_factors[1],
+        data=X_filtered,
         ax=ax[1],
-        factor_type="Sender Cell Type",
-        labels=X.obs[groupby].unique(),
-        vmin=-1
+        factor_type="Pf2_B",
+        yt=groupby_names,
     )
     
     plot_eigenstate_factors(
-        data=cpd_factors[2],
+        data=X_filtered,
         ax=ax[2],
-        factor_type="Receiver Cell Type",
-        labels=X.obs[groupby].unique(),
-        vmin=-1
+        factor_type="Pf2_C",
+         yt=groupby_names,
     )
 
+
     plot_lr_factors(
-        data=cpd_factors[3],
+        data=X_filtered,
         ax=ax[3],
-        lr_pairs=filtered_lr_pairs,
-        weight=0.04,
-        vmin=-1
+        weight=0.07,
     )
     
     

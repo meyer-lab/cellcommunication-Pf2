@@ -10,106 +10,65 @@ from matplotlib.patches import Patch
 cmap = sns.diverging_palette(240, 10, as_cmap=True)
 
 
-from typing import Union, Optional, Dict, List
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.axes import Axes
-from matplotlib.patches import Patch
-import seaborn as sns
-
-
 def plot_condition_factors(
-    data: Union[anndata.AnnData, Dict[str, np.ndarray], np.ndarray],
+    data: anndata.AnnData,
     ax: Axes,
-    cond: Optional[str] = "Condition",
-    cond_group_labels: Optional[pd.Series] = None,
-    condition_labels: Optional[Union[pd.Series, List[str], np.ndarray]] = None,
+    cond: str = "Condition",
+    cond_group_labels: pd.Series | None = None,
     color_key=None,
     group_cond=False,
-    vmin=0
 ):
-    """Plots condition factors from Pf2 or similar decomposition"""
-    
-    # Extract data based on input type
-    if isinstance(data, anndata.AnnData):
-        X = np.array(data.uns["Pf2_A"])
-        if condition_labels is None:
-            idxs = np.argsort(data.obs["condition_unique_idxs"].unique())
-            condition_labels = pd.Series(data.obs[cond].unique())[idxs]
-    elif isinstance(data, dict):
-        X = np.array(data["A"])
-        if condition_labels is None and "condition_labels" in data:
-            condition_labels = data["condition_labels"]
-    else:
-        X = np.array(data)
-    
-    # Handle condition labels
-    if condition_labels is None:
-        condition_labels = [f"Condition {i+1}" for i in range(X.shape[0])]
-    elif isinstance(condition_labels, (list, np.ndarray)):
-        condition_labels = pd.Series(condition_labels)
-    
-    # Convert to pandas Series for consistent handling
-    if not isinstance(condition_labels, pd.Series):
-        condition_labels = pd.Series(condition_labels)
-    
-    # # Normalize data
-    # XX = X.copy()
-    # X = X - np.median(XX, axis=0)
-    # X = X / np.std(XX, axis=0)
-    # X = X / np.max(np.abs(X))
-    
-    # Reorder
+    """Plots Pf2 condition factors"""
+
+    # Get sample names in the order of condition_unique_idxs (as used by anndata_to_list)
+    idxs = np.argsort(data.obs["condition_unique_idxs"].unique())
+    yt = pd.Series(data.obs[cond].unique())[idxs]
+
+    X = np.array(data.uns["Pf2_A"])
+
+    # XX = X
+    # X -= np.median(XX, axis=0)
+    # X /= np.std(XX, axis=0)
+    # X /= np.max(np.abs(X))
+
+    print(np.shape(X))
     ind = reorder_table(X)
+    print(np.shape(ind))
+    print(np.shape(yt))
     X = X[ind]
-    
-    # Reorder condition labels safely
-    condition_labels = condition_labels.reset_index(drop=True)
-    condition_labels = condition_labels.iloc[ind].reset_index(drop=True)
-    
+    yt = yt.iloc[ind]
+
     if cond_group_labels is not None:
-        # Convert cond_group_labels to Series if it's not already
-        if not isinstance(cond_group_labels, pd.Series):
-            cond_group_labels = pd.Series(cond_group_labels)
-        
-        # Reset index for both to ensure alignment
-        condition_labels = condition_labels.reset_index(drop=True)
-        cond_group_labels = cond_group_labels.reset_index(drop=True)
-        
-        # Align cond_group_labels with the reordered condition_labels
-        # Create a mapping from condition label to group label
-        label_to_group = dict(zip(condition_labels, cond_group_labels))
-        cond_group_labels = pd.Series([label_to_group.get(label, "Unknown") 
-                                     for label in condition_labels])
+        print(cond_group_labels)
+        # Align cond_group_labels with the reordered yt
+        cond_group_labels = cond_group_labels.loc[yt].reset_index(drop=True)
+        if group_cond is True:
+            print(cond_group_labels)
+            ind = cond_group_labels.argsort()
+            cond_group_labels = cond_group_labels.iloc[ind]
+            X = X[ind]
+            yt = yt.iloc[ind]
             
-        if group_cond:
-            # Get sorted indices based on group labels
-            sort_indices = cond_group_labels.argsort().values
-            cond_group_labels = cond_group_labels.iloc[sort_indices]
-            X = X[sort_indices]
-            condition_labels = condition_labels.iloc[sort_indices].reset_index(drop=True)
-            cond_group_labels = cond_group_labels.reset_index(drop=True)
-        
+            print(cond_group_labels)
+            print(yt)
+
         ax.tick_params(axis="y", which="major", pad=20, length=0)
         if color_key is None:
             colors = sns.color_palette(
-                "Set2", n_colors=cond_group_labels.nunique()
+                "Set2", n_colors=pd.Series(cond_group_labels).nunique()
             ).as_hex()
         else:
             colors = color_key
-        
         lut = {}
         legend_elements = []
-        for index, group in enumerate(cond_group_labels.unique()):
+        for index, group in enumerate(pd.unique(cond_group_labels)):
             lut[group] = colors[index]
             legend_elements.append(Patch(color=colors[index], label=group))
-        
+
         group_values = list(cond_group_labels)
         row_colors = [lut.get(val, "#cccccc") for val in group_values]
         ROW_RECTANGLE_X_OFFSET = -0.02
         ROW_RECTANGLE_WIDTH = 0.02
-        
         # Add colored rectangles for each row
         for iii, color in enumerate(row_colors):
             ax.add_patch(
@@ -123,103 +82,20 @@ def plot_condition_factors(
                     clip_on=False,
                 )
             )
-        
+
         # Create legend outside the plot area
         ax.legend(
             handles=legend_elements,
             loc="upper left",
-            bbox_to_anchor=(1.02, 1),
-            frameon=False,
+            bbox_to_anchor=(1.02, 1),  # Position legend to the right of the plot
+            frameon=False,  # Remove frame for a cleaner look
             fontsize=10,
             title="Condition",
             title_fontsize=12,
         )
-    
+
     xticks = np.arange(1, X.shape[1] + 1)
-    
-    sns.heatmap(
-        data=X,
-        xticklabels=xticks,
-        yticklabels=condition_labels.tolist(),
-        ax=ax,
-        center=0,
-        cmap=cmap,
-        vmin=vmin,
-        vmax=1,
-    )
-    ax.tick_params(axis="y", rotation=0)
-    ax.set(xlabel="Component")
-    
-    
-
-def plot_eigenstate_factors(
-    data: Union[anndata.AnnData, Dict[str, np.ndarray], np.ndarray], 
-    ax: Axes, 
-    factor_type: str = "B" or None,
-    labels: Optional[Union[List[str], np.ndarray]] = None,
-    vmin: float = 0,
-):
-    """Plots eigenstate factors from Pf2 or similar decomposition"""
-    
-    # Extract data based on input type
-    if isinstance(data, anndata.AnnData):
-        X = data.uns[f"Pf2_{factor_type}"]
-    else:
-        X = data
-    
-    # Handle eigenstate labels
-    if labels is None:
-        labels = np.arange(1, X.shape[0] + 1)
-
-    X = X / np.max(np.abs(np.array(X)))
-    xticks = np.arange(1, X.shape[1] + 1)
-    
-    sns.heatmap(
-        data=X,
-        xticklabels=xticks,
-        yticklabels=labels,
-        ax=ax,
-        center=0,
-        cmap=cmap,
-        vmin=vmin,
-        vmax=1,
-    )
-    ax.set(xlabel="Component")
-
-
-def plot_lr_factors(
-    data: Union[anndata.AnnData, np.ndarray], 
-    ax: Axes, 
-    lr_pairs: Optional[pd.DataFrame] = None,
-    trim: bool = True, 
-    weight: float = 0.08,
-    vmin: float = 0
-):
-    """Plots ligand-receptor factors from Pf2 or similar decomposition"""
-    
-    # Extract data based on input type
-    if isinstance(data, anndata.AnnData):
-        X = np.array(data.uns["Pf2_D"])
-        if lr_pairs is None:
-            lr_pairs = data.uns["Pf2_lr_pairs"]
-    else: 
-        X = np.array(data)
-
-    # Create labels from the ligand and receptor columns
-    yt = [f"{row['ligand']}-{row['receptor']}" for _, row in lr_pairs.iterrows()]
-    
-    if trim:
-        max_weight = np.max(np.abs(X), axis=1)
-        kept_idxs = max_weight > weight
-        X = X[kept_idxs]
-        yt = [y for i, y in enumerate(yt) if kept_idxs[i]]
-    
-    ind = reorder_table(X)
-    X = X[ind]
-    X = X / np.max(np.abs(X))
-    yt = [yt[ii] for ii in ind]
-    xticks = np.arange(1, X.shape[1] + 1)
-    
+    print(yt)
     sns.heatmap(
         data=X,
         xticklabels=xticks,
@@ -227,7 +103,65 @@ def plot_lr_factors(
         ax=ax,
         center=0,
         cmap=cmap,
-        vmin=vmin,
+        vmin=-1,
+        vmax=1,
+    )
+    ax.tick_params(axis="y", rotation=0)
+    ax.set(xlabel="Component")
+
+
+def plot_eigenstate_factors(data: anndata.AnnData, ax: Axes, factor_type: str, yt):
+    """Plots Pf2 eigenstate factors"""
+    cp_rank = data.uns["Pf2_B"].shape[1]
+    xticks = np.arange(1, cp_rank + 1)
+    X = data.uns["Pf2_B"] if factor_type == "Pf2_B" else data.uns["Pf2_C"]
+    # X = X / np.max(np.abs(np.array(X)))
+    rise_rank = data.uns["Pf2_B"].shape[0]
+    yt = yt
+
+    sns.heatmap(
+        data=X,
+        xticklabels=xticks,
+        yticklabels=yt,
+        ax=ax,
+        center=0,
+        cmap=cmap,
+        vmin=-1,
+        vmax=1,
+    )
+    ax.set(xlabel="Component")
+
+
+def plot_lr_factors(data: anndata.AnnData, ax: Axes, trim=True, weight=0.08):
+    """Plots Pf2 lr factors"""
+    # Read the LR factor and pair information from .uns
+    X = np.array(data.uns["Pf2_D"])
+    lr_pairs = data.uns["Pf2_lr_pairs"]
+    rank = X.shape[1]
+
+    # Create labels from the ligand and receptor columns
+    yt = [f"{row['ligand']}-{row['receptor']}" for _, row in lr_pairs.iterrows()]
+
+    if trim is True:
+        max_weight = np.max(np.abs(X), axis=1)
+        kept_idxs = max_weight > weight
+        X = X[kept_idxs]
+        yt = [y for i, y in enumerate(yt) if kept_idxs[i]]
+
+    ind = reorder_table(X)
+    # X = X[ind]
+    # X = X / np.max(np.abs(X))
+    yt = [yt[ii] for ii in ind]
+    xticks = np.arange(1, rank + 1)
+
+    sns.heatmap(
+        data=X,
+        xticklabels=xticks,
+        yticklabels=yt,
+        ax=ax,
+        center=0,
+        cmap=cmap,
+        vmin=-1,
         vmax=1,
     )
     ax.set(xlabel="Component")
