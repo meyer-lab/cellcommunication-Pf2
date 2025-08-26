@@ -1,7 +1,6 @@
 import anndata
 import numpy as np
 import pandas as pd
-import os
 from parafac2.parafac2 import anndata_to_list, parafac2_nd
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
 from tensorly.decomposition import parafac
@@ -121,43 +120,15 @@ def cc_pf2(
         - The filtered ligand-receptor pairs DataFrame used in the analysis.
     """
     gene_names = list(adata.var_names)
-    
-    # Check for cached PARAFAC2 results
-    cache_path = f"output/balf_covid_pf2_rank{rise_rank}.h5ad"
-    
-    if os.path.exists(cache_path):
-        print(f"Loading cached PARAFAC2 results from {cache_path}...")
-        try:
-            cached_adata = anndata.read_h5ad(cache_path)
-            
-            # Extract projections from cached data - reconstruct the list format
-            projections = []
-            all_projections = cached_adata.obsm["projections"]
-            sgIndex = cached_adata.obs["condition_unique_idxs"]
-            
-            for i in range(len(adata.obs["sample"].unique())):
-                condition_mask = sgIndex == i
-                condition_projections = all_projections[condition_mask]
-                projections.append(condition_projections)
-            
-            print(f"Successfully loaded cached PARAFAC2 results for rank {rise_rank}")
-            
-        except Exception as e:
-            print(f"Failed to load cached results: {e}. Computing PARAFAC2...")
-            projections = None
-    else:
-        projections = None
-    
-    # If no cached results or loading failed, compute PARAFAC2
-    if projections is None:
-        # PARAFAC2 decomposition
-        pf2_output, _ = parafac2_nd(
-            adata, rank=rise_rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
-        )
-        _, _, projections = pf2_output
+    X_list = anndata_to_list(adata)
+
+    # PARAFAC2 decomposition
+    pf2_output, _ = parafac2_nd(
+        adata, rank=rise_rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
+    )
+    _, _, projections = pf2_output
 
     # Project matrices
-    X_list = anndata_to_list(adata)
     projected_matrices = []
     for i, tensor in enumerate(X_list):
         proj = projections[i]
