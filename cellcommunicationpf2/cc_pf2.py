@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import os
 import pickle
+import hashlib
 from parafac2.parafac2 import anndata_to_list, parafac2_nd
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
 from tensorly.decomposition import parafac
@@ -124,7 +125,8 @@ def cc_pf2(
     gene_names = list(adata.var_names)
     X_list = anndata_to_list(adata)
 
-    cache_path = f"output/balf_covid_pf2_rank{rise_rank}.pkl"
+    data_fingerprint = hashlib.md5(f"{adata.shape[0]}_{adata.shape[1]}_{len(adata.var_names)}".encode()).hexdigest()[:8]
+    cache_path = f"output/balf_covid_pf2_rank{rise_rank}_{data_fingerprint}.pkl"
 
     if os.path.exists(cache_path):
         with open(cache_path, "rb") as f:
