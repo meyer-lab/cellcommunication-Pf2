@@ -265,7 +265,7 @@ def pseudobulk_nncp_decomposition(
         cp_rank,
         n_iter_max=n_iter_max,
         tol=tol,
-        init="random",  # Use random initialization
+        init="svd",  # Use SVD initialization
         normalize_factors=True,
         random_state=random_state,
     )

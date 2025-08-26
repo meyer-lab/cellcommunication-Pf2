@@ -46,7 +46,7 @@ def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
 
     assert hasattr(adata.X, "nnz"), "adata.X should be a sparse matrix"
 
-    return prepare_dataset(adata, condition_name="condition", geneThreshold=0.01)
+    return prepare_dataset(adata, condition_name="sample", geneThreshold=0.01)
 
 
 @lru_cache(maxsize=1)

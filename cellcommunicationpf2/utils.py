@@ -146,7 +146,8 @@ def pseudobulk_X(X: anndata, condition_name: str, groupby: str) -> list[pd.DataF
     
     # Get unique samples and cell types
     samples = X.obs[condition_name].unique()
-    groupby_names = X.obs[groupby].unique()
+    # groupby_names = X.obs[groupby].unique()
+    groupby_names = ['B', 'Epithelial', 'Macrophages', 'NK','T', 'mDC']
     gene_names = X.var_names
 
     # Initialize results dictionary
@@ -168,20 +169,20 @@ def pseudobulk_X(X: anndata, condition_name: str, groupby: str) -> list[pd.DataF
             # Store results
             result_dict = {}
             
-            if adata_subset.n_obs > 0:
-                # Calculate mean expression for existing cells
+            # if adata_subset.n_obs > 0:
                 # mean_expression = np.mean(adata_subset.X.toarray(), axis=0)
-                # for i, gene in enumerate(gene_names):
+                # for i, gene in enumerate(gene_names): s
                 #     result_dict[gene] = mean_expression[i]
-                ct_df = adata_subset.X.toarray()
-                cell_fraction = ((ct_df > 0).sum(axis=0) / ct_df.shape[0])
-                for i, gene in enumerate(gene_names):
-                    result_dict[gene] = cell_fraction[i]
-            else:
-                # Set zero expression for missing combinations
-                for gene in gene_names:
-                    result_dict[gene] = 0.0
-
+            ct_df = adata_subset.X.toarray()
+            cell_fraction = ((ct_df > 0).sum(axis=0) / ct_df.shape[0])
+            for i, gene in enumerate(gene_names):
+                result_dict[gene] = cell_fraction[i]
+                # print(results)
+            # else:
+            #     # Set zero expression for missing combinations
+            #     for gene in gene_names:
+            #         result_dict[gene] = 0.0
+        
             results.append(result_dict)
             
         # Dataframe with genes as rows and groupby as columns

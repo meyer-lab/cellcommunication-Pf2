@@ -39,7 +39,8 @@ def makeFigure():
     # Parameters for stability plots
     percentList = np.arange(0.0, 25.0, 5.0)
     ranks = list(range(1, 51, 5))
-    runs = 3
+    runs = 2
+
 
     # Generate plots
     # print("Plotting FMS vs. data dropout...")
@@ -50,7 +51,7 @@ def makeFigure():
 
     print("Plotting FMS vs. rank...")
     plot_fms_diff_ranks(X_filtered, ax[1], ranksList=ranks, runs=runs)
-    ax[1].set_title("Stability Across Ranks")
+    ax[1].set_title(f"Stability Across Ranks & Shape: {X_filtered.shape}")
 
     return f
 

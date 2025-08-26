@@ -53,12 +53,15 @@ def makeFigure():
     # sample_to_group = sample_to_group[idx]
     
     
+    
+    
+    
     print(sample_to_group)
 
     print(X_filtered)
     groupby = "celltype"
     
-    groupby_names = X.obs[groupby].unique()
+    groupby_names = ['B', 'Epithelial', 'Macrophages', 'NK','T', 'mDC']
     appended_pseudobulk  = pseudobulk_X(X_filtered, condition_name=condition_column, groupby=groupby)
     interaction_tensor, filtered_lr_pairs = calc_communication_score_pseudobulk(appended_pseudobulk, lr_pairs=lr_pairs)
 
@@ -72,12 +75,14 @@ def makeFigure():
         assert np.all(factor >= 0), "CPD factors contain negative values"
         
         
+        
     X_filtered.uns["Pf2_A"] = cpd_factors[0]  # Condition factor
     X_filtered.uns["Pf2_B"] = cpd_factors[1]  # Sender cells factor
     X_filtered.uns["Pf2_C"] = cpd_factors[2]  # Receiver cells factor
     X_filtered.uns["Pf2_D"] = cpd_factors[3]  # LR pairs factor
     
     X_filtered.uns["Pf2_lr_pairs"] = filtered_lr_pairs  # LR pairs factor
+    
     
     # f.suptitle("Pseudobulk Gene Exp")
     
