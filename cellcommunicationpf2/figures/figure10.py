@@ -53,8 +53,8 @@ def makeFigure():
 
     # Get the raw PARAFAC2 projections and CC-PF2 eigenstate factors
     stacked_projections = np.vstack(adata_filtered.uns["Pf2_projections"])
-    sender_factor = adata_filtered.uns["Pf2_B"]    # Sender eigenstate matrix (rank x cp_rank)
-    receiver_factor = adata_filtered.uns["Pf2_C"]  # Receiver eigenstate matrix (rank x cp_rank)
+    sender_factor = adata_filtered.uns["Pf2_B"]
+    receiver_factor = adata_filtered.uns["Pf2_C"]
 
     # Calculate sender and receiver weighted projections
     sender_weighted_projections = stacked_projections @ sender_factor
@@ -127,12 +127,6 @@ def makeFigure():
     # Add row labels
     fig.text(0.02, 0.75, 'Sender\nEigenstates', rotation=90, va='center', ha='center', fontsize=12, weight='bold')
     fig.text(0.02, 0.25, 'Receiver\nEigenstates', rotation=90, va='center', ha='center', fontsize=12, weight='bold')
-
-    # Add overall figure title
-    plt.suptitle(
-        f"CC-PF2 Weighted Projections: Sender vs Receiver Eigenstates (R²X = {r2x:.4f})",
-        fontsize=16, y=0.98
-    )
 
     print("Figure generation complete.")
     return fig
