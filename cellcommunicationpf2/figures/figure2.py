@@ -66,7 +66,7 @@ def run_cc_pf2_analysis(
     cp_results, projections = results
     cp_weights, factors = cp_results
 
-    _, factors = standardize_cc_pf2(factors, weights=cp_weights)
+    _, factors = standardize_cc_pf2(cp_weights,factors)
 
     adata.uns["Pf2_A"] = factors[0]
     adata.uns["Pf2_B"] = factors[1]

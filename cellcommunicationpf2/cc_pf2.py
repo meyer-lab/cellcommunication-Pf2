@@ -168,11 +168,11 @@ def cc_pf2(
 
 
 def standardize_cc_pf2(
-    factors: list[np.ndarray],
     weights: np.ndarray | None = None,
+    factors: list[np.ndarray] = None
 ) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray]]:
     """
-    Standardize CP factors and projections for better interpretability.
+    Standardize CP factors for better interpretability.
     This function expects all inputs to be NumPy arrays on the CPU.
 
     Parameters
@@ -197,65 +197,3 @@ def standardize_cc_pf2(
     weights, factors = cp_flip_sign(cp_normalize((weights, factors)), mode=1)
 
     return weights, factors
-
-
-def store_cc_pf2(X: anndata.AnnData, parafac2_output: tuple):
-    """
-    Store CC-PF2 results into an AnnData object.
-
-    Parameters
-    ----------
-    X : anndata.AnnData
-        AnnData object to store results in.
-    parafac2_output : tuple
-        The standardized output from `standardize_cc_pf2`: (weights, factors, projections).
-
-    Returns
-    -------
-    anndata.AnnData
-        Updated AnnData with stored results.
-    """
-    X.uns["Pf2_weights"] = parafac2_output[0]
-    X.uns["Pf2_A"], X.uns["Pf2_B"], X.uns["Pf2_C"], X.varm["Pf2_D"] = parafac2_output[1]
-    projections = parafac2_output[2]
-
-    stacked_projections = np.vstack(projections)
-
-    # Create condition index vector matching stacked projections
-    condition_indices = []
-    for idx, proj in enumerate(projections):
-        condition_indices.extend([idx] * proj.shape[0])
-
-    # Store both stacked projections and their condition indices
-    X.uns["Pf2_projections"] = stacked_projections
-    X.uns["Pf2_weighted_projections"] = stacked_projections @ X.uns["Pf2_B"]
-    X.uns["Pf2_projection_conditions"] = np.array(condition_indices)
-
-    n_pairs = X.shape[0]  # Number of cell-cell pairs
-    n_components = len(X.uns["Pf2_weights"])  # Number of components
-
-    # Initialize projection scores matrix
-    proj_scores = np.zeros((n_pairs, n_components))
-    cell_cell_indices = np.zeros(n_pairs, dtype=int)
-
-    current_idx = 0
-    # Process each sample separately
-    samples = X.obs["sample"].unique()
-    for k in range(len(samples)):
-        sample_proj = projections[k]
-        n_cells = sample_proj.shape[0]
-
-        # Generate all cell pairs for this sample
-        for i in range(n_cells):
-            for j in range(n_cells):
-                if i != j:  # Skip self-interactions
-                    # Calculate projection products and store at current index
-                    proj_scores[current_idx, :] = sample_proj[i] * sample_proj[j]
-                    cell_cell_indices.append(k)
-                    current_idx += 1
-
-    X.obsm["Pf2_cell_cell_projections"] = proj_scores
-    X.obsm["Pf2_cell_cell_weighted_projections"] = proj_scores @ X.uns["Pf2_B"]
-    X.obsm["Pf2_cell_cell_condition"] = cell_cell_indices
-
-    return X
