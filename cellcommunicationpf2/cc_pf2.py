@@ -124,8 +124,8 @@ def cc_pf2(
     """
     gene_names = list(adata.var_names)
     X_list = anndata_to_list(adata)
-
-    data_fingerprint = hashlib.md5(f"{adata.shape[0]}_{adata.shape[1]}_{len(adata.var_names)}".encode()).hexdigest()
+    
+    data_fingerprint = hashlib.md5(f"{adata.shape}_{adata.var_names.tolist()}".encode()).hexdigest()[:12]
     cache_path = f"output/balf_covid_pf2_rank{rise_rank}_{data_fingerprint}.pkl"
 
     if os.path.exists(cache_path):
