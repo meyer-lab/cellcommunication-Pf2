@@ -125,6 +125,7 @@ def cc_pf2(
     X_list = anndata_to_list(adata)
 
     cache_path = f"output/balf_covid_pf2_rank{rise_rank}.pkl"
+    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
 
     if os.path.exists(cache_path):
         with open(cache_path, "rb") as f:
