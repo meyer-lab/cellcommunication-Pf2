@@ -138,8 +138,8 @@ def cc_pf2(
         )
 
         _, _, projections = pf2_output
+        
         os.makedirs(os.path.dirname(cache_path), exist_ok=True)
-
         with open(cache_path, "wb") as f:
             pickle.dump(projections, f)
 
