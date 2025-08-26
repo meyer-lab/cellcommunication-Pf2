@@ -1,6 +1,8 @@
 import anndata
 import numpy as np
 import pandas as pd
+import os
+import pickle
 from parafac2.parafac2 import anndata_to_list, parafac2_nd
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
 from tensorly.decomposition import parafac
@@ -122,11 +124,21 @@ def cc_pf2(
     gene_names = list(adata.var_names)
     X_list = anndata_to_list(adata)
 
-    # PARAFAC2 decomposition
-    pf2_output, _ = parafac2_nd(
-        adata, rank=rise_rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
-    )
-    _, _, projections = pf2_output
+    cache_path = f"output/balf_covid_pf2_rank{rise_rank}.pkl"
+
+    if os.path.exists(cache_path):
+        with open(cache_path, "rb") as f:
+            projections = pickle.load(f)
+    else:
+        # PARAFAC2 decomposition
+        pf2_output, _ = parafac2_nd(
+            adata, rank=rise_rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
+        )
+
+        _, _, projections = pf2_output
+
+        with open(cache_path, "wb") as f:
+            pickle.dump(projections, f)
 
     # Project matrices
     projected_matrices = []
