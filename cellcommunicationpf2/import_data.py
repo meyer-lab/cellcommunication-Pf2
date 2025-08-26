@@ -6,12 +6,11 @@ import urllib
 
 import anndata
 import pandas as pd
-import numpy as np
 from parafac2.normalize import prepare_dataset
 
 
 # The below code is taken directly from https://github.com/earmingol/cell2cell/blob/master/cell2cell/datasets/anndata.py
-def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"):
+def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad", gene_threshold: float = 0.01):
     """BALF samples from COVID-19 patients
     The data consists in 63k immune and epithelial cells in lungs
     from 3 control, 3 moderate COVID-19, and 6 severe COVID-19 patients.
@@ -46,7 +45,7 @@ def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
 
     assert hasattr(adata.X, "nnz"), "adata.X should be a sparse matrix"
 
-    return prepare_dataset(adata, condition_name="condition", geneThreshold=0.01)
+    return prepare_dataset(adata, condition_name="sample", geneThreshold=gene_threshold)
 
 
 @lru_cache(maxsize=1)
