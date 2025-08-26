@@ -86,7 +86,7 @@ def makeFigure():
     ax[2].set_title("Factor 2: Receiver Cell Eigenstates")
 
     # Factor 3: Ligand-Receptor Pairs
-    plot_lr_factors(adata_filtered, ax[3], trim=True, weight=0.08)
+    plot_lr_factors(adata_filtered, ax[3], trim=True)
     ax[3].set_title("Factor 3: LR Pairs")
 
     # Add overall figure title with R2X information

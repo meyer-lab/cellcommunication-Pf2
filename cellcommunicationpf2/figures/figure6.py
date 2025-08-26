@@ -69,11 +69,6 @@ def makeFigure():
     ax.set_xlabel("CP Rank", fontsize=14)
     ax.set_ylabel("R²X", fontsize=14)
     ax.set_title(f"CP Rank Selection (RISE Rank = {rise_rank})", fontsize=16)
-    
-    # Set axes to start from 0
-    ax.set_xlim(0, max(cp_ranks) * 1.05)
-    ax.set_ylim(0, max(r2x_values) * 1.05)
-    
     ax.grid(True, alpha=0.3)
 
     print("Figure 6 generation complete.")

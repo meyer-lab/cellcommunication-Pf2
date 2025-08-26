@@ -99,11 +99,6 @@ def makeFigure():
     ax[0].set_ylabel("R²X Value")
     ax[0].set_title("R²X Trends by CP Rank")
     ax[0].legend(title="Rise Rank", bbox_to_anchor=(1.05, 1), loc="upper left")
-
-    # Set axes to start from 0
-    ax[0].set_xlim(0, max(cp_ranks) * 1.05)
-    ax[0].set_ylim(0, results_df['r2x'].max() * 1.05)
-
     ax[0].grid(True, alpha=0.3)
 
     # Add overall figure title
