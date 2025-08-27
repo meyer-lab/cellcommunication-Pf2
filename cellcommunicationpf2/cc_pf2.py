@@ -1,6 +1,9 @@
 import anndata
 import numpy as np
 import pandas as pd
+import os
+import pickle
+import hashlib
 from parafac2.parafac2 import anndata_to_list, parafac2_nd
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
 from tensorly.decomposition import parafac, non_negative_parafac
@@ -91,6 +94,7 @@ def cc_pf2(
     tol: float,
     cp_rank: int | None = None,
     random_state: int | None = None,
+    use_cache: bool = True,
 ) -> tuple[tuple, float, pd.DataFrame]:
     """
     Perform PARAFAC2 decomposition on an AnnData object, followed by
@@ -121,12 +125,24 @@ def cc_pf2(
     """
     gene_names = list(adata.var_names)
     X_list = anndata_to_list(adata)
+    
+    data_fingerprint = hashlib.md5(f"{adata.shape}_{adata.var_names.tolist()}".encode()).hexdigest()[:12]
+    cache_path = f"output/balf_covid_pf2_rank{rise_rank}_{data_fingerprint}.pkl"
 
-    # PARAFAC2 decomposition
-    pf2_output, _ = parafac2_nd(
-        adata, rank=rise_rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
-    )
-    _, _, projections = pf2_output
+    if os.path.exists(cache_path) and use_cache:
+        with open(cache_path, "rb") as f:
+            projections = pickle.load(f)
+    else:
+        # PARAFAC2 decomposition
+        pf2_output, _ = parafac2_nd(
+            adata, rank=rise_rank, n_iter_max=n_iter_max, tol=tol, random_state=random_state
+        )
+
+        _, _, projections = pf2_output
+        
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+        with open(cache_path, "wb") as f:
+            pickle.dump(projections, f)
 
     # Project matrices
     projected_matrices = []
