@@ -17,6 +17,7 @@ def plot_condition_factors(
     cond_group_labels: pd.Series | None = None,
     color_key=None,
     group_cond=False,
+    normalize=False
 ):
     """Plots Pf2 condition factors"""
 
@@ -26,10 +27,11 @@ def plot_condition_factors(
 
     X = np.array(data.uns["Pf2_A"])
 
-    XX = X
-    X -= np.median(XX, axis=0)
-    X /= np.std(XX, axis=0)
-    X /= np.max(np.abs(X))
+    if normalize is True:
+        XX = X
+        X -= np.median(XX, axis=0)
+        X /= np.std(XX, axis=0)
+        X /= np.max(np.abs(X))
 
     ind = reorder_table(X)
     X = X[ind]

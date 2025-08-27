@@ -1,5 +1,5 @@
 """
-Figure A2: XXXX
+Figure A2: Non-negative CP for COVID-19 pseudobulk
 """
 
 import numpy as np
@@ -70,7 +70,7 @@ def makeFigure():
 
         plot_condition_factors(
             data=X_filtered,
-            ax=ax[2*i],
+            ax=ax[(4*i)],
             cond=condition_column,
             cond_group_labels=sample_to_group,
             group_cond=True,
@@ -78,34 +78,30 @@ def makeFigure():
   
         plot_eigenstate_factors(
             data=X_filtered,
-            ax=ax[2*i+1],
+            ax=ax[(4*i+1)],
             factor_type="Pf2_B",
         )
-        ax[2*i+1].set_yticklabels(groupby_names)
+        ax[(4*i+1)].set_yticklabels(groupby_names)
 
         plot_eigenstate_factors(
             data=X_filtered,
-            ax=ax[2*i+2],
+            ax=ax[(4*i+2)],
             factor_type="Pf2_C",
         )
-        ax[2*i+2].set_yticklabels(groupby_names)
-
+        ax[(4*i+2)].set_yticklabels(groupby_names)
 
         plot_lr_factors(
             data=X_filtered,
-            ax=ax[2*i+3],
-            weight=0.07,
+            ax=ax[(4*i+3)],
+            weight=0.06,
         )
-        
-        ax[2*i].set_title("Conditions Factor")
-        ax[2*i+1].set_title("Sender Cell Type Factor")
-        ax[2*i+2].set_title("Receiver Cell Type Factor")
-        ax[2*i+3].set_title("Ligand-Receptor Factor")
-        rotate_yaxis(ax[2*i+1], rotation=0)
-        rotate_yaxis(ax[2*i+2], rotation=0)
+
+        ax[(4*i)].set_title("Conditions Factor")
+        ax[(4*i+1)].set_title("Sender Cell Type Factor")
+        ax[(4*i+2)].set_title("Receiver Cell Type Factor")
+        ax[(4*i+3)].set_title("Ligand-Receptor Factor")
+        rotate_yaxis(ax[(4*i+1)], rotation=0)
+        rotate_yaxis(ax[(4*i+2)], rotation=0)
+
 
     return f
-
-
-
-
