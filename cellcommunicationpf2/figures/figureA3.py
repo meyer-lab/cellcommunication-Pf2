@@ -1,13 +1,10 @@
 """
-Figure A1: FMS across RISE ranks (only) for COVID-19
+Figure A3: FMS across CPD ranks (only) for COVID-19
 """
 
-import anndata
 import pandas as pd
 import seaborn as sns
 import numpy as np
-from matplotlib.axes import Axes
-from ..utils import resample
 from parafac2.parafac2 import parafac2_nd, anndata_to_list
 from ..import_data import (
     add_cond_idxs,
@@ -18,11 +15,11 @@ from ..cc_pf2 import calc_communication_score
 from .common import getSetup, subplotLabel
 from tensorly.cp_tensor import CPTensor
 from tlviz.factor_tools import factor_match_score as fms
-from tensorly.decomposition import parafac,
+from tensorly.decomposition import parafac
 
 
 def makeFigure():
-    ax, f = getSetup((6, 3), (1, 2))
+    ax, f = getSetup((3, 3), (1, 1))
     subplotLabel(ax)
 
     # Import and prepare data
@@ -51,73 +48,78 @@ def makeFigure():
 
     # Calculate cell-cell communication scores
     gene_names = list(X_filtered.var_names)
-    interaction_tensors, filtered_lr_pairs = calc_communication_score(
-        projected_matrices, gene_names=gene_names
+    interaction_tensor, _ = calc_communication_score(
+        projected_matrices, gene_names=gene_names, lr_pairs=lr_pairs
     )
-    print(np.shape(interaction_tensors))
+    print(np.shape(interaction_tensor))
 
-
-    
-    ranks = list(range(1, 11, 2))
-    for i in ranks: 
-        boot_tensors = bootstrap_tensor_features(interaction_tensors, n_bootstrap=1000)
-        print(f"Bootstrapped tensors shape: {boot_tensors.shape}")
-        tensors = [interaction_tensors, boot_tensors]
-        for j in tensors: 
+    rank_list = list(range(1, 11, 2))
+    runs = 3
+    fms_list = []
+    for i in range(0, runs, 1):
+        scores = []
+        for j in rank_list:
+            boot_tensor = resample_tensor(interaction_tensor)
             cp_weights, cp_factors = parafac(
-                tensor=j,
-                rank=i,
+                tensor=interaction_tensor,
+                rank=j,
                 n_iter_max=1000,
                 init="svd",  # Use SVD initialization
                 normalize_factors=True,
             )
-            
-            
-            
+            cp_boot_weights, cp_boot_factors = parafac(
+                tensor=boot_tensor,
+                rank=j,
+                n_iter_max=1000,
+                init="svd",  # Use SVD initialization
+                normalize_factors=True,
+            )
+            fms_score = calculateFMS(cp_weights, cp_factors, cp_boot_weights, cp_boot_factors)
+            scores.append(fms_score)
+        # Save fms scores per rank
+        fms_list.append(scores)
+        
+        runsList_df = []
+    for i in range(0, runs):
+        for _j in range(0, len(rank_list)):
+            runsList_df.append(i)
+    ranksList_df = []
+    for _i in range(0, runs):
+        for j in range(0, len(rank_list)):
+            ranksList_df.append(rank_list[j])
+    fmsList_df = []
+    for sublist in fms_list:
+        fmsList_df += sublist
+        
+    df = pd.DataFrame(
+        {"Run": runsList_df, "Component": ranksList_df, "FMS": fmsList_df}
+    )
 
-    
+    sns.lineplot(data=df, x="Component", y="FMS", ax=ax[0], label="FMS")
+    ax[0].set_ylim(0, 1)
+
     
     return f
 
 
-
-def calculateFMS(A: anndata.AnnData, B: anndata.AnnData):
+def calculateFMS(weightsA, factorsA, weightsB, factorsB):
     """Calculates FMS between 2 factors"""
-    factors = [A.uns["Pf2_A"], A.uns["Pf2_B"], A.uns["Pf2_C"], A.uns["Pf2_D"]]
     A_CP = CPTensor(
         (
-            A.uns["Pf2_weights"],
-            factors,
+            weightsA,
+            factorsA,
         )
     )
-
-    factors = [B.uns["Pf2_A"], B.uns["Pf2_B"], B.uns["Pf2_C"], B.uns["Pf2_D"]]
     B_CP = CPTensor(
         (
-            B.uns["Pf2_weights"],
-            factors,
+            weightsB,
+            factorsB,
         )
     )
     return fms(A_CP, B_CP, consider_weights=False, skip_mode=(1, 2))  # type: ignore
 
 
-def bootstrap_tensor_features(interaction_tensors, n_bootstrap=100):
-    """Bootstrap by resampling along the LR dimension"""
-    n_features = interaction_tensors.shape[-1]  
-    
-    bootstrapped_tensors = []
-    
-    for i in range(n_bootstrap):
-        # Resample feature indices with replacement
-        boot_indices = np.random.choice(n_features, size=n_features, replace=True)
-        boot_tensor = interaction_tensors[..., boot_indices]
-        bootstrapped_tensors.append(boot_tensor)
-    
-    return np.array(bootstrapped_tensors) 
-
-def store_cpd(X, cpd_factors):
-    """Store CPD factors in AnnData object"""
-    X.uns["Pf2_A"] = cpd_factors[0]  # Condition factor
-    X.uns["Pf2_B"] = cpd_factors[1]  # Sender eigen-states factor
-    X.uns["Pf2_C"] = cpd_factors[2]  # Receiver eigen-states factor
-    X.uns["Pf2_D"] = cpd_factors[3]  # LR pairs factor
+def resample_tensor(interaction_tensors):
+    """Bootstrap tensor by resampling last dimension"""
+    indices = np.random.randint(0, interaction_tensors.shape[-1], size=interaction_tensors.shape[-1])
+    return interaction_tensors[..., indices]
