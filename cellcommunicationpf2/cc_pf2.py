@@ -94,6 +94,7 @@ def cc_pf2(
     tol: float,
     cp_rank: int | None = None,
     random_state: int | None = None,
+    use_cache: bool = True,
 ) -> tuple[tuple, float, pd.DataFrame]:
     """
     Perform PARAFAC2 decomposition on an AnnData object, followed by
@@ -128,7 +129,7 @@ def cc_pf2(
     data_fingerprint = hashlib.md5(f"{adata.shape}_{adata.var_names.tolist()}".encode()).hexdigest()[:12]
     cache_path = f"output/balf_covid_pf2_rank{rise_rank}_{data_fingerprint}.pkl"
 
-    if os.path.exists(cache_path):
+    if os.path.exists(cache_path) and use_cache:
         with open(cache_path, "rb") as f:
             projections = pickle.load(f)
     else:
