@@ -116,7 +116,7 @@ def calculateFMS(weightsA, factorsA, weightsB, factorsB):
             factorsB,
         )
     )
-    return fms(A_CP, B_CP, consider_weights=False, skip_mode=(1, 2))  # type: ignore
+    return fms(A_CP, B_CP, consider_weights=False, skip_mode=3)  # type: ignore
 
 
 def resample_tensor(interaction_tensors):
