@@ -9,6 +9,7 @@ from .ccc import build_context_ccc_tensor
 from .import_data import import_ligand_receptor_pairs
 
 
+
 def calc_communication_score(
     projected_matrices: list[np.ndarray],
     gene_names: list[str] = None,
@@ -203,6 +204,9 @@ def calc_communication_score_pseudobulk(
     pseudobulk_matrices_df: list[pd.DataFrame],
     gene_names: list[str] = None,
     lr_pairs: pd.DataFrame = None,
+    complex_sep: str = "&",
+    complex_agg_method: str = "min",        
+    verbose: bool = False,
 ) -> np.ndarray:
     """
     Calculate cell-cell communication scores for pseudobulk 
@@ -214,6 +218,12 @@ def calc_communication_score_pseudobulk(
         List of gene names corresponding to columns in the matrices
     lr_pairs : pd.DataFrame, optional
         DataFrame with 'ligand' and 'receptor' columns
+    complex_sep : str, default="&"
+        Symbol that separates the protein subunits in a multimeric complex
+    complex_agg_method : str, default="min"
+        Method to aggregate expression values for complexes
+    verbose : bool, default=False
+        Print verbose output
     Returns:
     --------
     np.ndarray
@@ -230,26 +240,52 @@ def calc_communication_score_pseudobulk(
     # Rename columns to match Cell2Cell convention
     if "ligand" in lr_pairs.columns and "receptor" in lr_pairs.columns:
         lr_pairs_renamed = lr_pairs.rename(columns={"ligand": "A", "receptor": "B"})
+        interaction_columns = ("A", "B")
     else:
         lr_pairs_renamed = lr_pairs
+        interaction_columns = ("A", "B")
+
+    # Generate expression values for protein complexes in PPI data
+    if complex_sep is not None:
+        if verbose:
+            print('Getting expression values for protein complexes')
+        _, _, _, _, complexes = get_genes_from_complexes(
+            ppi_data=lr_pairs_renamed,
+            complex_sep=complex_sep,
+            interaction_columns=interaction_columns
+        )
+        mod_rnaseq_matrices = [add_complexes_to_expression(rnaseq, complexes, agg_method=complex_agg_method) for rnaseq in pseudobulk_matrices_df]
+        
+        # print(complexes)
+        # for rnaseq in mod_rnaseq_matrices:
+        #     print('ACVR1B&TGFBR2' in rnaseq.index)
+    else:
+        mod_rnaseq_matrices = [df.copy() for df in pseudobulk_matrices_df]
 
     # Generate communication tensor for all contexts
     tensors, _, _, ppi_names, _ = build_context_ccc_tensor(
-        rnaseq_matrices=pseudobulk_matrices_df,
+        rnaseq_matrices=mod_rnaseq_matrices,
         ppi_data=lr_pairs_renamed,
         how="inner",
-        communication_score="expression_product",
-        complex_sep=None,
-        upper_letter_comparison=False,
-        interaction_columns=("A", "B"),
+        communication_score="expression_mean",
+        complex_sep=complex_sep,
+        upper_letter_comparison=True,
+        interaction_columns=interaction_columns,
         group_ppi_by=None,
         group_ppi_method="gmean",
-        verbose=False,
+        verbose=verbose,
     )
+    
+    print(len(ppi_names), "ppi names were used in the interaction tensor.")
+    
+     
+    search_str = "LAMB3^ITGA2&ITGB1"
+    is_present = search_str in ppi_names
+    print("Is present:", is_present)
+        
 
-    # Filter the original lr_pairs to match the pairs used in the tensor
-    lr_pair_names = lr_pairs["ligand"] + "^" + lr_pairs["receptor"]
-    filtered_lr_pairs = lr_pairs[lr_pair_names.isin(ppi_names)].reset_index(drop=True)
+    # Only keep ppi_names to match the pairs used in the tensor in the interaction symbol column of the lr_pairs DataFrame
+    filtered_lr_pairs = lr_pairs[lr_pairs["interaction_symbol"].isin(ppi_names)].reset_index(drop=True)
 
     # Convert to numpy and transpose to expected format
     # From: (context, ppi_idx, sender, receiver)
@@ -305,3 +341,137 @@ def pseudobulk_nncp_decomposition(
     r2x = 1 - (error / total_variance) if total_variance > 0 else 0.0
 
     return nncp_weights, nncp_factors, r2x
+    
+    
+    
+def get_genes_from_complexes(ppi_data, complex_sep='&', interaction_columns=('A', 'B')):
+    '''
+    Gets protein/gene names for individual proteins (subunits when in complex)
+    in a list of PPIs. If protein is a complex, for example ProtA&ProtB, it will
+    return ProtA and ProtB separately.
+
+    Parameters
+    ----------
+    ppi_data : pandas.DataFrame
+        List of protein-protein interactions (or ligand-receptor pairs) used
+        for inferring the cell-cell interactions and communication.
+
+    complex_sep : str, default=None
+        Symbol that separates the protein subunits in a multimeric complex.
+        For example, '&' is the complex_sep for a list of ligand-receptor pairs
+        where a protein partner could be "CD74&CD44".
+
+    interaction_columns : tuple, default=('A', 'B')
+        Contains the names of the columns where to find the partners in a
+        dataframe of protein-protein interactions. If the list is for
+        ligand-receptor pairs, the first column is for the ligands and the second
+        for the receptors.
+
+    Returns
+    -------
+    col_a_genes : list
+        List of protein/gene names for proteins and subunits in the first column
+        of interacting partners.
+
+    complex_a : list
+        List of list of subunits of each complex that were present in the first
+        column of interacting partners and that were returned as subunits in the
+        previous list.
+
+    col_b_genes : list
+        List of protein/gene names for proteins and subunits in the second column
+        of interacting partners.
+
+    complex_b : list
+        List of list of subunits of each complex that were present in the second
+        column of interacting partners and that were returned as subunits in the
+        previous list.
+
+    complexes : dict
+        Dictionary where keys are the complex names in the list of PPIs, while
+        values are list of subunits for the respective complex names.
+    '''
+    col_a = interaction_columns[0]
+    col_b = interaction_columns[1]
+
+    col_a_genes = set()
+    col_b_genes = set()
+
+    complexes = dict()
+    complex_a = set()
+    complex_b = set()
+    for idx, row in ppi_data.iterrows():
+        prot_a = row[col_a]
+        prot_b = row[col_b]
+
+        if complex_sep in prot_a:
+            comp = set([l for l in prot_a.split(complex_sep)])
+            complexes[prot_a] = comp
+            complex_a = complex_a.union(comp)
+        else:
+            col_a_genes.add(prot_a)
+
+        if complex_sep in prot_b:
+            comp = set([r for r in prot_b.split(complex_sep)])
+            complexes[prot_b] = comp
+            complex_b = complex_b.union(comp)
+        else:
+            col_b_genes.add(prot_b)
+
+    return col_a_genes, complex_a, col_b_genes, complex_b, complexes
+    
+    
+    
+def add_complexes_to_expression(rnaseq_data, complexes, agg_method='min'):
+    '''
+    Adds multimeric complexes into the gene expression matrix.
+    Their gene expressions are the minimum expression value
+    among the respective subunits composing them.
+
+    Parameters
+    ----------
+    rnaseq_data : pandas.DataFrame
+        Gene expression data for RNA-seq experiment. Columns are
+        cell-types/tissues/samples and rows are genes.
+
+    complexes : dict
+        Dictionary where keys are the complex names in the list of PPIs, while
+        values are list of subunits for the respective complex names.
+
+    agg_method : str, default='min'
+        Method to aggregate the expression value of multiple genes in a
+        complex.
+
+        - 'min' : Minimum expression value among all genes.
+        - 'mean' : Average expression value among all genes.
+        - 'gmean' : Geometric mean expression value among all genes.
+
+    Returns
+    -------
+    tmp_rna : pandas.DataFrame
+        Gene expression data for RNA-seq experiment containing multimeric
+        complex names. Their gene expressions are the minimum expression value
+        among the respective subunits composing them. Columns are
+        cell-types/tissues/samples and rows are genes.
+    '''
+    tmp_rna = rnaseq_data.copy()
+    for k, v in complexes.items():
+        if isinstance(v, set):
+            v = list(v)
+        elif isinstance(v, list):
+            pass  # No need to convert, already a list
+        else:
+            raise ValueError("Values in the `complexes`dictionary must be sets or lists.")
+        if all(g in tmp_rna.index for g in v):
+            df = tmp_rna.loc[v, :]
+            if agg_method == 'min':
+                tmp_rna.loc[k] = df.min().values.tolist()
+            elif agg_method == 'mean':
+                tmp_rna.loc[k] = df.mean().values.tolist()
+            elif agg_method == 'gmean':
+                tmp_rna.loc[k] = df.apply(lambda x: np.exp(np.mean(np.log(x)))).values.tolist()
+            else:
+                ValueError("{} is not a valid agg_method".format(agg_method))
+        else:
+            tmp_rna.loc[k] = [0] * tmp_rna.shape[1]
+    return tmp_rna

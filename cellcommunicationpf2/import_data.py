@@ -70,6 +70,8 @@ def import_ligand_receptor_pairs(filename="./Human-2020-Jin-LR-pairs.csv.zst"):
         with dctx.stream_reader(f) as reader:
             text_stream = io.TextIOWrapper(reader, encoding="utf-8")
             df = pd.read_csv(text_stream)
+    
+    # df['receptor'] = lr_pairs['receptor'].str.replace('_', '&')
 
     print(f"Cached {len(df)} ligand-receptor pairs")
     return df
