@@ -3,10 +3,12 @@ import io
 import zstandard as zstd
 from functools import lru_cache
 import urllib
-
+import numpy as np
+from scipy.sparse import issparse, csr_array
+import pandas as pd
 import anndata
 import pandas as pd
-from parafac2.normalize import prepare_dataset
+# from parafac2.normalize import prepare_dataset
 
 
 # The below code is taken directly from https://github.com/earmingol/cell2cell/blob/master/cell2cell/datasets/anndata.py
@@ -44,6 +46,8 @@ def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
     adata = anndata.read_h5ad(filename)
 
     assert hasattr(adata.X, "nnz"), "adata.X should be a sparse matrix"
+    
+    print(adata)
 
     return prepare_dataset(adata, condition_name="sample", geneThreshold=gene_threshold)
 
@@ -78,9 +82,55 @@ def add_cond_idxs(X, condition_key):
 
     # Get unique conditions and map to indices
     conditions = X.obs[condition_key].unique()
+    conditions = ["C51", "C52", "C100", "C141", "C142", "C143", "C144", "C145", "C146","C148", "C149", "C152"]
     condition_map = {cond: i for i, cond in enumerate(conditions)}
 
     # Add indices to obs
     X.obs["condition_unique_idxs"] = X.obs[condition_key].map(condition_map).values
+
+    return X
+
+
+
+def prepare_dataset(
+    X: anndata.AnnData, condition_name: str, geneThreshold: float, deviance=False
+) -> anndata.AnnData:
+    assert issparse(X.X)
+    X.X = csr_array(X.X)
+    assert np.amin(X.X.data) >= 0.0
+
+    # Filter out genes with too few reads, and cells with fewer than 10 counts
+    # X = X[X.X.sum(axis=1) > 10, X.X.mean(axis=0) > geneThreshold]
+
+    # Copy so that the subsetting is preserved
+    X._init_as_actual(X.copy())
+    X.X = csr_array(X.X)
+
+    # Convert counts to floats
+    if issubclass(X.X.dtype.type, int | np.integer):
+        X.X.data = X.X.data.astype(np.float32)
+
+    # if deviance:
+    #     X.X = get_deviance(X.X)
+    # else:
+    #     ## Normalize total counts per cell
+    #     # Keep the counts on a reasonable scale to avoid accuracy issues
+    #     counts_per_cell = X.X.sum(axis=1)
+    #     counts_per_cell /= np.median(counts_per_cell)
+    #     # inplace csr row scale
+    #     X.X.data /= np.repeat(counts_per_cell, np.diff(X.X.indptr))
+
+    #     # Scale genes by sum, inplace csr col scale
+    #     X.X.data /= X.X.sum(axis=0).take(X.X.indices, mode="clip")
+
+    #     # Transform values
+    #     X.X.data = np.log10((1000.0 * X.X.data) + 1.0)
+
+    # Get the indices for subsetting the data
+    _, sgIndex = np.unique(X.obs_vector(condition_name), return_inverse=True)
+    X.obs["condition_unique_idxs"] = sgIndex
+
+    # Pre-calculate gene means
+    X.var["means"] = X.X.mean(axis=0)
 
     return X

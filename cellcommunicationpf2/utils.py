@@ -144,7 +144,7 @@ def pseudobulk_X(X: anndata, condition_name: str, groupby: str, type: str) -> li
     Calculate average gene expression for each groupby in each sample
     """
     # Get unique samples and cell types
-    samples = X.obs[condition_name].unique()
+    samples = ["C51", "C52", "C100", "C141", "C142", "C143", "C144", "C145", "C146","C148", "C149", "C152"]
     groupby_names = X.obs[groupby].unique()
     gene_names = X.var_names
 
@@ -180,3 +180,45 @@ def pseudobulk_X(X: anndata, condition_name: str, groupby: str, type: str) -> li
         total_df.append(results_df.T)
 
     return total_df
+
+
+def pseudobulk_X_save(X: anndata, condition_name: str, groupby: str, type: str) -> list[pd.DataFrame]:
+    """
+    Calculate average gene expression for each groupby in each sample
+    """
+    # Get unique samples and cell types
+    samples = ["C51", "C52", "C100", "C141", "C142", "C143", "C144", "C145", "C146","C148", "C149", "C152"]
+    groupby_names = X.obs[groupby].unique()
+    gene_names = X.var_names
+
+    total_df = []
+    for sample in samples:
+        # Subset to current sample
+        sample_mask = X.obs[condition_name] == sample
+        X_sample = X[sample_mask, :]
+        results = []
+        for group_name in groupby_names:
+            # Subset to current groupby
+            group_mask = X_sample.obs[groupby] == group_name
+            adata_subset = X_sample[group_mask, :]
+            result_dict = {}
+            if adata_subset.n_obs > 0 and type is "mean":
+                mean_expression = np.mean(adata_subset.X.toarray(), axis=0)
+                for i, gene in enumerate(gene_names):
+                    result_dict[gene] = mean_expression[i]
+            elif adata_subset.n_obs > 0 and type is "fraction":
+                ct_df = adata_subset.X.toarray()
+                cell_fraction = ((ct_df > 0).sum(axis=0) / ct_df.shape[0])
+                for i, gene in enumerate(gene_names):
+                    result_dict[gene] = cell_fraction[i]
+            else:
+                # Set zero expression for missing combinations
+                for gene in gene_names:
+                    result_dict[gene] = 0.0
+
+            results.append(result_dict)
+
+        # Dataframe with genes as rows and groupby as columns
+        results_df = pd.DataFrame(results, columns=gene_names, index=groupby_names)
+        results_df = results_df.T
+        results_df.to_csv(f"{sample}_pseudobulk.csv")
