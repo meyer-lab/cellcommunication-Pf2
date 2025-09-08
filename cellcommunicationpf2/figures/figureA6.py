@@ -166,6 +166,7 @@ def makeFigure():
         only_in_tensor = set(tensor.order_names[1]) - set(filtered_lr_pairs["interaction_symbol"].values)
         print("Only in tensor_order_names:", only_in_tensor)
 
+
         weights, cpd_factors, _ = pseudobulk_nncp_decomposition(interaction_tensor, cp_rank=10, n_iter_max=10000, tol=1e-9)
         # Confirm cpd factors are only positive
         for factor in cpd_factors:
@@ -226,6 +227,8 @@ def makeFigure():
     cp_rank = 10  # You can adjust this rank as needed
     n_iter_max = 10000
     tol = 1e-9
+    
+    print("Filtered tensor shape:", tensor_filtered.shape)
     print("Performing non-negative CP decomposition on the loaded tensor...")
     nncp_weights, nncp_factors, r2x = pseudobulk_nncp_decomposition(
         tensor_filtered,
