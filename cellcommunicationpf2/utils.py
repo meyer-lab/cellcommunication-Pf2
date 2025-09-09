@@ -145,7 +145,7 @@ def pseudobulk_X(X: anndata, condition_name: str, groupby: str, type: str) -> li
     """
     # Get unique samples and cell types
     samples = ["C51", "C52", "C100", "C141", "C142", "C143", "C144", "C145", "C146","C148", "C149", "C152"]
-    groupby_names = X.obs[groupby].unique()
+    groupby_names = np.unique(X.obs[groupby].unique())
     gene_names = X.var_names
 
     total_df = []

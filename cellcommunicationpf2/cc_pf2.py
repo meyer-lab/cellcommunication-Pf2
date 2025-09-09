@@ -263,6 +263,9 @@ def calc_communication_score_pseudobulk(
         mod_rnaseq_matrices = [df.copy() for df in pseudobulk_matrices_df]
 
     # Generate communication tensor for all contexts
+    
+    print(mod_rnaseq_matrices[0])
+    print(mod_rnaseq_matrices[3])
     tensors, _, _, ppi_names, _ = build_context_ccc_tensor(
         rnaseq_matrices=mod_rnaseq_matrices,
         ppi_data=lr_pairs_renamed,
@@ -278,12 +281,6 @@ def calc_communication_score_pseudobulk(
     
     print(len(ppi_names), "ppi names were used in the interaction tensor.")
     
-     
-    search_str = "LAMB3^ITGA2&ITGB1"
-    is_present = search_str in ppi_names
-    print("Is present:", is_present)
-        
-
     # Only keep ppi_names to match the pairs used in the tensor in the interaction symbol column of the lr_pairs DataFrame
     filtered_lr_pairs = lr_pairs[lr_pairs["interaction_symbol"].isin(ppi_names)].reset_index(drop=True)
 

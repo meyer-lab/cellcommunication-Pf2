@@ -86,7 +86,7 @@ def add_cond_idxs(X, condition_key):
     conditions = X.obs[condition_key].unique()
     conditions = ["C51", "C52", "C100", "C141", "C142", "C143", "C144", "C145", "C146","C148", "C149", "C152"]
     condition_map = {cond: i for i, cond in enumerate(conditions)}
-
+    print(f"Mapping conditions to indices: {condition_map}")
     # Add indices to obs
     X.obs["condition_unique_idxs"] = X.obs[condition_key].map(condition_map).values
 

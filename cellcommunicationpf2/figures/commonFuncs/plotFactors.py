@@ -17,13 +17,14 @@ def plot_condition_factors(
     cond_group_labels: pd.Series | None = None,
     color_key=None,
     group_cond=False,
-    normalize=False
+    normalize=False,
+    yt= None
 ):
     """Plots Pf2 condition factors"""
 
     # Get sample names in the order of condition_unique_idxs (as used by anndata_to_list)
     idxs = np.argsort(data.obs["condition_unique_idxs"].unique())
-    yt = pd.Series(data.obs[cond].unique())[idxs]
+    
 
     X = np.array(data.uns["Pf2_A"])
 
@@ -33,9 +34,9 @@ def plot_condition_factors(
         X /= np.std(XX, axis=0)
         X /= np.max(np.abs(X))
 
-    ind = reorder_table(X)
-    X = X[ind]
-    yt = yt.iloc[ind]
+    # ind = reorder_table(X)
+    # X = X[ind]
+    # yt = yt.iloc[ind]
 
     if cond_group_labels is not None:
         # Align cond_group_labels with the reordered yt
@@ -141,10 +142,10 @@ def plot_lr_factors(data: anndata.AnnData, ax: Axes, trim=True, weight=0.08):
         X = X[kept_idxs]
         yt = [y for i, y in enumerate(yt) if kept_idxs[i]]
 
-    ind = reorder_table(X)
-    X = X[ind]
+    # ind = reorder_table(X)
+    # X = X[ind]
     X = X / np.max(np.abs(X))
-    yt = [yt[ii] for ii in ind]
+    # yt = [yt[ii] for ii in ind]
     xticks = np.arange(1, rank + 1)
 
     sns.heatmap(

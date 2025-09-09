@@ -58,6 +58,8 @@ def makeFigure():
         subset=[condition_column, group_col]
     ).set_index(condition_column)[group_col]
 
+
+
     groupby = "celltype"
     groupby_names = X_filtered.obs[groupby].unique()
     types = ["fraction"]
