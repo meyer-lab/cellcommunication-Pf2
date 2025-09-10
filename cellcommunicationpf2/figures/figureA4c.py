@@ -55,6 +55,8 @@ def makeFigure():
     cpd_weights, cpd_factors, _ = pseudobulk_nncp_decomposition(interaction_tensor, cp_rank=10, n_iter_max=100000, tol=1e-11, random_state=0)
 
     save_ccc_rise_results(X, cpd_factors, cpd_weights, filtered_lr_pairs)
+    
+    print(filtered_lr_pairs)
 
     plot_condition_factors(
         data=X,
@@ -68,6 +70,7 @@ def makeFigure():
         ax=ax[1],
         factor_type="Pf2_B"
     )
+    
 
     celltype_names = np.unique(X.obs[groupby])
     ax[1].set_yticklabels(celltype_names)

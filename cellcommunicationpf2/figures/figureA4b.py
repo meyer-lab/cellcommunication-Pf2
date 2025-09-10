@@ -41,7 +41,10 @@ def makeFigure():
     cpd_weights, cpd_factors, _ = pseudobulk_nncp_decomposition(tc2c_tensor_only, cp_rank=10, n_iter_max=100000, tol=1e-11, random_state=0)
 
     X = import_balf_covid(gene_threshold=0, normalize=False)
+    cpd_factors = [cpd_factors[0], cpd_factors[2], cpd_factors[3], cpd_factors[1]] 
     X = save_ccc_rise_results(X, cpd_factors, cpd_weights, lr_pairs_filtered)
+
+    print(lr_pairs_filtered)
 
 
     condition_column = "sample"
