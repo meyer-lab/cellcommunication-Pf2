@@ -329,6 +329,22 @@ def pseudobulk_nncp_decomposition(
     return nncp_weights, nncp_factors, r2x
 
 
+def save_ccc_rise_results(
+    X: anndata.AnnData,
+    cpd_factors: list[np.ndarray],
+    weights: np.ndarray,
+    lr_pairs: np.array
+):
+    """ Save CPD results in an AnnData object."""
+    X.uns["Pf2_A"] = cpd_factors[0]  # Condition factor
+    X.uns["Pf2_B"] = cpd_factors[1]  # Sender cell types factor
+    X.uns["Pf2_C"] = cpd_factors[2]  # Receiver cell types factor
+    X.uns["Pf2_D"] = cpd_factors[3]  # LR pairs factor
+    X.uns["Pf2_lr_pairs"] = lr_pairs  # LR pairs
+    X.uns["Pf2_weights"] = weights  # Component weights
+    
+    return X
+
     
 def get_genes_from_complexes(ppi_data, complex_sep='&', interaction_columns=('A', 'B')):
     '''
