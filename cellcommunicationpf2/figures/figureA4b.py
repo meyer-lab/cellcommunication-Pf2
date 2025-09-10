@@ -1,9 +1,8 @@
 """
-Figure A4a: Decomposition of the communication data from Tensorcell2cell.
+Figure A4b: Decomposition of the communication tensor from Tensorcell2cell.
 """
 
 import numpy as np
-import pandas as pd
 from ..import_data import (
     import_balf_covid,
     import_ligand_receptor_pairs,
@@ -16,7 +15,7 @@ from ..utils import (
     load_tensor
 )
 from ..cc_pf2 import (
-    calc_communication_score_pseudobulk,
+    save_ccc_rise_results,
     pseudobulk_nncp_decomposition,
 )
 from .commonFuncs.plotFactors import (
@@ -24,14 +23,12 @@ from .commonFuncs.plotFactors import (
     plot_eigenstate_factors,
     plot_lr_factors
 )
-
-
 from .commonFuncs.plotGeneral import (
     rotate_yaxis
 )
 
 def makeFigure():
-    ax, f = getSetup((20, 5), (1, 4))
+    ax, f = getSetup((20, 8), (1, 4))
     subplotLabel(ax)
 
     cond_names = np.unique(["C51", "C52", "C100", "C141", "C142", "C144", "C145", "C143", "C146", "C148", "C149", "C152"])
@@ -41,18 +38,12 @@ def makeFigure():
     
     tc2c_tensor_only, lr_pairs_filtered = filter_tensor(tc2c_tensor, lr_pairs, cond_names)
 
-    _, cpd_factors, _ = pseudobulk_nncp_decomposition(tc2c_tensor_only, cp_rank=10, n_iter_max=100000, tol=1e-11, random_state=0)
-    # Confirm cpd factors are only positive
-    for factor in cpd_factors:
-        assert np.all(factor >= 0), "CPD factors contain negative values"
+    cpd_weights, cpd_factors, _ = pseudobulk_nncp_decomposition(tc2c_tensor_only, cp_rank=10, n_iter_max=100000, tol=1e-11, random_state=0)
 
     X = import_balf_covid(gene_threshold=0, normalize=False)
-    X.uns["Pf2_A"] = cpd_factors[0]  # Condition factor
-    X.uns["Pf2_B"] = cpd_factors[2]  # Sender cell types factor
-    X.uns["Pf2_C"] = cpd_factors[3]  # Receiver cell types factor
-    X.uns["Pf2_D"] = cpd_factors[1]  # LR pairs factor
-    X.uns["Pf2_lr_pairs"] = lr_pairs_filtered  # LR pairs
-    
+    X = save_ccc_rise_results(X, cpd_factors, cpd_weights, lr_pairs_filtered)
+
+
     condition_column = "sample"
     group_col = "condition"
     sample_to_group = X.obs.drop_duplicates(
@@ -86,7 +77,7 @@ def makeFigure():
     plot_lr_factors(
         data=X,
         ax=ax[3],
-        weight=0.15
+        weight=0.16
     )
 
     return f
