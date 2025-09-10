@@ -19,11 +19,10 @@ def plot_condition_factors(
     group_cond=False,
     normalize=False
 ):
-    """Plots Pf2 condition factors"""
-
+    """Plots condition factors"""
     # Get sample names in the order of condition_unique_idxs (as used by anndata_to_list)
-    idxs = np.argsort(data.obs["condition_unique_idxs"].unique())
-    yt = pd.Series(data.obs[cond].unique())[idxs]
+    idxs = np.argsort(np.unique(data.obs["condition_unique_idxs"]))
+    yt = pd.Series(np.unique(data.obs[cond]))[idxs]
 
     X = np.array(data.uns["Pf2_A"])
 
@@ -32,10 +31,6 @@ def plot_condition_factors(
         X -= np.median(XX, axis=0)
         X /= np.std(XX, axis=0)
         X /= np.max(np.abs(X))
-
-    ind = reorder_table(X)
-    X = X[ind]
-    yt = yt.iloc[ind]
 
     if cond_group_labels is not None:
         # Align cond_group_labels with the reordered yt
@@ -104,7 +99,7 @@ def plot_condition_factors(
 
 
 def plot_eigenstate_factors(data: anndata.AnnData, ax: Axes, factor_type: str):
-    """Plots Pf2 eigenstate factors"""
+    """Plots eigenstate factors"""
     cp_rank = data.uns["Pf2_B"].shape[1]
     xticks = np.arange(1, cp_rank + 1)
     X = data.uns["Pf2_B"] if factor_type == "Pf2_B" else data.uns["Pf2_C"]
@@ -126,7 +121,7 @@ def plot_eigenstate_factors(data: anndata.AnnData, ax: Axes, factor_type: str):
 
 
 def plot_lr_factors(data: anndata.AnnData, ax: Axes, trim=True, weight=0.08):
-    """Plots Pf2 lr factors"""
+    """Plots lr factors"""
     # Read the LR factor and pair information from .uns
     X = np.array(data.uns["Pf2_D"])
     lr_pairs = data.uns["Pf2_lr_pairs"]
