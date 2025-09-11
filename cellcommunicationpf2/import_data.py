@@ -10,7 +10,7 @@ from scipy.sparse import issparse, csr_array
 import pandas as pd
 
 # The below code is taken directly from https://github.com/earmingol/cell2cell/blob/master/cell2cell/datasets/anndata.py
-def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad", gene_threshold: float = 0.01, normalize: bool = True) -> anndata.AnnData:
+def import_balf_covid(filename="cellcommunicationpf2/data/bal/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad", gene_threshold: float = 0.01, normalize: bool = True) -> anndata.AnnData:
     """BALF samples from COVID-19 patients
     The data consists in 63k immune and epithelial cells in lungs
     from 3 control, 3 moderate COVID-19, and 6 severe COVID-19 patients.
@@ -46,6 +46,7 @@ def import_balf_covid(filename="./data/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad"
     assert hasattr(adata.X, "nnz"), "adata.X should be a sparse matrix"
 
     return prepare_dataset(adata, condition_name="sample", geneThreshold=gene_threshold, normalize=normalize)
+
 
 
 @lru_cache(maxsize=1)

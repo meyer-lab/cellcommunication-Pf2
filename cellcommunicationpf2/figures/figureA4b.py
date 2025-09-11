@@ -33,13 +33,14 @@ def makeFigure():
 
     cond_names = np.unique(["C51", "C52", "C100", "C141", "C142", "C144", "C145", "C143", "C146", "C148", "C149", "C152"])
 
-    tc2c_tensor = load_tensor("./data/Tensor-cell2cell/tensor-bal.pkl")
+    tc2c_tensor = load_tensor("cellcommunicationpf2/data/Tensor-cell2cell/tensor-bal.pkl")
     lr_pairs = import_ligand_receptor_pairs()
     
     tc2c_tensor_only, lr_pairs_filtered = filter_tensor(tc2c_tensor, lr_pairs, cond_names)
 
     cpd_weights, cpd_factors, _ = pseudobulk_nncp_decomposition(tc2c_tensor_only, cp_rank=10, n_iter_max=100000, tol=1e-11, random_state=0)
 
+    cpd_factors = [cpd_factors[0], cpd_factors[2], cpd_factors[3], cpd_factors[1]]
     X = import_balf_covid(gene_threshold=0, normalize=False)
     X = save_ccc_rise_results(X, cpd_factors, cpd_weights, lr_pairs_filtered)
 

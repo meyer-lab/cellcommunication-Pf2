@@ -20,6 +20,8 @@ annoy==1.17.3
     # via pacmap
 array-api-compat==1.11.2
     # via anndata
+cell2cell==0.8.1
+    # via cellcommunicationpf2
 certifi==2025.1.31
     # via requests
 cfgv==3.4.0
@@ -40,12 +42,16 @@ distlib==0.3.9
     # via virtualenv
 docrep==0.3.2
     # via liana
+et-xmlfile==2.0.0
+    # via openpyxl
 fastrlock==0.8.3
     # via cupy-cuda12x
 filelock==3.18.0
     # via virtualenv
 fonttools==4.56.0
     # via matplotlib
+gseapy==1.0.3
+    # via cell2cell
 h5py==3.13.0
     # via anndata
     # via scanpy
@@ -59,6 +65,8 @@ joblib==1.4.2
     # via scikit-learn
 kiwisolver==1.4.8
     # via matplotlib
+kneed==0.8.5
+    # via cell2cell
 legacy-api-wrap==1.4.1
     # via scanpy
 liana==1.5.1
@@ -67,10 +75,13 @@ llvmlite==0.44.0
     # via numba
     # via pynndescent
 matplotlib==3.10.1
+    # via cell2cell
     # via cellcommunicationpf2
+    # via gseapy
     # via plotnine
     # via scanpy
     # via seaborn
+    # via statannotations
     # via tensorly-viz
 mizani==0.13.5
     # via plotnine
@@ -82,6 +93,7 @@ natsort==8.4.0
     # via anndata
     # via scanpy
 networkx==3.5
+    # via cell2cell
     # via scanpy
 nodeenv==1.9.1
     # via pre-commit
@@ -94,11 +106,14 @@ numba==0.61.2
     # via umap-learn
 numpy==2.2.6
     # via anndata
+    # via cell2cell
     # via cellcommunicationpf2
     # via contourpy
     # via cupy-cuda12x
     # via datashader
+    # via gseapy
     # via h5py
+    # via kneed
     # via matplotlib
     # via mizani
     # via numba
@@ -112,11 +127,14 @@ numpy==2.2.6
     # via scikit-learn
     # via scipy
     # via seaborn
+    # via statannotations
     # via statsmodels
     # via tensorly
     # via tensorly-viz
     # via umap-learn
     # via xarray
+openpyxl==3.1.5
+    # via cell2cell
 packaging==24.2
     # via anndata
     # via datashader
@@ -128,11 +146,14 @@ pacmap==0.8.0
     # via cellcommunicationpf2
 pandas==2.2.3
     # via anndata
+    # via cell2cell
     # via datashader
+    # via gseapy
     # via mizani
     # via plotnine
     # via scanpy
     # via seaborn
+    # via statannotations
     # via statsmodels
     # via tensorly-viz
     # via xarray
@@ -170,10 +191,13 @@ pyyaml==6.0.2
     # via pre-commit
 requests==2.32.3
     # via datashader
+    # via gseapy
     # via tensorly-viz
 scanpy==1.11.2
+    # via cell2cell
     # via liana
 scikit-learn==1.6.1
+    # via cell2cell
     # via cellcommunicationpf2
     # via pacmap
     # via pynndescent
@@ -183,29 +207,38 @@ scipy==1.15.2
     # via anndata
     # via cellcommunicationpf2
     # via datashader
+    # via gseapy
+    # via kneed
     # via mizani
     # via parafac2
     # via plotnine
     # via pynndescent
     # via scanpy
     # via scikit-learn
+    # via statannotations
     # via statsmodels
     # via tensorly
     # via tensorly-viz
     # via umap-learn
 seaborn==0.13.2
+    # via cell2cell
     # via cellcommunicationpf2
     # via scanpy
+    # via statannotations
 session-info2==0.1.2
     # via scanpy
 six==1.17.0
     # via docrep
     # via python-dateutil
+statannotations==0.7.2
+    # via cell2cell
 statsmodels==0.14.4
+    # via cell2cell
     # via plotnine
     # via scanpy
     # via tensorly-viz
 tensorly==0.9.0
+    # via cell2cell
     # via cellcommunicationpf2
     # via parafac2
 tensorly-viz==0.1.7
@@ -215,6 +248,7 @@ threadpoolctl==3.6.0
 toolz==1.0.0
     # via datashader
 tqdm==4.67.1
+    # via cell2cell
     # via liana
     # via parafac2
     # via scanpy
@@ -224,6 +258,7 @@ typing-extensions==4.14.0
 tzdata==2025.2
     # via pandas
 umap-learn==0.5.7
+    # via cell2cell
     # via scanpy
 urllib3==2.3.0
     # via requests
@@ -232,5 +267,7 @@ virtualenv==20.31.2
 xarray==2025.3.0
     # via datashader
     # via tensorly-viz
+xlrd==2.0.2
+    # via cell2cell
 zstandard==0.23.0
     # via cellcommunicationpf2
