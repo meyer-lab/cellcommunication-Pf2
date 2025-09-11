@@ -36,7 +36,7 @@ def makeFigure():
     subplotLabel(ax)
 
     tc2c_tensor = load_tensor("cellcommunicationpf2/data/Tensor-cell2cell/tensor-bal.pkl")
-    X = import_balf_covid(gene_threshold=0, normalize=False)
+    X = import_balf_covid(gene_threshold=0, normalize=True)
     lr_pairs = import_ligand_receptor_pairs()
     groupby = "celltype"
     condition_column = "sample"
@@ -45,8 +45,12 @@ def makeFigure():
     sample_to_group = X.obs.drop_duplicates(
         subset=[condition_column, group_col]
     ).set_index(condition_column)[group_col]
+ 
+    X = X[X.obs[groupby].isin(tc2c_tensor.order_names[2])]
+    type = "fraction"
+    # type = "mean"
 
-    appended_pseudobulk = pseudobulk_X(X, condition_name=condition_column, groupby=groupby, type="fraction")
+    appended_pseudobulk = pseudobulk_X(X, condition_name=condition_column, groupby=groupby, type=type)
     valid_tc2c_pairs = set(tc2c_tensor.order_names[1])
     lr_pairs_filtered = lr_pairs[lr_pairs["interaction_symbol"].isin(valid_tc2c_pairs)].reset_index(drop=True)
 
