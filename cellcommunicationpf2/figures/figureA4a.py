@@ -37,12 +37,12 @@ def makeFigure():
     celltypes = ["B", "Epithelial", "Macrophages", "NK", "T", "mDC"]
     total_df = []
     for _, cond_name in enumerate(cond_names):
-        df = pd.read_csv(f"./data/Tensor-cell2cell/{cond_name}.csv")
+        df = pd.read_csv(f"cellcommunicationpf2/data/Tensor-cell2cell/{cond_name}.csv")
         df.set_index(df.columns[0], inplace=True)
         df = df[celltypes]
         total_df.append(df.fillna(0))
 
-    tc2c_tensor = load_tensor("./data/Tensor-cell2cell/tensor-bal.pkl")
+    tc2c_tensor = load_tensor("cellcommunicationpf2/data/Tensor-cell2cell/tensor-bal.pkl")
     lr_pairs = import_ligand_receptor_pairs()
 
     valid_tc2c_pairs = set(tc2c_tensor.order_names[1])

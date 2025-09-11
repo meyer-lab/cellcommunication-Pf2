@@ -162,10 +162,8 @@ cython_debug/
 #.idea/
 
 # Data folder
-*/data/Tensor-cell2cell/
 */data/bal/
 
-data/Tensor-cell2cell/
 data/bal/
 output/
 
