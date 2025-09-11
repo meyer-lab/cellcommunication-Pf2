@@ -162,9 +162,11 @@ cython_debug/
 #.idea/
 
 # Data folder
-*/data/
+*/data/Tensor-cell2cell/
+*/data/bal/
 
-data/
+data/Tensor-cell2cell/
+data/bal/
 output/
 
 nohup.out
