@@ -47,14 +47,14 @@ def makeFigure():
     ).set_index(condition_column)[group_col]
  
     X = X[X.obs[groupby].isin(tc2c_tensor.order_names[2])]
-    type = "fraction"
-    # type = "mean"
+    # type = "fraction"
+    type = "mean"
 
     appended_pseudobulk = pseudobulk_X(X, condition_name=condition_column, groupby=groupby, type=type)
     valid_tc2c_pairs = set(tc2c_tensor.order_names[1])
     lr_pairs_filtered = lr_pairs[lr_pairs["interaction_symbol"].isin(valid_tc2c_pairs)].reset_index(drop=True)
 
-    interaction_tensor, filtered_lr_pairs = calc_communication_score_pseudobulk(appended_pseudobulk, lr_pairs=lr_pairs_filtered, complex_sep="&")
+    interaction_tensor, filtered_lr_pairs = calc_communication_score_pseudobulk(appended_pseudobulk, lr_pairs=lr_pairs, complex_sep="&")
     
     cpd_weights, cpd_factors, _ = pseudobulk_nncp_decomposition(interaction_tensor, cp_rank=10, n_iter_max=100000, tol=1e-11, random_state=0)
 

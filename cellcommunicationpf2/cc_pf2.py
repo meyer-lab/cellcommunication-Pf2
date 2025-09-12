@@ -13,6 +13,9 @@ def calc_communication_score(
     projected_matrices: list[np.ndarray],
     gene_names: list[str] = None,
     lr_pairs: pd.DataFrame = None,
+    complex_sep: str = "&",
+    complex_agg_method: str = "min",
+    verbose: bool = False,
 ) -> np.ndarray:
     """
     Calculate cell-cell communication scores using build_context_ccc_tensor
@@ -57,18 +60,31 @@ def calc_communication_score(
     else:
         lr_pairs_renamed = lr_pairs
 
+    # Handle complexes if requested
+    if complex_sep is not None:
+        if verbose:
+            print('Getting expression values for protein complexes')
+        _, _, _, _, complexes = get_genes_from_complexes(
+            ppi_data=lr_pairs_renamed,
+            complex_sep=complex_sep,
+            interaction_columns=("A", "B")
+        )
+        mod_rnaseq_matrices = [add_complexes_to_expression(rnaseq, complexes, agg_method=complex_agg_method) for rnaseq in rnaseq_matrices]
+    else:
+        mod_rnaseq_matrices = [df.copy() for df in rnaseq_matrices]
+
     # Generate communication tensor for all contexts
     tensors, _, _, ppi_names, _ = build_context_ccc_tensor(
-        rnaseq_matrices=rnaseq_matrices,
+        rnaseq_matrices=mod_rnaseq_matrices,
         ppi_data=lr_pairs_renamed,
         how="inner",
         communication_score="expression_product",
-        complex_sep=None,
+        complex_sep=complex_sep,
         upper_letter_comparison=False,
         interaction_columns=("A", "B"),
         group_ppi_by=None,
         group_ppi_method="gmean",
-        verbose=False,
+        verbose=verbose,
     )
 
     # Filter the original lr_pairs to match the pairs used in the tensor
