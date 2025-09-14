@@ -1,5 +1,5 @@
 """
-Figure A5: CCC-RISE on BALF COVID-19 data.
+Figure A5a: CCC-RISE on BALF COVID-19 data.
 """
 
 from .common import (

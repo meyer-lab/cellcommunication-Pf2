@@ -79,6 +79,7 @@ def run_cc_pf2_workflow(
     n_iter_max: int = 100,
     tol: float = 1e-3,
     random_state: int | None = None,
+    complex_sep: str = None,
 ) -> tuple[anndata.AnnData, float]:
     """
     Executes the complete CC-PF2 workflow: decomposition, standardization,
@@ -120,6 +121,8 @@ def run_cc_pf2_workflow(
         tol=tol,
         cp_rank=cp_rank,
         random_state=random_state,
+        complex_sep=complex_sep,
+        lr_pairs=lr_pairs,
     )
     (cp_weights, factors), projections = results
 
@@ -136,7 +139,12 @@ def run_cc_pf2_workflow(
     adata.uns["Pf2_lr_pairs"] = filtered_lr_pairs
     adata.uns["Pf2_r2x"] = r2x
     adata.uns["Pf2_weights"] = weights
-    adata.uns["Pf2_projections"] = projections
+    projections_stacked = np.concatenate(
+        [proj for proj in projections], axis=1
+    )
+    adata.uns["Pf2_projections"] = projections_stacked
+    adata.uns["Pf2_sc_B"] = projections_stacked @ factors[1]
+    adata.uns["Pf2_rc_C"] = projections_stacked @ factors[2]
 
     return adata, r2x
 

@@ -120,11 +120,12 @@ def plot_labels_pacmap(
     ax = assign_labels(ax)
 
 
-def plot_wp_per_celltype(
-    X: anndata.AnnData, cmp: int, ax: Axes, outliers: bool = False, cellType="cell_type"
+def plot_wc_per_celltype(
+    X: anndata.AnnData, cmp: int, ax: Axes, outliers: bool = False, cellType="cell_type", factor_matrix:str = None
 ):
-    """Boxplot of weighted projections for one component across cell types"""
-    XX = X.obsm["Pf2_cell_cell_weighted_projections"][:, cmp - 1]
+    """Boxplot of weighted cells for one component across cell types"""
+    sc_factor = X.uns[f"Pf2_sc_{factor_matrix}"]
+    XX = sc_factor[:, cmp - 1]
     cmpName = f"Cmp. {cmp}"
 
     df = pd.DataFrame({cmpName: XX, "Cell Type": X.obs[cellType].to_numpy()})
@@ -137,7 +138,7 @@ def plot_wp_per_celltype(
         ax=ax,
     )
     maxvalue = np.max(np.abs(ax.get_xticks()))
-    ax.set(xticks=np.linspace(-maxvalue, maxvalue, num=5), xlabel="WP Weight")
+    ax.set(xticks=np.linspace(-maxvalue, maxvalue, num=5), xlabel="WC Weight")
     ax.set_title(cmpName)
 
 

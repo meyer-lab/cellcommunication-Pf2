@@ -51,8 +51,8 @@ def makeFigure():
     type = "mean"
 
     appended_pseudobulk = pseudobulk_X(X, condition_name=condition_column, groupby=groupby, type=type)
-    valid_tc2c_pairs = set(tc2c_tensor.order_names[1])
-    lr_pairs_filtered = lr_pairs[lr_pairs["interaction_symbol"].isin(valid_tc2c_pairs)].reset_index(drop=True)
+    # valid_tc2c_pairs = set(tc2c_tensor.order_names[1])
+    # lr_pairs = lr_pairs[lr_pairs["interaction_symbol"].isin(valid_tc2c_pairs)].reset_index(drop=True)
 
     interaction_tensor, filtered_lr_pairs = calc_communication_score_pseudobulk(appended_pseudobulk, lr_pairs=lr_pairs, complex_sep="&")
     
