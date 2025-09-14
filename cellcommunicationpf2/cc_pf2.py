@@ -13,7 +13,7 @@ def calc_communication_score(
     projected_matrices: list[np.ndarray],
     gene_names: list[str] = None,
     lr_pairs: pd.DataFrame = None,
-    complex_sep: str = "&",
+    complex_sep: str = None,
     complex_agg_method: str = "min",
     verbose: bool = False,
 ) -> np.ndarray:
@@ -78,7 +78,7 @@ def calc_communication_score(
         rnaseq_matrices=mod_rnaseq_matrices,
         ppi_data=lr_pairs_renamed,
         how="inner",
-        communication_score="expression_product",
+        communication_score="expression_mean",
         complex_sep=complex_sep,
         upper_letter_comparison=False,
         interaction_columns=("A", "B"),
@@ -107,6 +107,8 @@ def cc_pf2(
     tol: float,
     cp_rank: int | None = None,
     random_state: int | None = None,
+    complex_sep: str = None,
+    lr_pairs: pd.DataFrame = None,
 ) -> tuple[tuple, float, pd.DataFrame]:
     """
     Perform PARAFAC2 decomposition on an AnnData object, followed by
@@ -155,7 +157,8 @@ def cc_pf2(
 
     # Calculate cell-cell communication scores
     interaction_tensors, filtered_lr_pairs = calc_communication_score(
-        projected_matrices, gene_names=gene_names
+        projected_matrices, gene_names=gene_names,
+        complex_sep=complex_sep, lr_pairs=lr_pairs,
     )
 
     cp_rank = cp_rank if cp_rank is not None else rise_rank
@@ -287,7 +290,8 @@ def calc_communication_score_pseudobulk(
     )
     
     # Only keep ppi_names to match the pairs used in the tensor in the interaction symbol column of the lr_pairs DataFrame
-    filtered_lr_pairs = lr_pairs[lr_pairs["interaction_symbol"].isin(ppi_names)].reset_index(drop=True)
+    lr_pair_names = lr_pairs["ligand"] + "^" + lr_pairs["receptor"]
+    filtered_lr_pairs = lr_pairs[lr_pair_names.isin(ppi_names)].reset_index(drop=True)
 
     # Convert to numpy and transpose to expected format
     # From: (context, ppi_idx, sender, receiver)
