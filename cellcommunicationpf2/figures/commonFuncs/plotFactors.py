@@ -25,6 +25,7 @@ def plot_condition_factors(
     yt = pd.Series(np.unique(data.obs[cond]))[idxs]
 
     X = np.array(data.uns["Pf2_A"])
+    X /= np.max(np.abs(X))
 
     if normalize is True:
         XX = X
@@ -124,22 +125,30 @@ def plot_lr_factors(data: anndata.AnnData, ax: Axes, trim=True, weight=0.08):
     """Plots lr factors"""
     # Read the LR factor and pair information from .uns
     X = np.array(data.uns["Pf2_D"])
-    lr_pairs = data.uns["Pf2_lr_pairs"]
+    yt = data.uns["Pf2_lr_pairs"]
+    yt = yt["interaction_symbol"].values
     rank = X.shape[1]
+    
+    print(np.shape(yt))
 
     # Create labels from the ligand and receptor columns
-    yt = [f"{row['ligand']}-{row['receptor']}" for _, row in lr_pairs.iterrows()]
+    # yt = [f"{row['ligand']}-{row['receptor']}" for _, row in lr_pairs.iterrows()]
 
     if trim is True:
         max_weight = np.max(np.abs(X), axis=1)
         kept_idxs = max_weight > weight
         X = X[kept_idxs]
-        yt = [y for i, y in enumerate(yt) if kept_idxs[i]]
+        yt = yt[kept_idxs]
 
     ind = reorder_table(X)
     X = X[ind]
     X = X / np.max(np.abs(X))
-    yt = [yt[ii] for ii in ind]
+    print(X.shape)
+    print(np.shape(yt))
+    print(np.shape(ind))
+    print(yt)
+    yt = yt[ind]
+    print(np.shape(ind))
     xticks = np.arange(1, rank + 1)
 
     sns.heatmap(
@@ -155,24 +164,27 @@ def plot_lr_factors(data: anndata.AnnData, ax: Axes, trim=True, weight=0.08):
     ax.set(xlabel="Component")
 
 
-def plot_gene_factors_partial(
-    cmp: int, dataIn: anndata.AnnData, ax: Axes, geneAmount: int = 5, top=True
+def plot_lr_factors_partial(
+    X: anndata.AnnData, cmp: int, ax: Axes, geneAmount: int = 5, top=True
 ):
-    """Plotting weights for gene factors for both most negatively/positively weighted terms"""
+    """Plotting weights for lr factors for both most negatively/positively weighted terms"""
     cmpName = f"Cmp. {cmp}"
+    lr_factor = np.array(X.uns["Pf2_D"])
+    yt = X.uns["Pf2_lr_pairs"]
+    yt = yt["interaction_symbol"].values
 
     df = pd.DataFrame(
-        data=dataIn.varm["Pf2_D"][:, cmp - 1], index=dataIn.var_names, columns=[cmpName]
+        data=lr_factor[:, cmp - 1], index=yt, columns=[cmpName]
     )
-    df = df.reset_index(names="Gene")
+    df = df.reset_index(names="LR")
     df = df.sort_values(by=cmpName)
 
     if top:
         sns.barplot(
-            data=df.iloc[-geneAmount:, :], x="Gene", y=cmpName, color="k", ax=ax
+            data=df.iloc[-geneAmount:, :], x="LR", y=cmpName, color="k", ax=ax
         )
     else:
-        sns.barplot(data=df.iloc[:geneAmount, :], x="Gene", y=cmpName, color="k", ax=ax)
+        sns.barplot(data=df.iloc[:geneAmount, :], x="LR", y=cmpName, color="k", ax=ax)
 
     ax.tick_params(axis="x", rotation=90)
 

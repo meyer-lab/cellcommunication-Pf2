@@ -22,9 +22,7 @@ from ..cc_pf2 import (
     save_ccc_rise_results
 )
 from .commonFuncs.plotFactors import (
-    plot_condition_factors,
-    plot_eigenstate_factors,
-    plot_lr_factors
+    plot_lr_factors_partial
 )
 
 from .commonFuncs.plotGeneral import (
@@ -32,7 +30,7 @@ from .commonFuncs.plotGeneral import (
 )
 
 def makeFigure():
-    ax, f = getSetup((20, 8), (1, 4))
+    ax, f = getSetup((12, 12), (5, 4))
     subplotLabel(ax)
 
     tc2c_tensor = load_tensor("cellcommunicationpf2/data/Tensor-cell2cell/tensor-bal.pkl")
@@ -43,10 +41,6 @@ def makeFigure():
     condition_column = "sample"
     group_col = "condition"
     X = add_cond_idxs(X, condition_column)
-    sample_to_group = X.obs.drop_duplicates(
-        subset=[condition_column, group_col]
-    ).set_index(condition_column)[group_col]
- 
     X = X[X.obs[groupby].isin(tc2c_tensor.order_names[2])]
     # type = "fraction"
     type = "mean"
@@ -61,42 +55,15 @@ def makeFigure():
     print(filtered_lr_pairs)
 
     print(np.shape(interaction_tensor))
-    cpd_weights, cpd_factors, _ = pseudobulk_nncp_decomposition(interaction_tensor, cp_rank=10, random_state=0, n_iter_max=1000)
+    cp_rank = 10
+    cpd_weights, cpd_factors, _ = pseudobulk_nncp_decomposition(interaction_tensor, cp_rank=cp_rank, random_state=0, n_iter_max=1000)
 
-    save_ccc_rise_results(X, cpd_factors, cpd_weights, filtered_lr_pairs)
-
-    plot_condition_factors(
-        data=X,
-        ax=ax[0],
-        cond="sample",
-        cond_group_labels=sample_to_group,
-        group_cond=True
-    )
-    plot_eigenstate_factors(    
-        data=X,
-        ax=ax[1],
-        factor_type="Pf2_B"
-    )
-
-    celltype_names = np.unique(X.obs[groupby])
-    ax[1].set_yticklabels(celltype_names)
-    rotate_yaxis(ax[1], 0)
-
-    plot_eigenstate_factors(
-        data=X,
-        ax=ax[2],
-        factor_type="Pf2_C",
-    )
-    ax[2].set_yticklabels(celltype_names)
-    rotate_yaxis(ax[2], 0)
-
-
-    print(X.uns["Pf2_D"].shape)
-    plot_lr_factors(
-        data=X,
-        ax=ax[3],
-        weight=0.14
-    )
+    X = save_ccc_rise_results(X, cpd_factors, cpd_weights, filtered_lr_pairs)
+    
+      
+    for i in range(cp_rank):
+        plot_lr_factors_partial(X, i, ax[2*i], geneAmount=10, top=True)
+        plot_lr_factors_partial(X, i, ax[2*i+1], geneAmount=10, top=False)
 
     
     return f
