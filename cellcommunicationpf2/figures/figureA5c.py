@@ -13,7 +13,8 @@ from ..import_data import (
 )
 from ..utils import run_cc_pf2_workflow
 from .commonFuncs.plotPaCMAP import (
-    plot_wc_per_celltype
+    plot_wc_per_celltype,
+    plot_wc_pacmap
 )   
 
 def makeFigure():
@@ -49,8 +50,16 @@ def makeFigure():
     )
     print(f"CCC-RISE decomposition R2X: {r2x:.4f}")
     
-    
+    # for i in range(cp_rank):
+    #     plot_wc_per_celltype(X, i + 1, ax[i], cellType="celltype", factor_matrix="B")
+        
+    # for i in range(cp_rank):
+    #     plot_wc_per_celltype(X, i + 1, ax[i+cp_rank], cellType="celltype", factor_matrix="C")
+        
     for i in range(cp_rank):
-        plot_wc_per_celltype(X, i + 1, ax[i], cellType="celltype", factor_matrix="B")
+        plot_wc_pacmap(X, i + 1, ax[i], factor_matrix="B")
+        
+    for i in range(cp_rank):
+        plot_wc_pacmap(X, i + 1, ax[i+cp_rank], factor_matrix="C")
 
     return f

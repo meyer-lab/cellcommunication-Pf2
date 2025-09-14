@@ -8,6 +8,7 @@ from sklearn.linear_model import LinearRegression
 import pandas as pd
 import os
 import pickle
+from pacmap import PaCMAP
 
 
 def resample(data: anndata.AnnData, random_seed: int = None) -> anndata.AnnData:
@@ -80,6 +81,7 @@ def run_cc_pf2_workflow(
     tol: float = 1e-3,
     random_state: int | None = None,
     complex_sep: str = None,
+    doEmbedding: bool = True,
 ) -> tuple[anndata.AnnData, float]:
     """
     Executes the complete CC-PF2 workflow: decomposition, standardization,
@@ -140,11 +142,15 @@ def run_cc_pf2_workflow(
     adata.uns["Pf2_r2x"] = r2x
     adata.uns["Pf2_weights"] = weights
     projections_stacked = np.concatenate(
-        [proj for proj in projections], axis=1
+        [proj.T for proj in projections], axis=1
     )
     adata.uns["Pf2_projections"] = projections_stacked
-    adata.uns["Pf2_sc_B"] = projections_stacked @ factors[1]
-    adata.uns["Pf2_rc_C"] = projections_stacked @ factors[2]
+    adata.uns["Pf2_sc_B"] = projections_stacked.T @ factors[1]
+    adata.uns["Pf2_rc_C"] = projections_stacked.T @ factors[2]
+    
+    if doEmbedding:
+        pcm = PaCMAP(random_state=random_state)
+        adata.uns["Pf2_PaCMAP"] = pcm.fit_transform(adata.uns["Pf2_projections"])
 
     return adata, r2x
 
@@ -169,11 +175,11 @@ def pseudobulk_X(X: anndata, condition_name: str, groupby: str, type: str) -> li
             group_mask = X_sample.obs[groupby] == group_name
             adata_subset = X_sample[group_mask, :]
             result_dict = {}
-            if adata_subset.n_obs > 0 and type is "mean":
+            if adata_subset.n_obs > 0 and type == "mean":
                 mean_expression = np.mean(adata_subset.X.toarray(), axis=0)
                 for i, gene in enumerate(gene_names):
                     result_dict[gene] = mean_expression[i]
-            elif adata_subset.n_obs > 0 and type is "fraction":
+            elif adata_subset.n_obs > 0 and type == "fraction":
                 ct_df = adata_subset.X.toarray()
                 cell_fraction = ((ct_df > 0).sum(axis=0) / ct_df.shape[0])
                 for i, gene in enumerate(gene_names):

@@ -43,11 +43,15 @@ def ds_show(result, ax):
     ax.imshow(mpl_img)
 
 
-def plot_wp_pacmap(X: anndata.AnnData, cmp: int, ax: Axes, cbarMax: float = 1.0):
-    """Scatterplot of PaCMAP visualization weighted by
-    projections for a component and eigenstate"""
-    values = X.obsm["Pf2_cell_cell_weighted_projections"][:, cmp - 1]
-    points = X.obsm["Pf2_PaCMAP_projections"]
+def plot_wc_pacmap(X: anndata.AnnData, cmp: int, ax: Axes, cbarMax: float = 1.0, factor_matrix:str = None):
+    """Scatterplot of PaCMAP visualization of weighted cells for one component in receiver or sender"""
+    if factor_matrix == "B":
+        factor = "Pf2_sc_B"
+    elif factor_matrix == "C":
+        factor = "Pf2_rc_C"
+    sc_factor = X.uns[factor]
+    values = sc_factor[:, cmp - 1]
+    points = X.obsm["Pf2_PaCMAP"]
 
     cmap = sns.diverging_palette(240, 10, as_cmap=True)
     canvas = _get_canvas(points)
@@ -124,7 +128,11 @@ def plot_wc_per_celltype(
     X: anndata.AnnData, cmp: int, ax: Axes, outliers: bool = False, cellType="cell_type", factor_matrix:str = None
 ):
     """Boxplot of weighted cells for one component across cell types"""
-    sc_factor = X.uns[f"Pf2_sc_{factor_matrix}"]
+    if factor_matrix == "B":
+        factor = "Pf2_sc_B"
+    elif factor_matrix == "C":
+        factor = "Pf2_rc_C"
+    sc_factor = X.uns[factor]
     XX = sc_factor[:, cmp - 1]
     cmpName = f"Cmp. {cmp}"
 
