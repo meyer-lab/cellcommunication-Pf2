@@ -16,14 +16,12 @@ from .commonFuncs.plotFactors import (
     plot_lr_factors_partial
 )
 
-
-
 def makeFigure():
     ax, f = getSetup((12, 12), (5, 4))
     subplotLabel(ax)
 
     # Import and prepare data
-    adata = import_balf_covid(gene_threshold=0, normalize=True)
+    adata = import_balf_covid(gene_threshold=0.01, normalize=True)
     lr_pairs = import_ligand_receptor_pairs()
 
     # Add numerical indices for each patient sample, which is the primary condition
@@ -33,8 +31,8 @@ def makeFigure():
     # Parameters for CCC-RISE
     rise_rank = 30
     cp_rank = 10
-    n_iter_max = 100
-    tol = 1e-6
+    n_iter_max = 1000
+    tol = 1e-9
     random_state = 42
     
     print(f"Running CCC-RISE with rank={rise_rank} and cp_rank={cp_rank}...")

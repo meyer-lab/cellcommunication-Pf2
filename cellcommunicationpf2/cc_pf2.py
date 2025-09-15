@@ -78,7 +78,7 @@ def calc_communication_score(
         rnaseq_matrices=mod_rnaseq_matrices,
         ppi_data=lr_pairs_renamed,
         how="inner",
-        communication_score="expression_mean",
+        communication_score="expression_product",
         complex_sep=complex_sep,
         upper_letter_comparison=False,
         interaction_columns=("A", "B"),
@@ -171,9 +171,9 @@ def cc_pf2(
         interaction_tensors,
         cp_rank,
         n_iter_max=n_iter_max,
-        tol=None,
-        init="random",  # Use random initialization
-        normalize_factors=False,
+        tol=tol,
+        init="svd",  # Use random initialization
+        normalize_factors=True,
         random_state=random_state,
     )
 
@@ -280,7 +280,7 @@ def calc_communication_score_pseudobulk(
         rnaseq_matrices=mod_rnaseq_matrices,
         ppi_data=lr_pairs_renamed,
         how="inner",
-        communication_score="expression_mean",
+        communication_score="expression_product",
         complex_sep=complex_sep,
         upper_letter_comparison=True,
         interaction_columns=interaction_columns,

@@ -22,7 +22,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Import and prepare data
-    adata = import_balf_covid(gene_threshold=0, normalize=True)
+    adata = import_balf_covid(gene_threshold=0.01, normalize=True)
     lr_pairs = import_ligand_receptor_pairs()
 
     # Add numerical indices for each patient sample, which is the primary condition
@@ -32,8 +32,8 @@ def makeFigure():
     # Parameters for CCC-RISE
     rise_rank = 30
     cp_rank = 10
-    n_iter_max = 100
-    tol = 1e-6
+    n_iter_max = 1000
+    tol = 1e-9
     random_state = 42
     
     print(f"Running CCC-RISE with rank={rise_rank} and cp_rank={cp_rank}...")
@@ -45,7 +45,7 @@ def makeFigure():
         n_iter_max=n_iter_max,
         tol=tol,
         random_state=random_state,
-        complex_sep="&"
+        # complex_sep="&"
         
     )
     print(f"CCC-RISE decomposition R2X: {r2x:.4f}")
@@ -57,9 +57,9 @@ def makeFigure():
     #     plot_wc_per_celltype(X, i + 1, ax[i+cp_rank], cellType="celltype", factor_matrix="C")
         
     for i in range(cp_rank):
-        plot_wc_pacmap(X, i + 1, ax[i], factor_matrix="B")
+        plot_wc_pacmap(X, i + 1, ax[i], factor_matrix="B", cbarMax=0.3)
         
     for i in range(cp_rank):
-        plot_wc_pacmap(X, i + 1, ax[i+cp_rank], factor_matrix="C")
+        plot_wc_pacmap(X, i + 1, ax[i+cp_rank], factor_matrix="C", cbarMax=0.3)
 
     return f

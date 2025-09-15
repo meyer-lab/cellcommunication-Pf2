@@ -162,7 +162,7 @@ def plot_lr_factors_partial(
     yt = X.uns["Pf2_lr_pairs"]
     yt = yt["interaction_symbol"].values
     df = pd.DataFrame(
-        data=lr_factor[:, cmp - 1], index=X.var_names, columns=[cmpName]
+        data=lr_factor[:, cmp - 1], index=yt, columns=[cmpName]
     )
     df = df.reset_index(names="LR")
     df = df.sort_values(by=cmpName)

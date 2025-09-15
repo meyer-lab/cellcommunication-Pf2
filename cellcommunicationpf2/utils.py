@@ -150,7 +150,7 @@ def run_cc_pf2_workflow(
     
     if doEmbedding:
         pcm = PaCMAP(random_state=random_state)
-        adata.uns["Pf2_PaCMAP"] = pcm.fit_transform(adata.uns["Pf2_projections"])
+        adata.uns["Pf2_PaCMAP"] = pcm.fit_transform(projections_stacked.T)
 
     return adata, r2x
 
