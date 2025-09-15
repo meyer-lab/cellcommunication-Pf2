@@ -49,7 +49,7 @@ def makeFigure():
     lr_pairs_filtered = lr_pairs[lr_pairs["interaction_symbol"].isin(valid_tc2c_pairs)].reset_index(drop=True)
     interaction_tensor, filtered_lr_pairs = calc_communication_score_pseudobulk(total_df, lr_pairs=lr_pairs_filtered, complex_sep="&")
 
-    cpd_weights, cpd_factors, _ = pseudobulk_nncp_decomposition(interaction_tensor, cp_rank=10, n_iter_max=100000, tol=1e-11, random_state=0)
+    cpd_weights, cpd_factors, _ = pseudobulk_nncp_decomposition(interaction_tensor, cp_rank=10, n_iter_max=1000, tol=1e-11, random_state=0)
 
     X = import_balf_covid(gene_threshold=0, normalize=False)
 
