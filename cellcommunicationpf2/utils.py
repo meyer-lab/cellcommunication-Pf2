@@ -81,7 +81,7 @@ def run_cc_pf2_workflow(
     tol: float = 1e-3,
     random_state: int | None = None,
     complex_sep: str = None,
-    doEmbedding: bool = True,
+    doEmbedding: int = 13,
 ) -> tuple[anndata.AnnData, float]:
     """
     Executes the complete CC-PF2 workflow: decomposition, standardization,
@@ -149,7 +149,7 @@ def run_cc_pf2_workflow(
     adata.uns["Pf2_rc_C"] = projections_stacked.T @ factors[2]
     
     if doEmbedding:
-        pcm = PaCMAP(random_state=random_state)
+        pcm = PaCMAP(random_state=random_state, n_neighbors=doEmbedding)
         adata.uns["Pf2_PaCMAP"] = pcm.fit_transform(projections_stacked.T)
 
     return adata, r2x

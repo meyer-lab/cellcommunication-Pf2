@@ -56,7 +56,7 @@ def makeFigure():
 
     interaction_tensor, filtered_lr_pairs = calc_communication_score_pseudobulk(appended_pseudobulk, lr_pairs=lr_pairs, complex_sep="&")
     
-    cpd_weights, cpd_factors, _ = pseudobulk_nncp_decomposition(interaction_tensor, cp_rank=10, n_iter_max=100000, tol=1e-11, random_state=0)
+    cpd_weights, cpd_factors, _ = pseudobulk_nncp_decomposition(interaction_tensor, cp_rank=10, n_iter_max=1000, tol=1e-11, random_state=0)
 
     save_ccc_rise_results(X, cpd_factors, cpd_weights, filtered_lr_pairs)
 

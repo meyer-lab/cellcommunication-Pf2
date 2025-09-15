@@ -96,7 +96,7 @@ def plot_labels_pacmap(
         )
     indices = np.argsort(labels)
 
-    points = X.obsm["Pf2_PaCMAP_projections"][indices, :]
+    points = X.uns["Pf2_PaCMAP"][indices, :]
     labels = labels.iloc[indices]
 
     canvas = _get_canvas(points)
