@@ -24,7 +24,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Import and prepare data
-    adata = import_balf_covid(gene_threshold=0.1, normalize=True)
+    adata = import_balf_covid(gene_threshold=0.01, normalize=True)
     lr_pairs = import_ligand_receptor_pairs()
 
     # Add numerical indices for each patient sample, which is the primary condition
@@ -39,10 +39,10 @@ def makeFigure():
     ).set_index(condition_column)[group_col]
 
     # Parameters for CCC-RISE
-    rise_rank = 3
-    cp_rank = 2
-    n_iter_max = 100
-    tol = 1e-6
+    rise_rank = 30
+    cp_rank = 10
+    n_iter_max = 1000
+    tol = 1e-9
     random_state = 42
 
     print(f"Running CCC-RISE with rank={rise_rank} and cp_rank={cp_rank}...")
@@ -54,7 +54,9 @@ def makeFigure():
         n_iter_max=n_iter_max,
         tol=tol,
         random_state=random_state,
+    
     )
+    
 
     print(f"CCC-RISE decomposition R2X: {r2x:.4f}")
 

@@ -36,7 +36,7 @@ def makeFigure():
     subplotLabel(ax)
 
     tc2c_tensor = load_tensor("cellcommunicationpf2/data/Tensor-cell2cell/tensor-bal.pkl")
-    X = import_balf_covid(gene_threshold=0, normalize=True)
+    X = import_balf_covid(gene_threshold=0.01, normalize=True)
     lr_pairs = import_ligand_receptor_pairs()
     groupby = "celltype"
     condition_column = "sample"

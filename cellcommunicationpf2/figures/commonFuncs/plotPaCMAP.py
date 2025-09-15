@@ -51,13 +51,13 @@ def plot_wc_pacmap(X: anndata.AnnData, cmp: int, ax: Axes, cbarMax: float = 1.0,
         factor = "Pf2_rc_C"
     sc_factor = X.uns[factor]
     values = sc_factor[:, cmp - 1]
-    points = X.obsm["Pf2_PaCMAP"]
+    points = np.array(X.uns["Pf2_PaCMAP"])
 
     cmap = sns.diverging_palette(240, 10, as_cmap=True)
     canvas = _get_canvas(points)
     data = pd.DataFrame(points, columns=("x", "y"))
 
-    values /= np.max(np.abs(values))
+    values /= np.max(values)
 
     data["val_cat"] = values
     result = tf.shade(
