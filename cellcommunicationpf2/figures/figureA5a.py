@@ -62,28 +62,28 @@ def makeFigure():
     adata_filtered.uns["Pf2_lr_pairs"] = adata_filtered.uns["Pf2_lr_pairs"]["interaction_symbol"].values
     adata_filtered.write_h5ad("cellcommunicationpf2/data/bal/bal.h5ad")
     
-    # print(f"CCC-RISE decomposition R2X: {r2x:.4f}")
+    print(f"CCC-RISE decomposition R2X: {r2x:.4f}")
 
-    # # Factor 0: Patient Conditions (Samples)
-    # plot_condition_factors(
-    #     adata_filtered,
-    #     ax[0],
-    #     cond=condition_column,
-    #     cond_group_labels=sample_to_group,
-    #     group_cond=True,  # Sort samples by their condition group
-    # )
-    # ax[0].set_title("Factor 0: Patient Conditions")
+    # Factor 0: Patient Conditions (Samples)
+    plot_condition_factors(
+        adata_filtered,
+        ax[0],
+        cond=condition_column,
+        cond_group_labels=sample_to_group,
+        group_cond=True,  # Sort samples by their condition group
+    )
+    ax[0].set_title("Factor 0: Patient Conditions")
 
-    # # Factor 1: Sender Cell Eigenstates
-    # plot_eigenstate_factors(adata_filtered, ax[1], factor_type="Pf2_B")
-    # ax[1].set_title("Factor 1: Sender Cell Eigenstates")
+    # Factor 1: Sender Cell Eigenstates
+    plot_eigenstate_factors(adata_filtered, ax[1], factor_type="Pf2_B")
+    ax[1].set_title("Factor 1: Sender Cell Eigenstates")
 
-    # # Factor 2: Receiver Cell Eigenstates
-    # plot_eigenstate_factors(adata_filtered, ax[2], factor_type="Pf2_C")
-    # ax[2].set_title("Factor 2: Receiver Cell Eigenstates")
+    # Factor 2: Receiver Cell Eigenstates
+    plot_eigenstate_factors(adata_filtered, ax[2], factor_type="Pf2_C")
+    ax[2].set_title("Factor 2: Receiver Cell Eigenstates")
 
-    # # Factor 3: Ligand-Receptor Pairs
-    # plot_lr_factors(adata_filtered, ax[3], trim=True)
-    # ax[3].set_title("Factor 3: LR Pairs")
+    # Factor 3: Ligand-Receptor Pairs
+    plot_lr_factors(adata_filtered, ax[3], trim=True)
+    ax[3].set_title("Factor 3: LR Pairs")
 
     return f

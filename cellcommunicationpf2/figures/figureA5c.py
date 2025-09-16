@@ -50,16 +50,16 @@ def makeFigure():
     )
     print(f"CCC-RISE decomposition R2X: {r2x:.4f}")
     
-    # for i in range(cp_rank):
-    #     plot_wc_per_celltype(X, i + 1, ax[i], cellType="celltype", factor_matrix="B")
-        
-    # for i in range(cp_rank):
-    #     plot_wc_per_celltype(X, i + 1, ax[i+cp_rank], cellType="celltype", factor_matrix="C")
+    for i in range(cp_rank):
+        plot_wc_per_celltype(X, i + 1, ax[i], cellType="celltype", factor_matrix="B")
         
     for i in range(cp_rank):
-        plot_wc_pacmap(X, i + 1, ax[i], factor_matrix="B", cbarMax=0.3)
+        plot_wc_per_celltype(X, i + 1, ax[i+cp_rank], cellType="celltype", factor_matrix="C")
         
-    for i in range(cp_rank):
-        plot_wc_pacmap(X, i + 1, ax[i+cp_rank], factor_matrix="C", cbarMax=0.3)
+    # for i in range(cp_rank):
+    #     plot_wc_pacmap(X, i + 1, ax[i], factor_matrix="B", cbarMax=0.3)
+        
+    # for i in range(cp_rank):
+    #     plot_wc_pacmap(X, i + 1, ax[i+cp_rank], factor_matrix="C", cbarMax=0.3)
 
     return f
