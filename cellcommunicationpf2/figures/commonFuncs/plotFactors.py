@@ -24,7 +24,7 @@ def plot_condition_factors(
     idxs = np.argsort(np.unique(data.obs["condition_unique_idxs"]))
     yt = pd.Series(np.unique(data.obs[cond]))[idxs]
 
-    X = np.array(data.uns["Pf2_A"])
+    X = np.array(data.uns["A"])
 
     if normalize is True:
         XX = X
@@ -100,11 +100,11 @@ def plot_condition_factors(
 
 def plot_eigenstate_factors(data: anndata.AnnData, ax: Axes, factor_type: str):
     """Plots eigenstate factors"""
-    cp_rank = data.uns["Pf2_B"].shape[1]
+    cp_rank = data.uns["B"].shape[1]
     xticks = np.arange(1, cp_rank + 1)
-    X = data.uns["Pf2_B"] if factor_type == "Pf2_B" else data.uns["Pf2_C"]
+    X = data.uns["B"] if factor_type == "B" else data.uns["C"]
     X = X / np.max(np.abs(np.array(X)))
-    rise_rank = data.uns["Pf2_B"].shape[0]
+    rise_rank = data.uns["B"].shape[0]
     yt = np.arange(1, rise_rank + 1)
 
     sns.heatmap(
@@ -123,9 +123,8 @@ def plot_eigenstate_factors(data: anndata.AnnData, ax: Axes, factor_type: str):
 def plot_lr_factors(data: anndata.AnnData, ax: Axes, trim=True, weight=0.08):
     """Plots lr factors"""
     # Read the LR factor and pair information from .uns
-    X = np.array(data.uns["Pf2_D"])
-    yt = data.uns["Pf2_lr_pairs"]
-    yt = yt["interaction_symbol"].values
+    X = np.array(data.uns["D"])
+    yt = data.uns["lr_pairs"]
     rank = X.shape[1]
 
     if trim is True:
@@ -158,9 +157,8 @@ def plot_lr_factors_partial(
 ):
     """Plotting weights for lr factors for both most negatively/positively weighted terms"""
     cmpName = f"Cmp. {cmp}"
-    lr_factor = np.array(X.uns["Pf2_D"])
-    yt = X.uns["Pf2_lr_pairs"]
-    yt = yt["interaction_symbol"].values
+    lr_factor = np.array(X.uns["D"])
+    yt = X.uns["lr_pairs"]
     df = pd.DataFrame(
         data=lr_factor[:, cmp - 1], index=yt, columns=[cmpName]
     )
@@ -179,7 +177,6 @@ def plot_lr_factors_partial(
 
 def reorder_table(projs: np.ndarray):
     """Reorder a table's rows using hierarchical clustering"""
-
     # Clean non-finite values
     clean_projs = np.nan_to_num(projs, nan=0.0, posinf=0.0, neginf=0.0)
 

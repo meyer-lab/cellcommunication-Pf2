@@ -15,7 +15,7 @@ from .common import (
 from ..utils import (
     load_tensor
 )
-from ..cc_pf2 import (
+from ..ccc_rise import (
     calc_communication_score_pseudobulk,
     pseudobulk_nncp_decomposition,
     save_ccc_rise_results

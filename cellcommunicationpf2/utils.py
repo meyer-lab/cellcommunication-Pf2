@@ -2,7 +2,7 @@ import anndata
 import numpy as np
 from tensorly.cp_tensor import CPTensor
 from tlviz.factor_tools import factor_match_score as fms
-from .cc_pf2 import cc_pf2, standardize_cc_pf2
+from .ccc_rise import ccc_rise, standardize_cc_pf2
 from .import_data import add_cond_idxs
 from sklearn.linear_model import LinearRegression
 import pandas as pd
@@ -71,7 +71,7 @@ def correct_conditions(X: anndata.AnnData):
     return X.uns["Pf2_A"] / counts_correct
 
 
-def run_cc_pf2_workflow(
+def run_ccc_rise_workflow(
     adata: anndata.AnnData,
     rise_rank: int,
     lr_pairs: pd.DataFrame,
@@ -81,10 +81,10 @@ def run_cc_pf2_workflow(
     tol: float = 1e-3,
     random_state: int | None = None,
     complex_sep: str = None,
-    doEmbedding: int = 13,
+    doEmbedding: bool = True
 ) -> tuple[anndata.AnnData, float]:
     """
-    Executes the complete CC-PF2 workflow: decomposition, standardization,
+    Executes the complete CCC-RISE workflow: decomposition, standardization,
     condition factor correction, and result storage.
 
     Parameters
@@ -115,8 +115,8 @@ def run_cc_pf2_workflow(
     # Ensure condition indices are present before running the model
     adata = add_cond_idxs(adata, condition_column)
 
-    # 1. Run the CC-PF2 decomposition
-    results, r2x, filtered_lr_pairs = cc_pf2(
+    # 1. Run the CC-RISE decomposition
+    results, r2x, filtered_lr_pairs = ccc_rise(
         adata,
         rise_rank,
         n_iter_max=n_iter_max,
@@ -132,25 +132,25 @@ def run_cc_pf2_workflow(
     weights, factors = standardize_cc_pf2(cp_weights, factors)
 
     # Store factors in AnnData object for easy access by plotting functions
-    adata.uns["Pf2_A"] = factors[0]  # Condition factor
-    adata.uns["Pf2_B"] = factors[1]  # Sender cells factor
-    adata.uns["Pf2_C"] = factors[2]  # Receiver cells factor
-    adata.uns["Pf2_D"] = factors[3]  # LR pairs factor
+    adata.uns["A"] = factors[0]  # Condition factor
+    adata.uns["B"] = factors[1]  # Sender cells factor
+    adata.uns["C"] = factors[2]  # Receiver cells factor
+    adata.uns["D"] = factors[3]  # LR pairs factor
 
     # Store the LR pairs and R2X
-    adata.uns["Pf2_lr_pairs"] = filtered_lr_pairs
-    adata.uns["Pf2_r2x"] = r2x
-    adata.uns["Pf2_weights"] = weights
+    adata.uns["lr_pairs"] = filtered_lr_pairs["interaction_symbol"].values
+    adata.uns["r2x"] = r2x
+    adata.uns["weights"] = weights
     sg_index = adata.obs["condition_unique_idxs"]
-    adata.obsm["Pf2_projections"] = np.zeros((adata.shape[0], rise_rank))
+    adata.obsm["projections"] = np.zeros((adata.shape[0], rise_rank))
     for i, p in enumerate(projections):
-        adata.obsm["Pf2_projections"][sg_index == i, :] = p
-    adata.obsm["Pf2_sc_B"] = adata.obsm["Pf2_projections"] @ factors[1]
-    adata.obsm["Pf2_rc_C"] = adata.obsm["Pf2_projections"] @ factors[2]
-    
+        adata.obsm["projections"][sg_index == i, :] = p
+    adata.obsm["sc_B"] = adata.obsm["projections"] @ factors[1]
+    adata.obsm["rc_C"] = adata.obsm["projections"] @ factors[2]
+
     if doEmbedding:
-        pcm = PaCMAP(random_state=random_state, n_neighbors=doEmbedding)
-        adata.obsm["Pf2_PaCMAP"] = pcm.fit_transform(adata.obsm["Pf2_projections"])
+        pcm = PaCMAP(random_state=random_state)
+        adata.obsm["PaCMAP"] = pcm.fit_transform(adata.obsm["projections"])
 
     return adata, r2x
 

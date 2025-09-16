@@ -100,7 +100,7 @@ def calc_communication_score(
     return interaction_tensor, filtered_lr_pairs
 
 
-def cc_pf2(
+def ccc_rise(
     adata: anndata.AnnData,
     rise_rank: int,
     n_iter_max: int,
@@ -111,7 +111,7 @@ def cc_pf2(
     lr_pairs: pd.DataFrame = None,
 ) -> tuple[tuple, float, pd.DataFrame]:
     """
-    Perform PARAFAC2 decomposition on an AnnData object, followed by
+    Perform RISE on an AnnData object, followed by
     CP decomposition on the resulting interaction tensor.
 
     Parameters:
