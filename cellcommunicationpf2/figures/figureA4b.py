@@ -14,7 +14,7 @@ from .common import (
 from ..utils import (
     load_tensor
 )
-from ..cc_pf2 import (
+from ..ccc_rise import (
     save_ccc_rise_results,
     pseudobulk_nncp_decomposition,
 )

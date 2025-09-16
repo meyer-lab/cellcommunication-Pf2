@@ -24,16 +24,17 @@ def makeFigure():
 
     # Import and prepare data
     print("Importing and preparing")
-    X = import_balf_covid()
+    X = import_balf_covid(gene_threshold=0.001, normalize=True)
 
     # Add condition indices using sample as the condition
     condition_column = "sample"
     X_filtered = add_cond_idxs(X, condition_column)
 
     # Parameters for stability plots
-    ranks = list(range(1, 81, 5))
+    ranks = list(range(1, 61, 5))
     ranks = list(range(1, 11, 5))
     runs = 3
+    runs = 1
 
     print("Plotting FMS vs. rank...")
     plot_fms_r2x_diff_ranks(X_filtered, ax[0], ax[1], ranksList=ranks, runs=runs)
@@ -78,6 +79,7 @@ def plot_fms_r2x_diff_ranks(
         scores = []
         r2x_scores = []
         for i in ranksList:
+            print(f"Run {j+1}, Rank {i}")
             dataX, r2x = rise_store_r2x(X, rank=i, n_iter_max=1000, tolerance=1e-9)
             sampledX, _ = rise_store_r2x(resample(X), rank=i, n_iter_max=1000, tolerance=1e-9)
             fmsScore = calculateFMS(dataX, sampledX)

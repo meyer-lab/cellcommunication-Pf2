@@ -46,12 +46,12 @@ def ds_show(result, ax):
 def plot_wc_pacmap(X: anndata.AnnData, cmp: int, ax: Axes, cbarMax: float = 1.0, factor_matrix:str = None):
     """Scatterplot of PaCMAP visualization of weighted cells for one component in receiver or sender"""
     if factor_matrix == "B":
-        factor = "Pf2_sc_B"
+        factor = "sc_B"
     elif factor_matrix == "C":
-        factor = "Pf2_rc_C"
+        factor = "rc_C"
     sc_factor = X.uns[factor]
     values = sc_factor[:, cmp - 1]
-    points = np.array(X.uns["Pf2_PaCMAP"])
+    points = np.array(X.uns["PaCMAP"])
 
     cmap = sns.diverging_palette(240, 10, as_cmap=True)
     canvas = _get_canvas(points)
@@ -96,7 +96,7 @@ def plot_labels_pacmap(
         )
     indices = np.argsort(labels)
 
-    points = X.obsm["Pf2_PaCMAP"][indices, :]
+    points = X.obsm["PaCMAP"][indices, :]
     labels = labels.iloc[indices]
 
     canvas = _get_canvas(points)
@@ -129,9 +129,9 @@ def plot_wc_per_celltype(
 ):
     """Boxplot of weighted cells for one component across cell types"""
     if factor_matrix == "B":
-        factor = "Pf2_sc_B"
+        factor = "sc_B"
     elif factor_matrix == "C":
-        factor = "Pf2_rc_C"
+        factor = "sc_C"
     sc_factor = X.obsm[factor]
     XX = sc_factor[:, cmp - 1]
     cmpName = f"Cmp. {cmp}"
@@ -159,7 +159,7 @@ def plot_lr_pacmap(lr: str, X: anndata.AnnData, ax: Axes, clip_outliers=0.9995):
 
     values = lrList
 
-    points = np.array(X.obsm["Pf2_PaCMAP_projections"])
+    points = np.array(X.obsm["PaCMAP"])
 
     canvas = _get_canvas(points)
     data = pd.DataFrame(points, columns=("x", "y"))
