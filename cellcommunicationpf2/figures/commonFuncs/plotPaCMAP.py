@@ -96,7 +96,7 @@ def plot_labels_pacmap(
         )
     indices = np.argsort(labels)
 
-    points = X.uns["Pf2_PaCMAP"][indices, :]
+    points = X.obsm["Pf2_PaCMAP"][indices, :]
     labels = labels.iloc[indices]
 
     canvas = _get_canvas(points)
@@ -132,7 +132,7 @@ def plot_wc_per_celltype(
         factor = "Pf2_sc_B"
     elif factor_matrix == "C":
         factor = "Pf2_rc_C"
-    sc_factor = X.uns[factor]
+    sc_factor = X.obsm[factor]
     XX = sc_factor[:, cmp - 1]
     cmpName = f"Cmp. {cmp}"
 

@@ -24,7 +24,8 @@ def makeFigure():
     subplotLabel(ax)
 
     # Import and prepare data
-    adata = import_balf_covid(gene_threshold=0.01, normalize=True)
+    adata = import_balf_covid(gene_threshold=0.001, normalize=True)
+    print(adata)
     lr_pairs = import_ligand_receptor_pairs()
 
     # Add numerical indices for each patient sample, which is the primary condition
@@ -57,7 +58,10 @@ def makeFigure():
     
     )
     
-
+    # Save anndata object with results
+    adata_filtered.uns["Pf2_lr_pairs"] = adata_filtered.uns["Pf2_lr_pairs"]["interaction_symbol"].values
+    adata_filtered.write_h5ad("cellcommunicationpf2/data/bal/bal.h5ad")
+    
     print(f"CCC-RISE decomposition R2X: {r2x:.4f}")
 
     # Factor 0: Patient Conditions (Samples)

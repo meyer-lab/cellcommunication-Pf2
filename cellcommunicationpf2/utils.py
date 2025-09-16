@@ -141,16 +141,16 @@ def run_cc_pf2_workflow(
     adata.uns["Pf2_lr_pairs"] = filtered_lr_pairs
     adata.uns["Pf2_r2x"] = r2x
     adata.uns["Pf2_weights"] = weights
-    projections_stacked = np.concatenate(
-        [proj.T for proj in projections], axis=1
-    )
-    adata.uns["Pf2_projections"] = projections_stacked
-    adata.uns["Pf2_sc_B"] = projections_stacked.T @ factors[1]
-    adata.uns["Pf2_rc_C"] = projections_stacked.T @ factors[2]
+    sg_index = adata.obs["condition_unique_idxs"]
+    adata.obsm["Pf2_projections"] = np.zeros((adata.shape[0], rise_rank))
+    for i, p in enumerate(projections):
+        adata.obsm["Pf2_projections"][sg_index == i, :] = p
+    adata.obsm["Pf2_sc_B"] = adata.obsm["Pf2_projections"] @ factors[1]
+    adata.obsm["Pf2_rc_C"] = adata.obsm["Pf2_projections"] @ factors[2]
     
     if doEmbedding:
         pcm = PaCMAP(random_state=random_state, n_neighbors=doEmbedding)
-        adata.uns["Pf2_PaCMAP"] = pcm.fit_transform(projections_stacked.T)
+        adata.obsm["Pf2_PaCMAP"] = pcm.fit_transform(adata.obsm["Pf2_projections"])
 
     return adata, r2x
 
