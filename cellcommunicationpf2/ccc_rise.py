@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from parafac2.parafac2 import anndata_to_list, parafac2_nd
 from tensorly.cp_tensor import cp_flip_sign, cp_normalize, cp_to_tensor
-from tensorly.decomposition import parafac, non_negative_parafac
+from tensorly.decomposition import parafac
 
 from .ccc import build_context_ccc_tensor
 from .import_data import import_ligand_receptor_pairs
@@ -302,7 +302,7 @@ def calc_communication_score_pseudobulk(
     return interaction_tensor, filtered_lr_pairs
 
 
-def pseudobulk_nncp_decomposition(
+def pseudobulk_cp_decomposition(
     interaction_tensors: np.ndarray,
     cp_rank: int,
     n_iter_max: int,
@@ -329,8 +329,8 @@ def pseudobulk_nncp_decomposition(
         A tuple containing the CP decomposition results, the R2X value,
         and the filtered ligand-receptor pairs.
     """
-    # Nonnegative CP decomposition
-    nncp_weights, nncp_factors = non_negative_parafac(
+    # CP decomposition
+    cp_weights, cp_factors = parafac(
         interaction_tensors,
         cp_rank,
         n_iter_max=n_iter_max,
@@ -341,12 +341,12 @@ def pseudobulk_nncp_decomposition(
     )
 
     # Calculate R2X for the CP decomposition of the interaction tensor
-    reconstructed = cp_to_tensor((nncp_weights, nncp_factors))
+    reconstructed = cp_to_tensor((cp_weights, cp_factors))
     total_variance = np.sum(interaction_tensors**2)
     error = np.sum((interaction_tensors - reconstructed) ** 2)
     r2x = 1 - (error / total_variance) if total_variance > 0 else 0.0
 
-    return nncp_weights, nncp_factors, r2x
+    return cp_weights, cp_factors, r2x
 
 
 def save_ccc_rise_results(
@@ -356,13 +356,13 @@ def save_ccc_rise_results(
     lr_pairs: np.array
 ):
     """ Save CPD results in an AnnData object."""
-    X.uns["Pf2_A"] = cpd_factors[0]  # Condition factor
-    X.uns["Pf2_B"] = cpd_factors[1]  # Sender cell types factor
-    X.uns["Pf2_C"] = cpd_factors[2]  # Receiver cell types factor
-    X.uns["Pf2_D"] = cpd_factors[3]  # LR pairs factor
-    X.uns["Pf2_lr_pairs"] = lr_pairs  # LR pairs
-    X.uns["Pf2_weights"] = weights  # Component weights
-    
+    X.uns["A"] = cpd_factors[0]  # Condition factor
+    X.uns["B"] = cpd_factors[1]  # Sender cell types factor
+    X.uns["C"] = cpd_factors[2]  # Receiver cell types factor
+    X.uns["D"] = cpd_factors[3]  # LR pairs factor
+    X.uns["lr_pairs"] = lr_pairs["interaction_symbol"].values  # LR pairs
+    X.uns["weights"] = weights  # Component weights
+
     return X
 
     
