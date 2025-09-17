@@ -56,9 +56,9 @@ def makeFigure():
     print(np.shape(interaction_tensor))
 
     rank_list = list(range(1, 15, 2))
-    # rank_list = list(range(1, 4, 2))
+    rank_list = list(range(1, 4, 2))
     runs = 3
-    # runs = 1
+    runs = 1
     fms_list = []
     r2xLists = []
     for i in range(0, runs, 1):

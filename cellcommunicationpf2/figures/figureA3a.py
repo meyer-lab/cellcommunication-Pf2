@@ -60,13 +60,12 @@ def makeFigure():
     # # Save anndata object with results
     # adata_filtered.write_h5ad("cellcommunicationpf2/data/bal/bal.h5ad")
     
-    X = anndata.read_h5ad("cellcommunicationpf2/data/bal/bal.h5ad")
+    X = anndata.read_h5ad("cellcommunicationpf2/data/bal/bal_updated.h5ad")
     condition_column = "sample"
     group_col = "condition"
     sample_to_group = X.obs.drop_duplicates(
         subset=[condition_column, group_col]
     ).set_index(condition_column)[group_col]
-
 
     # Factor 0: Patient Conditions (Samples)
     plot_condition_factors(

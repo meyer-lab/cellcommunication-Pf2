@@ -49,9 +49,9 @@ def plot_wc_pacmap(X: anndata.AnnData, cmp: int, ax: Axes, cbarMax: float = 1.0,
         factor = "sc_B"
     elif factor_matrix == "C":
         factor = "rc_C"
-    sc_factor = X.uns[factor]
+    sc_factor = X.obsm[factor]
     values = sc_factor[:, cmp - 1]
-    points = np.array(X.uns["PaCMAP"])
+    points = np.array(X.obsm["PaCMAP"])
 
     cmap = sns.diverging_palette(240, 10, as_cmap=True)
     canvas = _get_canvas(points)
@@ -131,7 +131,7 @@ def plot_wc_per_celltype(
     if factor_matrix == "B":
         factor = "sc_B"
     elif factor_matrix == "C":
-        factor = "sc_C"
+        factor = "rc_C"
     sc_factor = X.obsm[factor]
     XX = sc_factor[:, cmp - 1]
     cmpName = f"Cmp. {cmp}"

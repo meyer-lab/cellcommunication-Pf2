@@ -1,10 +1,10 @@
 """
-Figure A4a: Decomposition of the communication data from Tensorcell2cell.
+Figure A4a: Decomposition of the pseudobulk communication data and tensor for BAL data.
 """
 
 import numpy as np
-import pandas as pd
 from ..import_data import (
+    add_cond_idxs,
     import_balf_covid,
     import_ligand_receptor_pairs,
 )
@@ -13,11 +13,12 @@ from .common import (
     getSetup,
 )
 from ..utils import (
+    pseudobulk_X, 
     load_tensor
 )
 from ..ccc_rise import (
     calc_communication_score_pseudobulk,
-    pseudobulk_nncp_decomposition,
+    pseudobulk_cp_decomposition,
     save_ccc_rise_results
 )
 from .commonFuncs.plotFactors import (
@@ -25,36 +26,37 @@ from .commonFuncs.plotFactors import (
     plot_eigenstate_factors,
     plot_lr_factors
 )
+
 from .commonFuncs.plotGeneral import (
     rotate_yaxis
 )
+import anndata
 
 def makeFigure():
     ax, f = getSetup((20, 8), (1, 4))
     subplotLabel(ax)
 
-    cond_names = np.unique(["C51", "C52", "C100", "C141", "C142", "C144", "C145", "C143", "C146", "C148", "C149", "C152"])
-    celltypes = ["B", "Epithelial", "Macrophages", "NK", "T", "mDC"]
-    total_df = []
-    for _, cond_name in enumerate(cond_names):
-        df = pd.read_csv(f"cellcommunicationpf2/data/Tensor-cell2cell/{cond_name}.csv")
-        df.set_index(df.columns[0], inplace=True)
-        df = df[celltypes]
-        total_df.append(df.fillna(0))
+    # X = import_balf_covid(gene_threshold=0.001, normalize=True)
+    # lr_pairs = import_ligand_receptor_pairs()
+    # groupby = "celltype"
+    # condition_column = "sample"
+    # group_col = "condition"
+    # X = add_cond_idxs(X, condition_column)
+    # type = "mean"
 
-    tc2c_tensor = load_tensor("cellcommunicationpf2/data/Tensor-cell2cell/tensor-bal.pkl")
-    lr_pairs = import_ligand_receptor_pairs()
+    # appended_pseudobulk = pseudobulk_X(X, condition_name=condition_column, groupby=groupby, type=type)
+    # interaction_tensor, filtered_lr_pairs = calc_communication_score_pseudobulk(appended_pseudobulk, lr_pairs=lr_pairs, complex_sep="&")
 
-    valid_tc2c_pairs = set(tc2c_tensor.order_names[1])
-    lr_pairs_filtered = lr_pairs[lr_pairs["interaction_symbol"].isin(valid_tc2c_pairs)].reset_index(drop=True)
-    interaction_tensor, filtered_lr_pairs = calc_communication_score_pseudobulk(total_df, lr_pairs=lr_pairs_filtered, complex_sep="&")
+    # print(np.shape(interaction_tensor))
+    # cp_rank = 8
+    # cpd_weights, cpd_factors, _ = pseudobulk_cp_decomposition(interaction_tensor, cp_rank=cp_rank, n_iter_max=1000, tol=1e-11)
 
-    cpd_weights, cpd_factors, _ = pseudobulk_nncp_decomposition(interaction_tensor, cp_rank=10, n_iter_max=1000, tol=1e-11, random_state=0)
-
-    X = import_balf_covid(gene_threshold=0, normalize=False)
-
-    X = save_ccc_rise_results(X, cpd_factors, cpd_weights, filtered_lr_pairs)
-
+    # save_ccc_rise_results(X, cpd_factors, cpd_weights, filtered_lr_pairs)
+    
+    # X = X.write_h5ad("cellcommunicationpf2/data/bal/bal_pseudobulk.h5ad")
+    
+    X = anndata.read_h5ad("cellcommunicationpf2/data/bal/bal_pseudobulk.h5ad")
+    groupby = "celltype"
     condition_column = "sample"
     group_col = "condition"
     sample_to_group = X.obs.drop_duplicates(
@@ -68,31 +70,29 @@ def makeFigure():
         cond_group_labels=sample_to_group,
         group_cond=True
     )
-    plot_eigenstate_factors(
+    plot_eigenstate_factors(    
         data=X,
         ax=ax[1],
-        factor_type="Pf2_B",
+        factor_type="B"
     )
-    tc2c_celltype_names = np.unique(tc2c_tensor.order_names[2])
-    ax[1].set_yticklabels(tc2c_celltype_names)
+
+    celltype_names = np.unique(X.obs[groupby])
+    ax[1].set_yticklabels(celltype_names)
     rotate_yaxis(ax[1], 0)
 
     plot_eigenstate_factors(
         data=X,
         ax=ax[2],
-        factor_type="Pf2_C",
+        factor_type="C",
     )
-    ax[2].set_yticklabels(tc2c_celltype_names)
+    ax[2].set_yticklabels(celltype_names)
     rotate_yaxis(ax[2], 0)
 
     plot_lr_factors(
         data=X,
         ax=ax[3],
-        weight=0.16
+        weight=0.03
     )
+    
 
     return f
-
-
-
-

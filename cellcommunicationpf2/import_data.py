@@ -84,7 +84,7 @@ def import_ligand_receptor_pairs(filename="cellcommunicationpf2/data/Human-2020-
 def add_cond_idxs(X, condition_key):
     """Add unique condition indices to an AnnData object."""
     # Create a copy to avoid modifying a view
-    X = X.copy()
+    # X = X.copy()
 
     # Get unique conditions and map to indices
     conditions = np.unique(X.obs[condition_key].unique())
