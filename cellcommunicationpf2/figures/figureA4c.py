@@ -15,7 +15,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Import Anndata file
-    X = anndata.read_h5ad("cellcommunicationpf2/data/bal/bal_updated.h5ad")
+    X = anndata.read_h5ad("/opt/andrew/ccc/bal_covid19.h5ad")
     ccc_rise_cmp = 6
     
     # Violin plot of cell weighting distribution for Mast cells for a component
