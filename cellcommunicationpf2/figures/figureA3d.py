@@ -10,25 +10,7 @@ from .common import (
 from .commonFuncs.plotPaCMAP import (
     plot_labels_pacmap,
 )   
-from pacmap import PaCMAP
 
-from .common import (
-    subplotLabel,
-    getSetup,
-)
-from ..import_data import (
-    add_cond_idxs,
-    import_balf_covid,
-    import_ligand_receptor_pairs,
-)
-from ..utils import run_ccc_rise_workflow
-from .commonFuncs.plotFactors import (
-    plot_condition_factors,
-    plot_eigenstate_factors,
-    plot_lr_factors,
-)
-import anndata
-from .commonFuncs.plotGeneral import rotate_yaxis
 import seaborn as sns
 
 def makeFigure():
@@ -36,7 +18,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Import Anndata file
-    X = anndata.read_h5ad("cellcommunicationpf2/data/bal/bal_updated.h5ad")
+    X = anndata.read_h5ad("/opt/andrew/ccc/bal_covid19.h5ad")
     
     # Count the number of cells in each cell type
     celltype_counts = X.obs['celltype'].value_counts()
