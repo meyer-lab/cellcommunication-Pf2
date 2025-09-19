@@ -14,7 +14,6 @@ from .common import (
 )
 from ..utils import (
     pseudobulk_X, 
-    load_tensor
 )
 from ..ccc_rise import (
     calc_communication_score_pseudobulk,
