@@ -6,9 +6,12 @@ from .ccc_rise import ccc_rise, standardize_cc_pf2
 from .import_data import add_cond_idxs
 from sklearn.linear_model import LinearRegression
 import pandas as pd
-import os
-import pickle
 from pacmap import PaCMAP
+from parafac2.parafac2 import parafac2_nd, store_pf2, anndata_to_list
+from tensorly.cp_tensor import CPTensor
+from tensorly.cp_tensor import cp_to_tensor
+from tensorly.decomposition import parafac
+from .ccc_rise import calc_communication_score
 
 
 def resample(data: anndata.AnnData, random_seed: int = None) -> anndata.AnnData:
@@ -36,18 +39,56 @@ def resample(data: anndata.AnnData, random_seed: int = None) -> anndata.AnnData:
     return resampled_data
 
 
-def calculate_fms(A: anndata.AnnData, B: anndata.AnnData) -> float:
-    """Calculate FMS between two CC-PF2 decompositions stored in AnnData objects.
+def resample_tensor(interaction_tensors):
+    """Bootstrap tensor by resampling last dimension"""
+    indices = np.random.randint(0, interaction_tensors.shape[-1], size=interaction_tensors.shape[-1])
+    return interaction_tensors[..., indices]
 
-    Skips comparison of sender/receiver factors (modes 1 and 2) as they are most variable.
-    """
-    factors_A = [A.uns["Pf2_A"], A.uns["Pf2_B"], A.uns["Pf2_C"], A.uns["Pf2_D"]]
-    A_CP = CPTensor((A.uns["Pf2_weights"], factors_A))
+def rise_store_r2x(X: anndata.AnnData, rank: int, n_iter_max: int, tolerance: float, random_state: int = None):
+    """Runs RISE and stores the results."""
+    pf2_out, r2x = parafac2_nd(
+        X, rank=rank, random_state=random_state, tol=tolerance, n_iter_max=n_iter_max
+    )
+    X = store_pf2(X, pf2_out)
+    
+    return X, r2x
 
-    factors_B = [B.uns["Pf2_A"], B.uns["Pf2_B"], B.uns["Pf2_C"], B.uns["Pf2_D"]]
-    B_CP = CPTensor((B.uns["Pf2_weights"], factors_B))
 
-    return fms(A_CP, B_CP, consider_weights=False, skip_mode=[1, 2])
+def calculate_fms_cpd(weightsA, factorsA, weightsB, factorsB):
+    """Calculates FMS between 2 factors"""
+    A_CP = CPTensor(
+        (
+            weightsA,
+            factorsA,
+        )
+    )
+    B_CP = CPTensor(
+        (
+            weightsB,
+            factorsB,
+        )
+    )
+    return fms(A_CP, B_CP, consider_weights=False, skip_mode=3)  # type: ignore
+
+
+def calculate_fms_rise(A: anndata.AnnData, B: anndata.AnnData):
+    """Calculates FMS between 2 factors"""
+    factors = [A.uns["Pf2_A"], A.uns["Pf2_B"], A.varm["Pf2_C"]]
+    A_CP = CPTensor(
+        (
+            A.uns["Pf2_weights"],
+            factors,
+        )
+    )
+
+    factors = [B.uns["Pf2_A"], B.uns["Pf2_B"], B.varm["Pf2_C"]]
+    B_CP = CPTensor(
+        (
+            B.uns["Pf2_weights"],
+            factors,
+        )
+    )
+    return fms(A_CP, B_CP, consider_weights=False, skip_mode=1)  # type: ignore
 
 
 def correct_conditions(X: anndata.AnnData):
@@ -69,6 +110,16 @@ def correct_conditions(X: anndata.AnnData):
     counts_correct = lr.predict(counts)
 
     return X.uns["Pf2_A"] / counts_correct
+
+
+def calculate_r2x(cp_weights, cp_factors, interaction_tensor):
+    """Calculate R2X for the CP decomposition of the interaction tensor"""
+    reconstructed = cp_to_tensor((cp_weights, cp_factors))
+    total_variance = np.sum(interaction_tensor**2)
+    error = np.sum((interaction_tensor - reconstructed) ** 2)
+    final_R2X = 1 - (error / total_variance) if total_variance > 0 else 0.0
+
+    return final_R2X
 
 
 def run_ccc_rise_workflow(
@@ -199,86 +250,89 @@ def pseudobulk_X(X: anndata, condition_name: str, groupby: str, type: str) -> li
 
 
 
-def load_tensor(filename, backend=None, device=None):
-    '''Imports a communication tensor that could be used
-    with Tensor-cell2cell.
+def calculate_interaction_tensor(X_filtered: anndata.AnnData, lr_pairs: pd.DataFrame, rise_rank: int):
+    """Calculate interaction tensor from AnnData object using PARAFAC2 and communication scores."""
+    pf2_out, rise_rank = parafac2_nd(
+        X_filtered, rank=rise_rank, n_iter_max=1000, tol=1e-9
+    )
+    _, _, projections = pf2_out
 
-    Parameters
-    ----------
-    filename : str
-        Absolute path to a file storing a communication tensor
-        that was previously saved by using pickle.
+    # Project matrices
+    X_list = anndata_to_list(X_filtered)
+    projected_matrices = []
+    for i, tensor in enumerate(X_list):
+        proj = projections[i]
+        # Convert tensor to NumPy
+        tensor_np = tensor.get()
+        projected_matrices.append(proj.T @ tensor_np)
 
-    backend : str, default=None
-        Backend that TensorLy will use to perform calculations
-        on this tensor. When None, the default backend used is
-        the currently active backend, usually is ('numpy'). Options are:
-        {'cupy', 'jax', 'mxnet', 'numpy', 'pytorch', 'tensorflow'}
-
-    device : str, default=None
-        Device to use when backend allows using multiple devices. Options are:
-         {'cpu', 'cuda:0', None}
-
-    Returns
-    -------
-    interaction_tensor : cell2cell.tensor.BaseTensor
-        A communication tensor generated with any of the tensor class in
-        cell2cell.tensor.
-    '''
-    interaction_tensor = load_variable_with_pickle(filename)
-    if 'tl' not in globals():
-        import tensorly as tl
-    if backend is not None:
-        tl.set_backend(backend)
-    
-    if device is None:
-        interaction_tensor.tensor = tl.tensor(interaction_tensor.tensor)
-    else:
-        if tl.get_backend() in ['pytorch', 'tensorflow']:
-            interaction_tensor.tensor = tl.tensor(interaction_tensor.tensor, device=device)
-        else:
-            interaction_tensor.tensor = tl.tensor(interaction_tensor.tensor)
-    
-    def safe_convert_attribute(attr_name, default_value=None):
-        if hasattr(interaction_tensor, attr_name):
-            attr_value = getattr(interaction_tensor, attr_name)
-            if attr_value is not None:
-                if device is None:
-                    return tl.tensor(attr_value)
-                elif tl.get_backend() in ['pytorch', 'tensorflow']:
-                    return tl.tensor(attr_value, device=device)
-                else:
-                    return tl.tensor(attr_value)
-        return default_value
-    
-    interaction_tensor.loc_nans = safe_convert_attribute('loc_nans', None)
-    interaction_tensor.loc_zeros = safe_convert_attribute('loc_zeros', None)
-    interaction_tensor.mask = safe_convert_attribute('mask', None)
+    # Calculate cell-cell communication scores
+    gene_names = list(X_filtered.var_names)
+    interaction_tensor, _ = calc_communication_score(
+        projected_matrices, gene_names=gene_names, lr_pairs=lr_pairs,
+        complex_sep="&"
+    )
     
     return interaction_tensor
 
 
-def load_variable_with_pickle(filename):
-    '''Imports a large size variable stored in a file previously
-    exported with pickle.
-
-    Parameters
-    ----------
-    filename : str
-        Absolute path to a file storing a python variable that
-        was previously created by using pickle.
-
-    Returns
-    -------
-    variable : a python variable
-        The variable of interest.
-    '''
-
-    max_bytes = 2 ** 31 - 1
-    bytes_in = bytearray(0)
-    input_size = os.path.getsize(filename)
-    with open(filename, 'rb') as f_in:
-        for _ in range(0, input_size, max_bytes):
-            bytes_in += f_in.read(max_bytes)
-    variable = pickle.loads(bytes_in)
-    return variable
+def run_fms_r2x_analysis(interaction_tensor: np.ndarray, rank_list: list[int] = None, runs: int = 1) -> pd.DataFrame:
+    """Run FMS and R2X analysis across different CP ranks and bootstrap runs."""
+    if rank_list is None:
+        rank_list = list(range(1, 4, 2))
+    
+    fms_list = []
+    r2xLists = []
+    
+    for i in range(runs):
+        scores = []
+        r2x_scores = []
+        for j in rank_list:
+            print(f"Run {i+1}, Rank {j}")
+            boot_tensor = resample_tensor(interaction_tensor)
+            cp_weights, cp_factors = parafac(
+                tensor=interaction_tensor,
+                rank=j,
+                n_iter_max=1000,
+                init="random",  # Use SVD initialization
+                normalize_factors=True,
+            )
+            r2x = calculate_r2x(cp_weights, cp_factors, interaction_tensor)
+            cp_boot_weights, cp_boot_factors = parafac(
+                tensor=boot_tensor,
+                rank=j,
+                n_iter_max=1000,
+                init="random",  # Use SVD initialization
+                normalize_factors=True,
+            )
+            fms_score = calculate_fms_cpd(cp_weights, cp_factors, cp_boot_weights, cp_boot_factors)
+            scores.append(fms_score)
+            r2x_scores.append(r2x)
+        # Save fms/r2x scores per rank
+        fms_list.append(scores)
+        r2xLists.append(r2x_scores)
+    
+    # Convert to DataFrame format
+    runsList_df = []
+    for i in range(runs):
+        for _j in range(len(rank_list)):
+            runsList_df.append(i)
+    
+    ranksList_df = []
+    for _i in range(runs):
+        for j in range(len(rank_list)):
+            ranksList_df.append(rank_list[j])
+    
+    fmsList_df = []
+    for sublist in fms_list:
+        fmsList_df += sublist
+    
+    r2xList_df = []
+    for sublist in r2xLists:
+        r2xList_df += sublist
+        
+    df = pd.DataFrame(
+        {"Run": runsList_df, "Component": ranksList_df, "FMS": fmsList_df, "R2X": r2xList_df}
+    )
+    
+    return df

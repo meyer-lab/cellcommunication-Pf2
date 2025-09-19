@@ -73,6 +73,19 @@ def import_ligand_receptor_pairs(filename="/opt/andrew/ccc/Human-2020-Jin-LR-pai
     return df
 
 
+def import_alad(
+    gene_threshold: float = 0.1, normalize: bool = True
+):
+    """Generate data for ALAD analysis, filtering and scaling as needed.
+    patient ids: dsco_id
+    """
+    data = anndata.read_h5ad("/opt/BAL-scRNAseq-raw.h5ad", backed="r")
+
+    # normalize by read depth, transform
+    data = prepare_dataset(data, "dsco_id", geneThreshold=gene_threshold, normalize=normalize)
+
+    return data
+
 def add_cond_idxs(X, condition_key):
     """Add unique condition indices to an AnnData object."""
     # Create a copy to avoid modifying a view
