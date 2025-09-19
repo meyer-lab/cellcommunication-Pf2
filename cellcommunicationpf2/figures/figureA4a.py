@@ -55,7 +55,7 @@ def makeFigure():
     
     # X = X.write_h5ad("cellcommunicationpf2/data/bal/bal_pseudobulk.h5ad")
     
-    X = anndata.read_h5ad("cellcommunicationpf2/data/bal/bal_pseudobulk.h5ad")
+    X = anndata.read_h5ad("/opt/andrew/ccc/bal_covid19_pseudobulk.h5ad")
     groupby = "celltype"
     condition_column = "sample"
     group_col = "condition"

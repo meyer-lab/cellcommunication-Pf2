@@ -16,7 +16,7 @@ def makeFigure():
     ax, f = getSetup((18, 18), (5, 4))
     subplotLabel(ax)
 
-    X = anndata.read_h5ad("cellcommunicationpf2/data/bal/bal_updated.h5ad")
+    X = anndata.read_h5ad("/opt/andrew/ccc/bal_covid19.h5ad")
     cp_rank = X.uns["A"].shape[1]
             
     for i in range(cp_rank):

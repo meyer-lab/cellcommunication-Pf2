@@ -60,7 +60,7 @@ def makeFigure():
     # # Save anndata object with results
     # adata_filtered.write_h5ad("cellcommunicationpf2/data/bal/bal.h5ad")
     
-    X = anndata.read_h5ad("cellcommunicationpf2/data/bal/bal_updated.h5ad")
+    X = anndata.read_h5ad("/opt/andrew/ccc/bal_covid19.h5ad")
     condition_column = "sample"
     group_col = "condition"
     sample_to_group = X.obs.drop_duplicates(

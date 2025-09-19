@@ -41,6 +41,7 @@ def makeFigure():
     ax[0].set_title(f"RISE on COVID-19 scRNA-seq: {X_filtered.shape[1]} genes")
     ax[1].set_title(f"RISE on COVID-19 scRNA-seq: {X_filtered.shape[1]} genes")
 
+
     return f
 
 

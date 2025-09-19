@@ -10,7 +10,7 @@ from scipy.sparse import issparse, csr_array
 import pandas as pd
 
 # The below code is taken directly from https://github.com/earmingol/cell2cell/blob/master/cell2cell/datasets/anndata.py
-def import_balf_covid(filename="cellcommunicationpf2/data/bal/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad", gene_threshold: float = 0.01, normalize: bool = True) -> anndata.AnnData:
+def import_balf_covid(filename="/opt/andrew/ccc/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad", gene_threshold: float = 0.01, normalize: bool = True) -> anndata.AnnData:
     """BALF samples from COVID-19 patients
     The data consists in 63k immune and epithelial cells in lungs
     from 3 control, 3 moderate COVID-19, and 6 severe COVID-19 patients.
@@ -50,17 +50,9 @@ def import_balf_covid(filename="cellcommunicationpf2/data/bal/BALF-COVID19-Liao_
 
 
 @lru_cache(maxsize=1)
-def import_ligand_receptor_pairs(filename="cellcommunicationpf2/data/Human-2020-Jin-LR-pairs.csv.zst", update_interaction_names: bool = True) -> pd.DataFrame:
+def import_ligand_receptor_pairs(filename="/opt/andrew/ccc/Human-2020-Jin-LR-pairs.csv.zst", update_interaction_names: bool = True) -> pd.DataFrame:
     """Import ligand-receptor pairs from a zstd-compressed CSV with caching.
-
-    The data is cached in memory after first load for improved performance.
     """
-    if not os.path.exists(filename):
-        raise FileNotFoundError(
-            f"Ligand-receptor pairs file not found: {filename}\n"
-            "Please ensure the compressed file is present in the repository."
-        )
-
     print("Loading ligand-receptor pairs data (zstd compressed)...")
     with open(filename, "rb") as f:
         dctx = zstd.ZstdDecompressor()
@@ -100,7 +92,12 @@ def prepare_dataset(
     X: anndata.AnnData, condition_name: str, geneThreshold: float, normalize=False
 ) -> anndata.AnnData:
     assert issparse(X.X)
-    X.X = csr_array(X.X)
+    # Use raw data if available, otherwise use the current X data
+    if X.raw is not None:
+        X.X = csr_array(X.raw.X)
+    else:
+        # If no raw data is available, use the current X matrix
+        X.X = csr_array(X.X)
     assert np.amin(X.X.data) >= 0.0
 
     # Filter out genes with too few reads, and cells with fewer than 10 counts
