@@ -18,6 +18,7 @@ def rotate_yaxis(ax, rotation=90):
     
 def plot_fms_r2x_diff_ranks(
     X: anndata.AnnData,
+    condition_name: str,
     ax1: Axes,
     ax2: Axes,
     ranksList: list[int],
@@ -33,7 +34,7 @@ def plot_fms_r2x_diff_ranks(
         for i in ranksList:
             print(f"Run {j+1}, Rank {i}")
             dataX, r2x = rise_store_r2x(X, rank=i, n_iter_max=1000, tolerance=1e-9)
-            sampledX, _ = rise_store_r2x(resample(X), rank=i, n_iter_max=1000, tolerance=1e-9)
+            sampledX, _ = rise_store_r2x(resample(X, condition_name=condition_name), rank=i, n_iter_max=1000, tolerance=1e-9)
             fmsScore = calculate_fms_rise(dataX, sampledX)
             scores.append(fmsScore)
             # Calculate R2X for X only (not resampled)

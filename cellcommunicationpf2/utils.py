@@ -14,7 +14,7 @@ from tensorly.decomposition import parafac
 from .ccc_rise import calc_communication_score
 
 
-def resample(data: anndata.AnnData, random_seed: int = None) -> anndata.AnnData:
+def resample(data: anndata.AnnData, condition_name: str, random_seed: int = None) -> anndata.AnnData:
     """Perform stratified bootstrap sampling by resampling cells within each sample.
 
     This maintains the same number of cells per sample in the resampled dataset.
@@ -24,9 +24,9 @@ def resample(data: anndata.AnnData, random_seed: int = None) -> anndata.AnnData:
         np.random.seed(random_seed)
 
     resampled_indices = []
-    for sample in data.obs["sample"].unique():
+    for sample in data.obs[condition_name].unique():
         # Get indices of cells in this sample
-        sample_cell_indices = np.where(data.obs["sample"] == sample)[0]
+        sample_cell_indices = np.where(data.obs[condition_name] == sample)[0]
         n_cells = len(sample_cell_indices)
 
         # Sample with replacement within this sample's cells

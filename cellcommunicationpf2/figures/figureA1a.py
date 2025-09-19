@@ -20,7 +20,7 @@ def makeFigure():
 
     # Add condition indices using sample as the condition
     condition_column = "sample"
-    X_filtered = add_cond_idxs(X, condition_column)
+    X = add_cond_idxs(X, condition_column)
 
     # Parameters for stability plots
     ranks = list(range(1, 61, 5))
@@ -29,9 +29,9 @@ def makeFigure():
     runs = 1
 
     print("Plotting FMS vs. rank...")
-    plot_fms_r2x_diff_ranks(X_filtered, ax[0], ax[1], ranksList=ranks, runs=runs)
-    ax[0].set_title(f"RISE on COVID-19 scRNA-seq: {X_filtered.shape[1]} genes")
-    ax[1].set_title(f"RISE on COVID-19 scRNA-seq: {X_filtered.shape[1]} genes")
+    plot_fms_r2x_diff_ranks(X, condition_column, ax[0], ax[1], ranksList=ranks, runs=runs)
+    ax[0].set_title(f"RISE on COVID-19 scRNA-seq: {X.shape[1]} genes")
+    ax[1].set_title(f"RISE on COVID-19 scRNA-seq: {X.shape[1]} genes")
 
 
     return f

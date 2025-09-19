@@ -19,9 +19,9 @@ def makeFigure():
     X = import_alad(gene_threshold=0.001, normalize=True)
     print(X)
 
-    # Add condition indices using disco_id as the condition
-    condition_column = "disco_id"
-    X_filtered = add_cond_idxs(X, condition_column)
+    # Add condition indices using dsco_id as the condition
+    condition_column = "dsco_id"
+    X = add_cond_idxs(X, condition_column)
 
     # Parameters for stability plots
     ranks = list(range(1, 61, 5))
@@ -30,9 +30,9 @@ def makeFigure():
     runs = 1
 
     print("Plotting FMS vs. rank...")
-    plot_fms_r2x_diff_ranks(X_filtered, ax[0], ax[1], ranksList=ranks, runs=runs)
-    ax[0].set_title(f"RISE on COVID-19 scRNA-seq: {X_filtered.shape[1]} genes")
-    ax[1].set_title(f"RISE on COVID-19 scRNA-seq: {X_filtered.shape[1]} genes")
+    plot_fms_r2x_diff_ranks(X, condition_column, ax[0], ax[1], ranksList=ranks, runs=runs)
+    ax[0].set_title(f"RISE on COVID-19 scRNA-seq: {X.shape[1]} genes")
+    ax[1].set_title(f"RISE on COVID-19 scRNA-seq: {X.shape[1]} genes")
 
 
     return f

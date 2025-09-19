@@ -79,9 +79,17 @@ def import_alad(
     """Generate data for ALAD analysis, filtering and scaling as needed.
     patient ids: dsco_id
     """
-    data = anndata.read_h5ad("/opt/BAL-scRNAseq-raw.h5ad", backed="r")
+    # Load data without backing to avoid issues with sparse conversion
+    data = anndata.read_h5ad("/opt/BAL-scRNAseq-raw.h5ad")
+    
+    # Convert to sparse format if not already sparse
+    if not issparse(data.X):
+        # Convert dense matrix to sparse CSR format
+        from scipy.sparse import csr_matrix
+        data.X = csr_matrix(data.X)
 
     # normalize by read depth, transform
+    print(data)
     data = prepare_dataset(data, "dsco_id", geneThreshold=gene_threshold, normalize=normalize)
 
     return data
