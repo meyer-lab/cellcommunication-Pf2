@@ -24,9 +24,9 @@ def makeFigure():
     X = add_cond_idxs(X, condition_column)
 
     # Parameters for stability plots
-    ranks = list(range(1, 61, 5))
+    # ranks = list(range(1, 71, 5))
     ranks = list(range(1, 11, 5))
-    runs = 3
+    # runs = 3
     runs = 1
 
     print("Plotting FMS vs. rank...")

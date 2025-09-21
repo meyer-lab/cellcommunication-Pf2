@@ -172,7 +172,7 @@ def ccc_rise(
         cp_rank,
         n_iter_max=n_iter_max,
         tol=tol,
-        init="svd",  # Use random initialization
+        init="svd",
         normalize_factors=True,
         random_state=random_state,
     )
