@@ -88,8 +88,6 @@ def import_alad(
         from scipy.sparse import csr_matrix
         data.X = csr_matrix(data.X)
 
-    # normalize by read depth, transform
-    print(data)
     data = prepare_dataset(data, "dsco_id", geneThreshold=gene_threshold, normalize=normalize)
 
     return data

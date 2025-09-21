@@ -97,7 +97,7 @@ def correct_conditions(X: anndata.AnnData):
 
     counts = np.zeros((np.amax(sgIndex.to_numpy()) + 1, 1))
 
-    cond_mean = np.linalg.norm(X.uns["Pf2_A"], axis=1)
+    cond_mean = np.linalg.norm(X.uns["A"], axis=1)
 
     x_count = X.X.sum(axis=1)
 
@@ -109,7 +109,7 @@ def correct_conditions(X: anndata.AnnData):
 
     counts_correct = lr.predict(counts)
 
-    return X.uns["Pf2_A"] / counts_correct
+    return X.uns["A"] / counts_correct
 
 
 def calculate_r2x(cp_weights, cp_factors, interaction_tensor):
@@ -294,7 +294,7 @@ def run_fms_r2x_analysis(interaction_tensor: np.ndarray, rank_list: list[int] = 
                 tensor=interaction_tensor,
                 rank=j,
                 n_iter_max=1000,
-                init="random",  # Use SVD initialization
+                init="svd",  # Use SVD initialization
                 normalize_factors=True,
             )
             r2x = calculate_r2x(cp_weights, cp_factors, interaction_tensor)
@@ -302,7 +302,7 @@ def run_fms_r2x_analysis(interaction_tensor: np.ndarray, rank_list: list[int] = 
                 tensor=boot_tensor,
                 rank=j,
                 n_iter_max=1000,
-                init="random",  # Use SVD initialization
+                init="svd",  # Use SVD initialization
                 normalize_factors=True,
             )
             fms_score = calculate_fms_cpd(cp_weights, cp_factors, cp_boot_weights, cp_boot_factors)
