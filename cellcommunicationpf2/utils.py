@@ -276,7 +276,7 @@ def calculate_interaction_tensor(X_filtered: anndata.AnnData, lr_pairs: pd.DataF
     return interaction_tensor
 
 
-def run_fms_r2x_analysis(interaction_tensor: np.ndarray, rank_list: list[int] = None, runs: int = 1) -> pd.DataFrame:
+def run_fms_r2x_analysis(interaction_tensor: np.ndarray, rank_list: list[int] = None, runs: int = 1, svd_init: str = "svd") -> pd.DataFrame:
     """Run FMS and R2X analysis across different CP ranks and bootstrap runs."""
     if rank_list is None:
         rank_list = list(range(1, 4, 2))
@@ -294,7 +294,7 @@ def run_fms_r2x_analysis(interaction_tensor: np.ndarray, rank_list: list[int] = 
                 tensor=interaction_tensor,
                 rank=j,
                 n_iter_max=1000,
-                init="svd",  # Use SVD initialization
+                init=svd_init,  
                 normalize_factors=True,
             )
             r2x = calculate_r2x(cp_weights, cp_factors, interaction_tensor)
@@ -302,7 +302,7 @@ def run_fms_r2x_analysis(interaction_tensor: np.ndarray, rank_list: list[int] = 
                 tensor=boot_tensor,
                 rank=j,
                 n_iter_max=1000,
-                init="svd",  # Use SVD initialization
+                init=svd_init,
                 normalize_factors=True,
             )
             fms_score = calculate_fms_cpd(cp_weights, cp_factors, cp_boot_weights, cp_boot_factors)
