@@ -336,3 +336,72 @@ def run_fms_r2x_analysis(interaction_tensor: np.ndarray, rank_list: list[int] = 
     )
     
     return df
+
+
+def add_obs_cmp_unique_one(X: anndata.AnnData, cmp: str):
+    """Creates AnnData observation column for a single component."""
+    label_col = f"Cmp{cmp}"
+    X.obs["Label"] = np.where(X.obs[label_col], label_col, "NoLabel")
+    
+    return X
+
+
+def add_obs_cmp_label(
+    X: anndata.AnnData, cmp: int, pos: bool = True, top_perc: float = 1, type: str = "receiver"
+):
+    """Adds a boolean label to X.obs for cells in the top or bottom percentage of a single component."""
+    if type == "sender":
+        factor_type = X.obsm["sc_B"]
+    elif type == "receiver":
+        factor_type = X.obsm["rc_C"]
+  
+    if pos:
+        thres_value = 100 - top_perc
+        threshold = np.percentile(factor_type, thres_value, axis=0)
+        idx = factor_type[:, cmp - 1] > threshold[cmp - 1]
+    else:
+        thres_value = top_perc
+        threshold = np.percentile(factor_type, thres_value, axis=0)
+        idx = factor_type[:, cmp - 1] < threshold[cmp - 1]
+
+    X.obs[f"Cmp{cmp}"] = idx
+    
+    return X
+
+
+def expression_product_matrix(X1: anndata.AnnData, X2: anndata.AnnData, ligand: str, receptor: str):
+    """
+    For each cell in X1 and each cell in X2, compute the product:
+    X1[cell_i, ligand] * X2[cell_j, receptor]
+    Returns a DataFrame with X1 cells as rows and X2 cells as columns.
+    """
+    # Ensure gene names are present
+    assert ligand in X1.var_names, f"{ligand} not in X1"
+    assert receptor in X2.var_names, f"{receptor} not in X2"
+        
+    # Get expression vectors
+
+    # Ensure 1D dense arrays
+    # Convert to dense 1D arrays, even if sparse
+    expr1 = X1[:, ligand].X
+    if hasattr(expr1, 'toarray'):
+        expr1 = expr1.toarray().flatten()
+    else:
+        expr1 = np.ravel(np.array(expr1))
+
+    expr2 = X2[:, receptor].X
+    if hasattr(expr2, 'toarray'):
+        expr2 = expr2.toarray().flatten()
+    else:
+        expr2 = np.ravel(np.array(expr2))
+        
+    # Compute outer product
+    product_matrix = np.outer(expr1, expr2)
+
+    # Build DataFrame
+    df = pd.DataFrame(
+        product_matrix,
+        index=X1.obs_names,
+        columns=X2.obs_names
+    )
+    return df
