@@ -51,7 +51,7 @@ def makeFigure():
     
     # Plot distribution of factor values for each label
     sns.boxplot(data=X_mdc_sender.obs, x='Label', y=X_mdc_sender.obsm["sc_B"][:, ccc_rise_cmp1-1], ax=ax[2])
-    ax[2].set_title(f"Sender Factor {ccc_rise_cmp1} Distribution by Label")
+    ax[2].set_title(f"Sender Epithelial Cells {ccc_rise_cmp1} Distribution by Label")
     sns.boxplot(data=X_mdc_receiver.obs, x='Label', y=X_mdc_receiver.obsm["rc_C"][:, ccc_rise_cmp1-1], ax=ax[3])
     ax[3].set_title(f"Receiver Factor {ccc_rise_cmp1} Distribution by Label")
     
