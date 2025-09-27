@@ -1,5 +1,5 @@
 """
-Figure A4b: Comparison of CCC-RISE and Pseudobulk CPD on BALF COVID-19
+Figure A3a: Comparison of CCC-RISE and Pseudobulk CPD on BALF COVID-19
 """
 
 import numpy as np
@@ -10,9 +10,6 @@ import pandas as pd
 from .common import (
     subplotLabel,
     getSetup,
-)
-from .commonFuncs.plotGeneral import (
-    rotate_yaxis
 )
 
 def makeFigure():
@@ -38,8 +35,8 @@ def makeFigure():
         pearson_corr[i] = pearsonr(A_factor[:, i], severity_numeric)[0]
     pearson_df = pd.DataFrame(pearson_corr, index=[f"{i+1}" for i in range(cmp)], columns=["Pearson Correlation"])
     pearson_df["Component"] = pearson_df.index
-    sns.barplot(x="Component", y="Pearson Correlation", data=pearson_df, ax=ax[4], color="black")
-    ax[4].set_ylim(-0.1, 1)
+    sns.barplot(x="Component", y="Pearson Correlation", data=pearson_df, ax=ax[0], color="black")
+    ax[0].set_ylim(-0.1, 1)
     
 
     return f

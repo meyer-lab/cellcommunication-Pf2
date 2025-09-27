@@ -38,7 +38,7 @@ def makeFigure():
     rank_list = list(range(1, 4, 2))
     runs = 3
     runs = 1
-    df = run_fms_r2x_analysis(interaction_tensor, rank_list=rank_list, runs=runs)
+    df = run_fms_r2x_analysis(interaction_tensor, rank_list=rank_list, runs=runs, svd_init="random")
 
     sns.lineplot(data=df, x="Component", y="FMS", ax=ax[0], label="FMS")
     ax[0].set_ylim(0, 1)
