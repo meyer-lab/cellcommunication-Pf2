@@ -16,7 +16,7 @@ from ..utils import (
 )
 
 def makeFigure():
-    ax, f = getSetup((18, 6), (2, 3))  # 1 row, 3 columns for 3 L-R  pairs
+    ax, f = getSetup((10, 10), (3, 3))  # 1 row, 3 columns for 3 L-R  pairs
     subplotLabel(ax)
 
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_covid19.h5ad")
@@ -116,7 +116,7 @@ def makeFigure():
         # Create heatmap
         sns.heatmap(
             pivot_data, 
-            annot=True, 
+            # annot=True, 
             fmt='.4f', 
             cmap="Purples",
             cbar_kws={'label': 'Avg Communication Score'},

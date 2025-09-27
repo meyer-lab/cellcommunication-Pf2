@@ -16,7 +16,7 @@ from ..utils import (
 )
 
 def makeFigure():
-    ax, f = getSetup((10, 10), (3, 3))  # 1 row, 3 columns for 3 L-R  pairs
+    ax, f = getSetup((8, 8), (3, 3))  # 1 row, 3 columns for 3 L-R  pairs
     subplotLabel(ax)
 
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_covid19.h5ad")
@@ -62,10 +62,45 @@ def makeFigure():
     
     
     plot_pair_gene_factors(X, ccc_rise_cmp1, ccc_rise_cmp2, ax[6])
-    # Make axis symmetrical 
-    lim = np.max(np.abs(ax[6].get_xlim()))
+    # Make axis symmetrical check both axes x and y
+    xlim = np.max(np.abs(ax[6].get_xlim()))
+    ylim = np.max([xlim, np.max(np.abs(ax[6].get_ylim()))])
+    # Choose higher one
+    lim = max(xlim, ylim)
+
     ax[6].set_xlim(-lim, lim)
     ax[6].set_ylim(-lim, lim)
+
+    # Plot condition factors with condition label as well with A matrix
+    condition_column = "sample"
+    group_col = "condition"
+    sample_to_group = X.obs.drop_duplicates(
+        subset=[condition_column, group_col]
+    ).set_index(condition_column)[group_col]
+    # Reorder index based on np.unique
+    sample_to_group = sample_to_group.loc[np.unique(X.obs[condition_column], return_index=True)[0]]
+    pal = sns.color_palette(palette="Set2", n_colors=len(sample_to_group.unique()))
+    pal = pal.as_hex() 
+    color_map = {k: v for k, v in zip(sample_to_group.unique(), pal)}
+
+    # Map colors to each unique sample/condition based on their group
+    colors = [color_map[sample_to_group.loc[condition]] for condition in sample_to_group.index]
+    
+    # Compare component values for the two decompositions on scatter plot and pearson correlation
+    # Log both axes to better visualize the spread.
+    A_factor = X.uns["A"]
+    
+
+    ax[7].scatter(A_factor[:,ccc_rise_cmp1-1], A_factor[:,ccc_rise_cmp2-1], c=colors)
+    ax[7].set_xscale("log")
+    ax[7].set_yscale("log")
+    r = np.corrcoef(A_factor[:,ccc_rise_cmp1-1], A_factor[:,ccc_rise_cmp2-1])[0,1]
+    print("Condition factor correlation:", r)
+
+    ax[7].set_xlabel(f"CCC-RISE Condition Component {ccc_rise_cmp1}")
+    ax[7].set_ylabel(f"CCC-RISE Condition Component {ccc_rise_cmp2}")
+
+    
     
     return f
     
