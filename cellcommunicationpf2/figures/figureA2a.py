@@ -1,9 +1,11 @@
 """
-Figure A2a: FMS across CPD ranks (only) for COVID-19
+Figure A2a: FMS across CPD ranks for COVID-19 BALF data
 """
 
-import seaborn as sns
-import numpy as np
+from .common import (
+    subplotLabel,
+    getSetup,
+)
 from ..import_data import (
     add_cond_idxs,
     import_balf_covid,
@@ -11,6 +13,9 @@ from ..import_data import (
 )
 from .common import getSetup, subplotLabel
 from ..utils import run_fms_r2x_analysis, calculate_interaction_tensor
+import seaborn as sns
+import numpy as np
+
 
 def makeFigure():
     ax, f = getSetup((6, 3), (1, 2))

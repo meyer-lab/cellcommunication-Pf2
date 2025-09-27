@@ -1,55 +1,97 @@
 """
-Figure A4c: Violin plots of cell weight distributions for specific cell types and components in CCC-RISE on BALF COVID-19 data.
+Figure A4c: CCC-RISE on BAL ALAD data
 """
 
-import anndata
 from .common import (
     subplotLabel,
     getSetup,
 )
-import anndata
+import numpy as np
 import seaborn as sns
+import pandas as pd
+from scipy.stats import pearsonr
+from ..import_data import (
+    add_cond_idxs,
+    import_alad,
+    import_ligand_receptor_pairs,
+)
+from ..utils import run_ccc_rise_workflow, correct_conditions
+from .commonFuncs.plotFactors import (
+    plot_condition_factors,
+    plot_eigenstate_factors,
+    plot_lr_factors,
+)
+import anndata
+from .commonFuncs.plotGeneral import rotate_yaxis
 
 def makeFigure():
-    ax, f = getSetup((6, 6), (2, 2))
+    ax, f = getSetup((20, 8), (1, 4))
     subplotLabel(ax)
 
-    # Import Anndata file
-    X = anndata.read_h5ad("/opt/andrew/ccc/bal_covid19.h5ad")
-    ccc_rise_cmp = 6
-    
-    # Violin plot of cell weighting distribution for Mast cells for a component
-    # Keep only cells with mast cells for the violin plot
-    X_mdc = X[X.obs["celltype"] == "mDC"]
-    X_mdc = X_mdc.obsm["sc_B"][:, ccc_rise_cmp-1]
+    # # Import and prepare data
+    # X = import_alad(gene_threshold=0.001, normalize=True)
+    # # X = X[X.obs["ALADstatus"] != "control"]
+    # lr_pairs = import_ligand_receptor_pairs()
 
-    sns.violinplot(data=X_mdc, ax=ax[0])
-    ax[0].set_ylim(-0.1, 0.85)
-    ax[0].set_xlabel("mDC Weight Distribution")
-    ax[0].set_ylabel("Sender Cell Component Association")
+    # # Add numerical indices for each patient sample, which is the primary condition
+    # condition_column = "dsco_id"
+    # X = add_cond_idxs(X, condition_column)
     
-    ccc_rise_cmp = 5
-    
-    # Violin plot of cell weighting distribution for Mast cells for a component
-    # Keep only cells with mast cells for the violin plot
-    X_epithelial = X[X.obs["celltype"] == "Epithelial"]
-    print(X_epithelial)
-    X_epithelial_send = X_epithelial.obsm["sc_B"][:, ccc_rise_cmp-1]
+    # # Parameters for CCC-RISE
+    # rise_rank = 25
+    # cp_rank = 12
+    # n_iter_max = 10000
+    # tol = 1e-11
 
-    sns.violinplot(data=X_epithelial_send, ax=ax[1])
-    ax[1].set_ylim(-0.15, 0.5)
-    ax[1].set_xlabel("Epithelial Cell Weight Distribution")
-    ax[1].set_ylabel("Sender Cell Component Association")
+    # print(f"Running CCC-RISE with rank={rise_rank} and cp_rank={cp_rank}...")
+    # X, _ = run_ccc_rise_workflow(
+    #     X,
+    #     rise_rank=rise_rank,
+    #     lr_pairs=lr_pairs,
+    #     condition_column=condition_column,
+    #     cp_rank=cp_rank,
+    #     n_iter_max=n_iter_max,
+    #     tol=tol,
+    #     complex_sep="&",
+    
+    # )
+    # # Save anndata object with results
+    # X.write_h5ad("cellcommunicationpf2/alad.h5ad")
     
     
-    X_epithelial_rec = X_epithelial.obsm["rc_C"][:, ccc_rise_cmp-1]
+    X = anndata.read_h5ad("/opt/andrew/ccc/bal_alad.h5ad")
+    condition_column = "dsco_id"
+    X.uns["A"] = correct_conditions(X)
 
-    sns.violinplot(data=X_epithelial_rec, ax=ax[2])
-    ax[2].set_ylim(-0.15, 0.5)
-    ax[2].set_xlabel("Epithelial Cell Weight Distribution")
-    ax[2].set_ylabel("Receiver Cell Component Association")
+    group_col = "ALADstatus"
+    sample_to_group = X.obs.drop_duplicates(
+        subset=[condition_column, group_col]
+    ).set_index(condition_column)[group_col]
     
-    
+
+    # Factor 0: Patient Conditions (Samples)
+    plot_condition_factors(
+        X,
+        ax[0],
+        cond=condition_column,
+        cond_group_labels=sample_to_group,
+        group_cond=True,  # Sort samples by their condition group
+        normalize=True,
+    )
+    ax[0].set_title("Factor 0: Patient Condition")
+
+    # Factor 1: Sender Cell Eigenstates
+    plot_eigenstate_factors(X, ax[1], factor_type="B")
+    ax[1].set_title("Factor 1: Sender Cell Eigen-state")
+    rotate_yaxis(ax[1], rotation=0)
+
+    # Factor 2: Receiver Cell Eigenstates
+    plot_eigenstate_factors(X, ax[2], factor_type="C")
+    ax[2].set_title("Factor 2: Receiver Cell Eigen-state")
+    rotate_yaxis(ax[2], rotation=0)
+
+    # Factor 3: Ligand-Receptor Pairs
+    plot_lr_factors(X, ax[3], trim=True, weight=0.06)
+    ax[3].set_title("Factor 3: LR Pair")
+
     return f
-
-
