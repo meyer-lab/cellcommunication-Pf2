@@ -1,5 +1,5 @@
 """
-Figure A5b: Correlation of condition factors with disease severity in CCC-RISE on BAL ALAD data
+Figure A4d: Correlation of condition factors with disease severity in CCC-RISE on BAL ALAD data
 """
 
 import anndata

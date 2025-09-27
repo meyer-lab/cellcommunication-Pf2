@@ -190,3 +190,16 @@ def reorder_table(projs: np.ndarray):
         clean_projs, method="complete", metric="cosine", optimal_ordering=True
     )
     return sch.leaves_list(Z)
+
+
+def plot_pair_lr_factors(X: anndata.AnnData, cmp1: int, cmp2: int, ax: Axes):
+    """Plots two gene components weights"""
+    cmpWeights = np.concatenate(
+        ([X.uns["D"][:, cmp1 - 1]], [X.uns["D"][:, cmp2 - 1]])
+    )
+    df = pd.DataFrame(
+        data=cmpWeights.transpose(), columns=[f"Cmp. {cmp1}", f"Cmp. {cmp2}"]
+    )
+    sns.scatterplot(data=df, x=f"Cmp. {cmp1}", y=f"Cmp. {cmp2}", ax=ax, color="k")
+    ax.set(title="LR Factors")
+

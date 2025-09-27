@@ -2,7 +2,8 @@ import numpy as np
 import anndata
 import pandas as pd
 import seaborn as sns
-from ...utils import rise_store_r2x, calculate_fms_rise, resample
+from ...tensor import rise_store_r2x, calculate_fms_rise
+from ...utils import resample
 from matplotlib.axes import Axes
 
 def rotate_xaxis(ax, rotation=90):

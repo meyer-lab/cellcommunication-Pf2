@@ -1,5 +1,5 @@
 """
-Figure A4a: Decomposition of the pseudobulk communication data and tensor for BAL data.
+Figure S1h: Decomposition of the pseudobulk communication data and tensor for BAL data.
 """
 
 import numpy as np

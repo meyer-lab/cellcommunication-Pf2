@@ -1,5 +1,5 @@
 """
-Figure A3b: CCC-RISE on BALF COVID-19 data. Showing ligand-receptor factors.
+Figure S2: CCC-RISE on BALF COVID-19 data. Showing ligand-receptor factors.
 """
 
 from .common import (
