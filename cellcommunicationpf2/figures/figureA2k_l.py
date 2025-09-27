@@ -1,5 +1,5 @@
 """
-Figure A3e: Heatmaps of ligand-receptor expression products for selected cell types and components in CCC-RISE on BALF COVID-19 data.
+Figure A2k-l: Heatmaps of ligand-receptor expression products for selected cell types and components in CCC-RISE on BALF COVID-19 data.
 """
 
 import anndata
