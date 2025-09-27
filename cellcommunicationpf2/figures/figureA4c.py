@@ -15,7 +15,8 @@ from ..import_data import (
     import_alad,
     import_ligand_receptor_pairs,
 )
-from ..utils import run_ccc_rise_workflow, correct_conditions
+from ..utils import correct_conditions
+from ..tensor import run_ccc_rise_workflow
 from .commonFuncs.plotFactors import (
     plot_condition_factors,
     plot_eigenstate_factors,

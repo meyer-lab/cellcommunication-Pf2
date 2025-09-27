@@ -1,5 +1,5 @@
 """
-Figure A1a: FMS across RISE ranks (only) for COVID-19
+Figure S1a_b: FMS across RISE ranks (only) for COVID-19
 """
 
 from ..import_data import (

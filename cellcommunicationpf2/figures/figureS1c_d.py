@@ -1,5 +1,5 @@
 """
-Figure A2a: FMS across CPD ranks (only) for COVID-19
+Figure S1c_d: FMS across CPD ranks (only) for COVID-19
 """
 
 import seaborn as sns
@@ -10,7 +10,7 @@ from ..import_data import (
     import_ligand_receptor_pairs
 )
 from .common import getSetup, subplotLabel
-from ..utils import run_fms_r2x_analysis, calculate_interaction_tensor
+from ..tensor import run_fms_r2x_analysis, calculate_interaction_tensor
 
 def makeFigure():
     ax, f = getSetup((6, 3), (1, 2))

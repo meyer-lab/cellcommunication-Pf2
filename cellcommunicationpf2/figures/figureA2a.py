@@ -12,7 +12,7 @@ from ..import_data import (
     import_ligand_receptor_pairs
 )
 from .common import getSetup, subplotLabel
-from ..utils import run_fms_r2x_analysis, calculate_interaction_tensor
+from ..tensor import run_fms_r2x_analysis, calculate_interaction_tensor
 import seaborn as sns
 import numpy as np
 

@@ -1,5 +1,5 @@
 """
-Figure A3g: Cell type proportions across conditions in BALF COVID-19 data.
+Figure S1e_g: Cell type proportions across conditions in BALF COVID-19 data.
 """
 
 import anndata
