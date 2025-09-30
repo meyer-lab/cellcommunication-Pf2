@@ -20,6 +20,7 @@ from .commonFuncs.plotFactors import (
 import anndata
 from .commonFuncs.plotGeneral import rotate_yaxis
 
+
 def makeFigure():
     ax, f = getSetup((20, 8), (1, 4))
     subplotLabel(ax)
@@ -55,11 +56,11 @@ def makeFigure():
     #     n_iter_max=n_iter_max,
     #     tol=tol,
     #     complex_sep="&",
-    
+
     # )
     # # Save anndata object with results
     # adata_filtered.write_h5ad("cellcommunicationpf2/data/bal/bal.h5ad")
-    
+
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_covid19.h5ad")
     condition_column = "sample"
     group_col = "condition"

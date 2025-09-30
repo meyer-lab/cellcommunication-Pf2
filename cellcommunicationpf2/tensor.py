@@ -15,16 +15,25 @@ from .ccc_rise import calc_communication_score
 
 def resample_tensor(interaction_tensors):
     """Bootstrap tensor by resampling last dimension"""
-    indices = np.random.randint(0, interaction_tensors.shape[-1], size=interaction_tensors.shape[-1])
+    indices = np.random.randint(
+        0, interaction_tensors.shape[-1], size=interaction_tensors.shape[-1]
+    )
     return interaction_tensors[..., indices]
 
-def rise_store_r2x(X: anndata.AnnData, rank: int, n_iter_max: int, tolerance: float, random_state: int = None):
+
+def rise_store_r2x(
+    X: anndata.AnnData,
+    rank: int,
+    n_iter_max: int,
+    tolerance: float,
+    random_state: int = None,
+):
     """Runs RISE and stores the results."""
     pf2_out, r2x = parafac2_nd(
         X, rank=rank, random_state=random_state, tol=tolerance, n_iter_max=n_iter_max
     )
     X = store_pf2(X, pf2_out)
-    
+
     return X, r2x
 
 
@@ -63,7 +72,6 @@ def calculate_fms_rise(A: anndata.AnnData, B: anndata.AnnData):
         )
     )
     return fms(A_CP, B_CP, consider_weights=False, skip_mode=1)  # type: ignore
-
 
 
 def calculate_r2x(cp_weights, cp_factors, interaction_tensor):
@@ -131,7 +139,7 @@ def run_ccc_rise_workflow(
         random_state=random_state,
         complex_sep=complex_sep,
         lr_pairs=lr_pairs,
-        svd_init=svd_init
+        svd_init=svd_init,
     )
     (cp_weights, factors), projections = results
 
@@ -162,8 +170,9 @@ def run_ccc_rise_workflow(
     return adata, r2x
 
 
-
-def calculate_interaction_tensor(X_filtered: anndata.AnnData, lr_pairs: pd.DataFrame, rise_rank: int):
+def calculate_interaction_tensor(
+    X_filtered: anndata.AnnData, lr_pairs: pd.DataFrame, rise_rank: int
+):
     """Calculate interaction tensor from AnnData object using PARAFAC2 and communication scores."""
     pf2_out, rise_rank = parafac2_nd(
         X_filtered, rank=rise_rank, n_iter_max=1000, tol=1e-9
@@ -182,32 +191,36 @@ def calculate_interaction_tensor(X_filtered: anndata.AnnData, lr_pairs: pd.DataF
     # Calculate cell-cell communication scores
     gene_names = list(X_filtered.var_names)
     interaction_tensor, _ = calc_communication_score(
-        projected_matrices, gene_names=gene_names, lr_pairs=lr_pairs,
-        complex_sep="&"
+        projected_matrices, gene_names=gene_names, lr_pairs=lr_pairs, complex_sep="&"
     )
-    
+
     return interaction_tensor
 
 
-def run_fms_r2x_analysis(interaction_tensor: np.ndarray, rank_list: list[int] = None, runs: int = 1, svd_init: str = "svd") -> pd.DataFrame:
+def run_fms_r2x_analysis(
+    interaction_tensor: np.ndarray,
+    rank_list: list[int] = None,
+    runs: int = 1,
+    svd_init: str = "svd",
+) -> pd.DataFrame:
     """Run FMS and R2X analysis across different CP ranks and bootstrap runs."""
     if rank_list is None:
         rank_list = list(range(1, 4, 2))
-    
+
     fms_list = []
     r2xLists = []
-    
+
     for i in range(runs):
         scores = []
         r2x_scores = []
         for j in rank_list:
-            print(f"Run {i+1}, Rank {j}")
+            print(f"Run {i + 1}, Rank {j}")
             boot_tensor = resample_tensor(interaction_tensor)
             cp_weights, cp_factors = parafac(
                 tensor=interaction_tensor,
                 rank=j,
                 n_iter_max=1000,
-                init=svd_init,  
+                init=svd_init,
                 normalize_factors=True,
             )
             r2x = calculate_r2x(cp_weights, cp_factors, interaction_tensor)
@@ -218,35 +231,41 @@ def run_fms_r2x_analysis(interaction_tensor: np.ndarray, rank_list: list[int] = 
                 init=svd_init,
                 normalize_factors=True,
             )
-            fms_score = calculate_fms_cpd(cp_weights, cp_factors, cp_boot_weights, cp_boot_factors)
+            fms_score = calculate_fms_cpd(
+                cp_weights, cp_factors, cp_boot_weights, cp_boot_factors
+            )
             scores.append(fms_score)
             r2x_scores.append(r2x)
         # Save fms/r2x scores per rank
         fms_list.append(scores)
         r2xLists.append(r2x_scores)
-    
+
     # Convert to DataFrame format
     runsList_df = []
     for i in range(runs):
         for _j in range(len(rank_list)):
             runsList_df.append(i)
-    
+
     ranksList_df = []
     for _i in range(runs):
         for j in range(len(rank_list)):
             ranksList_df.append(rank_list[j])
-    
+
     fmsList_df = []
     for sublist in fms_list:
         fmsList_df += sublist
-    
+
     r2xList_df = []
     for sublist in r2xLists:
         r2xList_df += sublist
-        
-    df = pd.DataFrame(
-        {"Run": runsList_df, "Component": ranksList_df, "FMS": fmsList_df, "R2X": r2xList_df}
-    )
-    
-    return df
 
+    df = pd.DataFrame(
+        {
+            "Run": runsList_df,
+            "Component": ranksList_df,
+            "FMS": fmsList_df,
+            "R2X": r2xList_df,
+        }
+    )
+
+    return df

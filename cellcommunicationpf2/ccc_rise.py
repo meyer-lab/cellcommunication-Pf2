@@ -63,13 +63,18 @@ def calc_communication_score(
     # Handle complexes if requested
     if complex_sep is not None:
         if verbose:
-            print('Getting expression values for protein complexes')
+            print("Getting expression values for protein complexes")
         _, _, _, _, complexes = get_genes_from_complexes(
             ppi_data=lr_pairs_renamed,
             complex_sep=complex_sep,
-            interaction_columns=("A", "B")
+            interaction_columns=("A", "B"),
         )
-        mod_rnaseq_matrices = [add_complexes_to_expression(rnaseq, complexes, agg_method=complex_agg_method) for rnaseq in rnaseq_matrices]
+        mod_rnaseq_matrices = [
+            add_complexes_to_expression(
+                rnaseq, complexes, agg_method=complex_agg_method
+            )
+            for rnaseq in rnaseq_matrices
+        ]
     else:
         mod_rnaseq_matrices = [df.copy() for df in rnaseq_matrices]
 
@@ -158,8 +163,10 @@ def ccc_rise(
 
     # Calculate cell-cell communication scores
     interaction_tensors, filtered_lr_pairs = calc_communication_score(
-        projected_matrices, gene_names=gene_names,
-        complex_sep=complex_sep, lr_pairs=lr_pairs,
+        projected_matrices,
+        gene_names=gene_names,
+        complex_sep=complex_sep,
+        lr_pairs=lr_pairs,
     )
 
     cp_rank = cp_rank if cp_rank is not None else rise_rank
@@ -188,8 +195,7 @@ def ccc_rise(
 
 
 def standardize_cc_pf2(
-    weights: np.ndarray | None = None,
-    factors: list[np.ndarray] = None
+    weights: np.ndarray | None = None, factors: list[np.ndarray] = None
 ) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray]]:
     """
     Standardize CP factors for better interpretability.
@@ -224,11 +230,11 @@ def calc_communication_score_pseudobulk(
     gene_names: list[str] = None,
     lr_pairs: pd.DataFrame = None,
     complex_sep: str = "&",
-    complex_agg_method: str = "min",        
+    complex_agg_method: str = "min",
     verbose: bool = False,
 ) -> np.ndarray:
     """
-    Calculate cell-cell communication scores for pseudobulk 
+    Calculate cell-cell communication scores for pseudobulk
     Parameters:
     -----------
     pseudobulk_matrices_df : list[pd.DataFrame]
@@ -267,13 +273,18 @@ def calc_communication_score_pseudobulk(
     # Generate expression values for protein complexes in PPI data
     if complex_sep is not None:
         if verbose:
-            print('Getting expression values for protein complexes')
+            print("Getting expression values for protein complexes")
         _, _, _, _, complexes = get_genes_from_complexes(
             ppi_data=lr_pairs_renamed,
             complex_sep=complex_sep,
-            interaction_columns=interaction_columns
+            interaction_columns=interaction_columns,
         )
-        mod_rnaseq_matrices = [add_complexes_to_expression(rnaseq, complexes, agg_method=complex_agg_method) for rnaseq in pseudobulk_matrices_df]
+        mod_rnaseq_matrices = [
+            add_complexes_to_expression(
+                rnaseq, complexes, agg_method=complex_agg_method
+            )
+            for rnaseq in pseudobulk_matrices_df
+        ]
     else:
         mod_rnaseq_matrices = [df.copy() for df in pseudobulk_matrices_df]
 
@@ -289,7 +300,7 @@ def calc_communication_score_pseudobulk(
         group_ppi_method="gmean",
         verbose=verbose,
     )
-    
+
     # Only keep ppi_names to match the pairs used in the tensor in the interaction symbol column of the lr_pairs DataFrame
     lr_pair_names = lr_pairs["ligand"] + "^" + lr_pairs["receptor"]
     filtered_lr_pairs = lr_pairs[lr_pair_names.isin(ppi_names)].reset_index(drop=True)
@@ -354,9 +365,9 @@ def save_ccc_rise_results(
     X: anndata.AnnData,
     cpd_factors: list[np.ndarray],
     weights: np.ndarray,
-    lr_pairs: np.array
+    lr_pairs: np.array,
 ):
-    """ Save CPD results in an AnnData object."""
+    """Save CPD results in an AnnData object."""
     X.uns["A"] = cpd_factors[0]  # Condition factor
     X.uns["B"] = cpd_factors[1]  # Sender cell types factor
     X.uns["C"] = cpd_factors[2]  # Receiver cell types factor
@@ -366,9 +377,9 @@ def save_ccc_rise_results(
 
     return X
 
-    
-def get_genes_from_complexes(ppi_data, complex_sep='&', interaction_columns=('A', 'B')):
-    '''
+
+def get_genes_from_complexes(ppi_data, complex_sep="&", interaction_columns=("A", "B")):
+    """
     Gets protein/gene names for individual proteins (subunits when in complex)
     in a list of PPIs. If protein is a complex, for example ProtA&ProtB, it will
     return ProtA and ProtB separately.
@@ -413,7 +424,7 @@ def get_genes_from_complexes(ppi_data, complex_sep='&', interaction_columns=('A'
     complexes : dict
         Dictionary where keys are the complex names in the list of PPIs, while
         values are list of subunits for the respective complex names.
-    '''
+    """
     col_a = interaction_columns[0]
     col_b = interaction_columns[1]
 
@@ -442,11 +453,10 @@ def get_genes_from_complexes(ppi_data, complex_sep='&', interaction_columns=('A'
             col_b_genes.add(prot_b)
 
     return col_a_genes, complex_a, col_b_genes, complex_b, complexes
-    
-    
-    
-def add_complexes_to_expression(rnaseq_data, complexes, agg_method='min'):
-    '''
+
+
+def add_complexes_to_expression(rnaseq_data, complexes, agg_method="min"):
+    """
     Adds multimeric complexes into the gene expression matrix.
     Their gene expressions are the minimum expression value
     among the respective subunits composing them.
@@ -476,7 +486,7 @@ def add_complexes_to_expression(rnaseq_data, complexes, agg_method='min'):
         complex names. Their gene expressions are the minimum expression value
         among the respective subunits composing them. Columns are
         cell-types/tissues/samples and rows are genes.
-    '''
+    """
     tmp_rna = rnaseq_data.copy()
     for k, v in complexes.items():
         if isinstance(v, set):
@@ -484,15 +494,19 @@ def add_complexes_to_expression(rnaseq_data, complexes, agg_method='min'):
         elif isinstance(v, list):
             pass  # No need to convert, already a list
         else:
-            raise ValueError("Values in the `complexes`dictionary must be sets or lists.")
+            raise ValueError(
+                "Values in the `complexes`dictionary must be sets or lists."
+            )
         if all(g in tmp_rna.index for g in v):
             df = tmp_rna.loc[v, :]
-            if agg_method == 'min':
+            if agg_method == "min":
                 tmp_rna.loc[k] = df.min().values.tolist()
-            elif agg_method == 'mean':
+            elif agg_method == "mean":
                 tmp_rna.loc[k] = df.mean().values.tolist()
-            elif agg_method == 'gmean':
-                tmp_rna.loc[k] = df.apply(lambda x: np.exp(np.mean(np.log(x)))).values.tolist()
+            elif agg_method == "gmean":
+                tmp_rna.loc[k] = df.apply(
+                    lambda x: np.exp(np.mean(np.log(x)))
+                ).values.tolist()
             else:
                 ValueError("{} is not a valid agg_method".format(agg_method))
         else:

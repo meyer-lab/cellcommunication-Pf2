@@ -25,6 +25,7 @@ from .commonFuncs.plotFactors import (
 import anndata
 from .commonFuncs.plotGeneral import rotate_yaxis
 
+
 def makeFigure():
     ax, f = getSetup((20, 8), (1, 4))
     subplotLabel(ax)
@@ -36,7 +37,7 @@ def makeFigure():
     # # Add numerical indices for each patient sample, which is the primary condition
     # condition_column = "dsco_id"
     # X = add_cond_idxs(X, condition_column)
-    
+
     # # Parameters for CCC-RISE
     # rise_rank = 15
     # cp_rank = 18
@@ -58,7 +59,7 @@ def makeFigure():
     # )
     # # Save anndata object with results
     # X.write_h5ad("cellcommunicationpf2/alad.h5ad")
-    
+
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_alad.h5ad")
     condition_column = "dsco_id"
     X.uns["A"] = correct_conditions(X)
@@ -67,7 +68,6 @@ def makeFigure():
     sample_to_group = X.obs.drop_duplicates(
         subset=[condition_column, group_col]
     ).set_index(condition_column)[group_col]
-    
 
     # Factor 0: Patient Conditions (Samples)
     plot_condition_factors(

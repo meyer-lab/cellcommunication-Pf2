@@ -15,29 +15,38 @@ from ..utils import (
     expression_product_matrix,
 )
 
+
 def makeFigure():
     ax, f = getSetup((6, 6), (2, 2))
     subplotLabel(ax)
 
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_covid19.h5ad")
     ccc_rise_cmp = 5
-    
+
     X_mdc_sender = X[X.obs["celltype"] == "Epithelial"]
-    X_mdc_sender = add_obs_cmp_label(X_mdc_sender, cmp=ccc_rise_cmp, pos=True, top_perc=10, type="sender")
+    X_mdc_sender = add_obs_cmp_label(
+        X_mdc_sender, cmp=ccc_rise_cmp, pos=True, top_perc=10, type="sender"
+    )
     X_mdc_sender = add_obs_cmp_unique_one(X_mdc_sender, cmp=ccc_rise_cmp)
     X_mdc_sender = X_mdc_sender[X_mdc_sender.obs["Label"] != "NoLabel"]
 
     # Alter order based on factor value high to low
-    X_mdc_sender = X_mdc_sender[np.argsort(-X_mdc_sender.obsm["sc_B"][:, ccc_rise_cmp-1])]
+    X_mdc_sender = X_mdc_sender[
+        np.argsort(-X_mdc_sender.obsm["sc_B"][:, ccc_rise_cmp - 1])
+    ]
 
     X_mdc_receiver = X[(X.obs["celltype"] == "Epithelial")]
-    X_mdc_receiver = add_obs_cmp_label(X_mdc_receiver, cmp=ccc_rise_cmp, pos=True, top_perc=10, type="receiver")
+    X_mdc_receiver = add_obs_cmp_label(
+        X_mdc_receiver, cmp=ccc_rise_cmp, pos=True, top_perc=10, type="receiver"
+    )
     X_mdc_receiver = add_obs_cmp_unique_one(X_mdc_receiver, cmp=ccc_rise_cmp)
     X_mdc_receiver = X_mdc_receiver[X_mdc_receiver.obs["Label"] != "NoLabel"]
 
     # Alter order based on factor value low to high
-    X_mdc_receiver = X_mdc_receiver[np.argsort(X_mdc_receiver.obsm["rc_C"][:, ccc_rise_cmp-1])]
-    
+    X_mdc_receiver = X_mdc_receiver[
+        np.argsort(X_mdc_receiver.obsm["rc_C"][:, ccc_rise_cmp - 1])
+    ]
+
     print("Epithelial sender cells:", X_mdc_sender.shape)
 
     pairs = [["CDH1", "CDH1"], ["OCLN", "OCLN"], ["PRSS3", "F2RL1"]]
@@ -51,5 +60,4 @@ def makeFigure():
         ax[i].set_xticks([])
         ax[i].set_yticks([])
 
-    
     return f

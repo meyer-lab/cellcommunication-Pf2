@@ -9,8 +9,13 @@ import numpy as np
 from scipy.sparse import issparse, csr_array
 import pandas as pd
 
+
 # The below code is taken directly from https://github.com/earmingol/cell2cell/blob/master/cell2cell/datasets/anndata.py
-def import_balf_covid(filename="/opt/andrew/ccc/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad", gene_threshold: float = 0.01, normalize: bool = True) -> anndata.AnnData:
+def import_balf_covid(
+    filename="/opt/andrew/ccc/BALF-COVID19-Liao_et_al-NatMed-2020.h5ad",
+    gene_threshold: float = 0.01,
+    normalize: bool = True,
+) -> anndata.AnnData:
     """BALF samples from COVID-19 patients
     The data consists in 63k immune and epithelial cells in lungs
     from 3 control, 3 moderate COVID-19, and 6 severe COVID-19 patients.
@@ -45,14 +50,20 @@ def import_balf_covid(filename="/opt/andrew/ccc/BALF-COVID19-Liao_et_al-NatMed-2
 
     assert hasattr(adata.X, "nnz"), "adata.X should be a sparse matrix"
 
-    return prepare_dataset(adata, condition_name="sample", geneThreshold=gene_threshold, normalize=normalize)
-
+    return prepare_dataset(
+        adata,
+        condition_name="sample",
+        geneThreshold=gene_threshold,
+        normalize=normalize,
+    )
 
 
 @lru_cache(maxsize=1)
-def import_ligand_receptor_pairs(filename="/opt/andrew/ccc/Human-2020-Jin-LR-pairs.csv.zst", update_interaction_names: bool = True) -> pd.DataFrame:
-    """Import ligand-receptor pairs from a zstd-compressed CSV with caching.
-    """
+def import_ligand_receptor_pairs(
+    filename="/opt/andrew/ccc/Human-2020-Jin-LR-pairs.csv.zst",
+    update_interaction_names: bool = True,
+) -> pd.DataFrame:
+    """Import ligand-receptor pairs from a zstd-compressed CSV with caching."""
     print("Loading ligand-receptor pairs data (zstd compressed)...")
     with open(filename, "rb") as f:
         dctx = zstd.ZstdDecompressor()
@@ -63,34 +74,46 @@ def import_ligand_receptor_pairs(filename="/opt/andrew/ccc/Human-2020-Jin-LR-pai
     print(f"Cached {len(df)} ligand-receptor pairs")
 
     if update_interaction_names:
-        if 'interaction_name_2' in df.columns:
-            df['ligand'] = df['interaction_name_2'].apply(lambda x: x.split(' - ')[0].upper())
-            df['receptor'] = df['interaction_name_2'].apply(lambda x: x.split(' - ')[1].upper().replace('(', '').replace(')', '').replace('+', '&'))
+        if "interaction_name_2" in df.columns:
+            df["ligand"] = df["interaction_name_2"].apply(
+                lambda x: x.split(" - ")[0].upper()
+            )
+            df["receptor"] = df["interaction_name_2"].apply(
+                lambda x: x.split(" - ")[1]
+                .upper()
+                .replace("(", "")
+                .replace(")", "")
+                .replace("+", "&")
+            )
         # Also update interaction_symbol if present
-        if 'interaction_symbol' in df.columns:
-            df['interaction_symbol'] = df['interaction_symbol'].str.upper().str.replace('_', '&')
-        
+        if "interaction_symbol" in df.columns:
+            df["interaction_symbol"] = (
+                df["interaction_symbol"].str.upper().str.replace("_", "&")
+            )
+
     return df
 
 
-def import_alad(
-    gene_threshold: float = 0.1, normalize: bool = True
-):
+def import_alad(gene_threshold: float = 0.1, normalize: bool = True):
     """Generate data for ALAD analysis, filtering and scaling as needed.
     patient ids: dsco_id
     """
     # Load data without backing to avoid issues with sparse conversion
     data = anndata.read_h5ad("/opt/BAL-scRNAseq-raw.h5ad")
-    
+
     # Convert to sparse format if not already sparse
     if not issparse(data.X):
         # Convert dense matrix to sparse CSR format
         from scipy.sparse import csr_matrix
+
         data.X = csr_matrix(data.X)
 
-    data = prepare_dataset(data, "dsco_id", geneThreshold=gene_threshold, normalize=normalize)
+    data = prepare_dataset(
+        data, "dsco_id", geneThreshold=gene_threshold, normalize=normalize
+    )
 
     return data
+
 
 def add_cond_idxs(X, condition_key):
     """Add unique condition indices to an AnnData object."""
