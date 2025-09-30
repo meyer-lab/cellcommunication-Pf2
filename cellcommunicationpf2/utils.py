@@ -29,7 +29,7 @@ def resample(data: anndata.AnnData, condition_name: str, random_seed: int = None
     return resampled_data
 
 
-def correct_conditions(X: anndata.AnnData):
+def correct_conditions(X: anndata.AnnData) -> np.ndarray:
     """Correct the conditions factors by overall read depth."""
     sgIndex = X.obs["condition_unique_idxs"]
 
