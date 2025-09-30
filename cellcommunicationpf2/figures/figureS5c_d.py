@@ -26,15 +26,15 @@ def makeFigure():
     X_filtered = add_cond_idxs(X, condition_column)
 
     # Calculate interaction tensor
-    interaction_tensor = calculate_interaction_tensor(X_filtered, lr_pairs, rise_rank=25)
+    interaction_tensor = calculate_interaction_tensor(X_filtered, lr_pairs, rise_rank=15)
     print("Interaction tensor shape:", interaction_tensor.shape)
     
     # Run FMS and R2X analysis
-    rank_list = list(range(1, 15, 2))
+    rank_list = list(range(1, 27, 1))
     rank_list = list(range(1, 4, 2))
     runs = 3
     runs = 1
-    df = run_fms_r2x_analysis(interaction_tensor, rank_list=rank_list, runs=runs)
+    df = run_fms_r2x_analysis(interaction_tensor, rank_list=rank_list, runs=runs, svd_init="random")
 
     sns.lineplot(data=df, x="Component", y="FMS", ax=ax[0], label="FMS")
     ax[0].set_ylim(0, 1)
