@@ -10,10 +10,10 @@ from .common import (
 import pandas as pd
 import seaborn as sns
 import numpy as np
-from scipy.stats import pearsonr
+from scipy.stats import spearmanr
 
 def makeFigure():
-    ax, f = getSetup((6, 6), (2, 2))
+    ax, f = getSetup((4, 4), (2, 2))
     subplotLabel(ax)
 
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_covid19.h5ad")
@@ -47,18 +47,19 @@ def makeFigure():
     for celltype in df["celltype"].unique():
         subset = df[df["celltype"] == celltype]
         if len(subset["severity"].unique()) > 1:  # Ensure there's variability in severity
-            corr = pearsonr(subset["proportion"], subset["severity"]).correlation
-            pval = pearsonr(subset["proportion"], subset["severity"]).pvalue
+            corr = spearmanr(subset["proportion"], subset["severity"])[0]
+            pval = spearmanr(subset["proportion"], subset["severity"])[1]
             correlation_results.append((celltype, corr, pval))
     corr_df = pd.DataFrame(correlation_results, columns=["celltype", "correlation", "pvalue"]).dropna()
     print(corr_df)
     sns.scatterplot(data=corr_df, x="correlation", y="pvalue", ax=ax[1], hue="celltype", palette="Set3")
     ax[1].set_title("Correlation of Cell Type Proportion with Severity")
-    ax[1].set_xlabel("Pearson Correlation")
+    ax[1].set_xlabel("Spearman Correlation")
     ax[1].set_ylabel("P-value")
     ax[1].axhline(0.05, color='red', linestyle='--')
-    
-    
+    ax[1].set_yscale("log")
+    ax[1].set_xlim(-1, 1)
+
     sample_totals = df.groupby(["sample"])["count"].sum().reset_index()
     sample_totals.columns = ["sample", "total_cells"]
     sample_totals = sample_totals.merge(sample_condition_map, on="sample", how="left")

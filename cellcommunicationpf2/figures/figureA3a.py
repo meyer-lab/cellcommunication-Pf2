@@ -5,7 +5,7 @@ Figure A3a: Comparison of CCC-RISE and Pseudobulk CPD on BALF COVID-19
 import numpy as np
 import anndata
 import seaborn as sns
-from scipy.stats import pearsonr
+from scipy.stats import spearmanr
 import pandas as pd
 from .common import (
     subplotLabel,
@@ -30,13 +30,14 @@ def makeFigure():
     severity_numeric = sample_to_group.map(severity_map).values
 
     cmp = A_factor.shape[1]
-    pearson_corr = np.zeros((cmp))
+    spearman_corr = np.zeros((cmp))
     for i in range(cmp):
-        pearson_corr[i] = pearsonr(A_factor[:, i], severity_numeric)[0]
-    pearson_df = pd.DataFrame(pearson_corr, index=[f"{i+1}" for i in range(cmp)], columns=["Pearson Correlation"])
-    pearson_df["Component"] = pearson_df.index
-    sns.barplot(x="Component", y="Pearson Correlation", data=pearson_df, ax=ax[0], color="black")
+        spearman_corr[i] = spearmanr(A_factor[:, i], severity_numeric)[0]
+    spearman_df = pd.DataFrame(spearman_corr, index=[f"{i+1}" for i in range(cmp)], columns=["Spearman Correlation"])
+    spearman_df["Component"] = spearman_df.index
+    sns.barplot(x="Component", y="Spearman Correlation", data=spearman_df, ax=ax[0], color="black")
     ax[0].set_ylim(-0.1, 1)
+    print(spearman_df)
     
 
     return f
