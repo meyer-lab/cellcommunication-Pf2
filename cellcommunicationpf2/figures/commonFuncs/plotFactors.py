@@ -17,7 +17,7 @@ def plot_condition_factors(
     cond_group_labels: pd.Series | None = None,
     color_key=None,
     group_cond=False,
-    normalize=False
+    normalize=False,
 ):
     """Plots condition factors"""
     # Get sample names in the order of condition_unique_idxs (as used by anndata_to_list)
@@ -159,16 +159,12 @@ def plot_lr_factors_partial(
     cmpName = f"Cmp. {cmp}"
     lr_factor = np.array(X.uns["D"])
     yt = X.uns["lr_pairs"]
-    df = pd.DataFrame(
-        data=lr_factor[:, cmp - 1], index=yt, columns=[cmpName]
-    )
+    df = pd.DataFrame(data=lr_factor[:, cmp - 1], index=yt, columns=[cmpName])
     df = df.reset_index(names="LR")
     df = df.sort_values(by=cmpName)
 
     if top:
-        sns.barplot(
-            data=df.iloc[-geneAmount:, :], x="LR", y=cmpName, color="k", ax=ax
-        )
+        sns.barplot(data=df.iloc[-geneAmount:, :], x="LR", y=cmpName, color="k", ax=ax)
     else:
         sns.barplot(data=df.iloc[:geneAmount, :], x="LR", y=cmpName, color="k", ax=ax)
 
@@ -194,12 +190,9 @@ def reorder_table(projs: np.ndarray):
 
 def plot_pair_lr_factors(X: anndata.AnnData, cmp1: int, cmp2: int, ax: Axes):
     """Plots two gene components weights"""
-    cmpWeights = np.concatenate(
-        ([X.uns["D"][:, cmp1 - 1]], [X.uns["D"][:, cmp2 - 1]])
-    )
+    cmpWeights = np.concatenate(([X.uns["D"][:, cmp1 - 1]], [X.uns["D"][:, cmp2 - 1]]))
     df = pd.DataFrame(
         data=cmpWeights.transpose(), columns=[f"Cmp. {cmp1}", f"Cmp. {cmp2}"]
     )
     sns.scatterplot(data=df, x=f"Cmp. {cmp1}", y=f"Cmp. {cmp2}", ax=ax, color="k")
     ax.set(title="LR Factors")
-

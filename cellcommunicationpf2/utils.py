@@ -4,7 +4,9 @@ from sklearn.linear_model import LinearRegression
 import pandas as pd
 
 
-def resample(data: anndata.AnnData, condition_name: str, random_seed: int = None) -> anndata.AnnData:
+def resample(
+    data: anndata.AnnData, condition_name: str, random_seed: int = None
+) -> anndata.AnnData:
     """Perform stratified bootstrap sampling by resampling cells within each sample.
 
     This maintains the same number of cells per sample in the resampled dataset.
@@ -50,7 +52,9 @@ def correct_conditions(X: anndata.AnnData) -> np.ndarray:
     return X.uns["A"] / counts_correct
 
 
-def pseudobulk_X(X: anndata, condition_name: str, groupby: str, type: str) -> list[pd.DataFrame]:
+def pseudobulk_X(
+    X: anndata, condition_name: str, groupby: str, type: str
+) -> list[pd.DataFrame]:
     """
     Calculate average gene expression for each groupby in each sample
     """
@@ -76,7 +80,7 @@ def pseudobulk_X(X: anndata, condition_name: str, groupby: str, type: str) -> li
                     result_dict[gene] = mean_expression[i]
             elif adata_subset.n_obs > 0 and type == "fraction":
                 ct_df = adata_subset.X.toarray()
-                cell_fraction = ((ct_df > 0).sum(axis=0) / ct_df.shape[0])
+                cell_fraction = (ct_df > 0).sum(axis=0) / ct_df.shape[0]
                 for i, gene in enumerate(gene_names):
                     result_dict[gene] = cell_fraction[i]
             else:
@@ -93,24 +97,27 @@ def pseudobulk_X(X: anndata, condition_name: str, groupby: str, type: str) -> li
     return total_df
 
 
-
 def add_obs_cmp_unique_one(X: anndata.AnnData, cmp: str):
     """Creates AnnData observation column for a single component."""
     label_col = f"Cmp{cmp}"
     X.obs["Label"] = np.where(X.obs[label_col], label_col, "NoLabel")
-    
+
     return X
 
 
 def add_obs_cmp_label(
-    X: anndata.AnnData, cmp: int, pos: bool = True, top_perc: float = 1, type: str = "receiver"
+    X: anndata.AnnData,
+    cmp: int,
+    pos: bool = True,
+    top_perc: float = 1,
+    type: str = "receiver",
 ):
     """Adds a boolean label to X.obs for cells in the top or bottom percentage of a single component."""
     if type == "sender":
         factor_type = X.obsm["sc_B"]
     elif type == "receiver":
         factor_type = X.obsm["rc_C"]
-  
+
     if pos:
         thres_value = 100 - top_perc
         threshold = np.percentile(factor_type, thres_value, axis=0)
@@ -121,11 +128,13 @@ def add_obs_cmp_label(
         idx = factor_type[:, cmp - 1] < threshold[cmp - 1]
 
     X.obs[f"Cmp{cmp}"] = idx
-    
+
     return X
 
 
-def expression_product_matrix(X1: anndata.AnnData, X2: anndata.AnnData, ligand: str, receptor: str):
+def expression_product_matrix(
+    X1: anndata.AnnData, X2: anndata.AnnData, ligand: str, receptor: str
+):
     """
     For each cell in X1 and each cell in X2, compute the product:
     X1[cell_i, ligand] * X2[cell_j, receptor]
@@ -134,43 +143,46 @@ def expression_product_matrix(X1: anndata.AnnData, X2: anndata.AnnData, ligand: 
     # Ensure gene names are present
     assert ligand in X1.var_names, f"{ligand} not in X1"
     assert receptor in X2.var_names, f"{receptor} not in X2"
-        
+
     # Get expression vectors
 
     # Ensure 1D dense arrays
     # Convert to dense 1D arrays, even if sparse
     expr1 = X1[:, ligand].X
-    if hasattr(expr1, 'toarray'):
+    if hasattr(expr1, "toarray"):
         expr1 = expr1.toarray().flatten()
     else:
         expr1 = np.ravel(np.array(expr1))
 
     expr2 = X2[:, receptor].X
-    if hasattr(expr2, 'toarray'):
+    if hasattr(expr2, "toarray"):
         expr2 = expr2.toarray().flatten()
     else:
         expr2 = np.ravel(np.array(expr2))
-        
+
     # Compute outer product
     product_matrix = np.outer(expr1, expr2)
 
     # Build DataFrame
-    df = pd.DataFrame(
-        product_matrix,
-        index=X1.obs_names,
-        columns=X2.obs_names
-    )
+    df = pd.DataFrame(product_matrix, index=X1.obs_names, columns=X2.obs_names)
     return df
 
+
 def add_obs_cmp_both_label(
-    X: anndata.AnnData, cmp1: int, cmp2: int, pos1=True, pos2=True, top_perc=1, type="sender"
+    X: anndata.AnnData,
+    cmp1: int,
+    cmp2: int,
+    pos1=True,
+    pos2=True,
+    top_perc=1,
+    type="sender",
 ):
     """Adds if cells in top/bot percentage"""
     if type == "sender":
         factor_type = X.obsm["sc_B"]
     elif type == "receiver":
         factor_type = X.obsm["rc_C"]
-  
+
     pos_neg = [pos1, pos2]
 
     for i, cmp in enumerate([cmp1, cmp2]):
@@ -221,9 +233,17 @@ def add_obs_cmp_both_label(
 
 def add_obs_cmp_unique_two(X: anndata.AnnData, cmp1: str, cmp2: str):
     """Creates AnnData observation column"""
-    X.obs.loc[((X.obs[f"Cmp{cmp1}"] == True) & (X.obs[f"Cmp{cmp2}"] == False), "Label")] = f"Cmp{cmp1}"
-    X.obs.loc[(X.obs[f"Cmp{cmp1}"] == False) & (X.obs[f"Cmp{cmp2}"] == True), "Label"] = f"Cmp{cmp2}"
-    X.obs.loc[(X.obs[f"Cmp{cmp1}"] == True) & (X.obs[f"Cmp{cmp2}"] == True), "Label"] = "Both"
-    X.obs.loc[(X.obs[f"Cmp{cmp1}"] == False) & (X.obs[f"Cmp{cmp2}"] == False), "Label"] = "NoLabel"
-    
+    X.obs.loc[
+        ((X.obs[f"Cmp{cmp1}"] == True) & (X.obs[f"Cmp{cmp2}"] == False), "Label")
+    ] = f"Cmp{cmp1}"
+    X.obs.loc[
+        (X.obs[f"Cmp{cmp1}"] == False) & (X.obs[f"Cmp{cmp2}"] == True), "Label"
+    ] = f"Cmp{cmp2}"
+    X.obs.loc[
+        (X.obs[f"Cmp{cmp1}"] == True) & (X.obs[f"Cmp{cmp2}"] == True), "Label"
+    ] = "Both"
+    X.obs.loc[
+        (X.obs[f"Cmp{cmp1}"] == False) & (X.obs[f"Cmp{cmp2}"] == False), "Label"
+    ] = "NoLabel"
+
     return X

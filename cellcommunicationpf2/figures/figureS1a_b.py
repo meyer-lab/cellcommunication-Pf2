@@ -29,10 +29,10 @@ def makeFigure():
     runs = 1
 
     print("Plotting FMS vs. rank...")
-    plot_fms_r2x_diff_ranks(X, condition_column, ax[0], ax[1], ranksList=ranks, runs=runs)
+    plot_fms_r2x_diff_ranks(
+        X, condition_column, ax[0], ax[1], ranksList=ranks, runs=runs
+    )
     ax[0].set_title(f"RISE on COVID-19 scRNA-seq: {X.shape[1]} genes")
     ax[1].set_title(f"RISE on COVID-19 scRNA-seq: {X.shape[1]} genes")
 
-
     return f
-

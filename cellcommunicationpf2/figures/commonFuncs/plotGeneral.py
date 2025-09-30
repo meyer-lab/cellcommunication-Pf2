@@ -6,6 +6,7 @@ from ...tensor import rise_store_r2x, calculate_fms_rise
 from ...utils import resample
 from matplotlib.axes import Axes
 
+
 def rotate_xaxis(ax, rotation=90):
     """Rotates text by 90 degrees for x-axis"""
     ax.set_xticks(ax.get_xticks())
@@ -16,7 +17,8 @@ def rotate_yaxis(ax, rotation=90):
     """Rotates text by 90 degrees for y-axis"""
     ax.set_yticks(ax.get_yticks())
     ax.set_yticklabels(labels=ax.get_yticklabels(), rotation=rotation)
-    
+
+
 def plot_fms_r2x_diff_ranks(
     X: anndata.AnnData,
     condition_name: str,
@@ -33,9 +35,14 @@ def plot_fms_r2x_diff_ranks(
         scores = []
         r2x_scores = []
         for i in ranksList:
-            print(f"Run {j+1}, Rank {i}")
+            print(f"Run {j + 1}, Rank {i}")
             dataX, r2x = rise_store_r2x(X, rank=i, n_iter_max=1000, tolerance=1e-9)
-            sampledX, _ = rise_store_r2x(resample(X, condition_name=condition_name), rank=i, n_iter_max=1000, tolerance=1e-9)
+            sampledX, _ = rise_store_r2x(
+                resample(X, condition_name=condition_name),
+                rank=i,
+                n_iter_max=1000,
+                tolerance=1e-9,
+            )
             fmsScore = calculate_fms_rise(dataX, sampledX)
             scores.append(fmsScore)
             # Calculate R2X for X only (not resampled)
@@ -57,10 +64,14 @@ def plot_fms_r2x_diff_ranks(
     r2xList_df = []
     for sublist in r2xLists:
         r2xList_df += sublist
-        
-        
+
     df = pd.DataFrame(
-        {"Run": runsList_df, "Component": ranksList_df, "FMS": fmsList_df, "R2X": r2xList_df}
+        {
+            "Run": runsList_df,
+            "Component": ranksList_df,
+            "FMS": fmsList_df,
+            "R2X": r2xList_df,
+        }
     )
 
     # Plot FMS

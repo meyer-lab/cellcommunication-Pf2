@@ -13,23 +13,22 @@ from .common import (
     getSetup,
 )
 from ..utils import (
-    pseudobulk_X, 
+    pseudobulk_X,
 )
 from ..ccc_rise import (
     calc_communication_score_pseudobulk,
     pseudobulk_cp_decomposition,
-    save_ccc_rise_results
+    save_ccc_rise_results,
 )
 from .commonFuncs.plotFactors import (
     plot_condition_factors,
     plot_eigenstate_factors,
-    plot_lr_factors
+    plot_lr_factors,
 )
 
-from .commonFuncs.plotGeneral import (
-    rotate_yaxis
-)
+from .commonFuncs.plotGeneral import rotate_yaxis
 import anndata
+
 
 def makeFigure():
     ax, f = getSetup((20, 8), (1, 4))
@@ -51,9 +50,9 @@ def makeFigure():
     # cpd_weights, cpd_factors, _ = pseudobulk_cp_decomposition(interaction_tensor, cp_rank=cp_rank, n_iter_max=1000, tol=1e-11)
 
     # save_ccc_rise_results(X, cpd_factors, cpd_weights, filtered_lr_pairs)
-    
+
     # X = X.write_h5ad("cellcommunicationpf2/data/bal/bal_pseudobulk.h5ad")
-    
+
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_covid19_pseudobulk.h5ad")
     groupby = "celltype"
     condition_column = "sample"
@@ -67,13 +66,9 @@ def makeFigure():
         ax=ax[0],
         cond="sample",
         cond_group_labels=sample_to_group,
-        group_cond=True
+        group_cond=True,
     )
-    plot_eigenstate_factors(    
-        data=X,
-        ax=ax[1],
-        factor_type="B"
-    )
+    plot_eigenstate_factors(data=X, ax=ax[1], factor_type="B")
 
     celltype_names = np.unique(X.obs[groupby])
     ax[1].set_yticklabels(celltype_names)
@@ -87,11 +82,6 @@ def makeFigure():
     ax[2].set_yticklabels(celltype_names)
     rotate_yaxis(ax[2], 0)
 
-    plot_lr_factors(
-        data=X,
-        ax=ax[3],
-        weight=0.03
-    )
-    
+    plot_lr_factors(data=X, ax=ax[3], weight=0.03)
 
     return f

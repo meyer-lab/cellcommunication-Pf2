@@ -43,7 +43,13 @@ def ds_show(result, ax):
     ax.imshow(mpl_img)
 
 
-def plot_wc_pacmap(X: anndata.AnnData, cmp: int, ax: Axes, cbarMax: float = 1.0, factor_matrix:str = None):
+def plot_wc_pacmap(
+    X: anndata.AnnData,
+    cmp: int,
+    ax: Axes,
+    cbarMax: float = 1.0,
+    factor_matrix: str = None,
+):
     """Scatterplot of PaCMAP visualization of weighted cells for one component in receiver or sender"""
     if factor_matrix == "B":
         factor = "sc_B"
@@ -125,7 +131,12 @@ def plot_labels_pacmap(
 
 
 def plot_wc_per_celltype(
-    X: anndata.AnnData, cmp: int, ax: Axes, outliers: bool = False, cellType="cell_type", factor_matrix:str = None
+    X: anndata.AnnData,
+    cmp: int,
+    ax: Axes,
+    outliers: bool = False,
+    cellType="cell_type",
+    factor_matrix: str = None,
 ):
     """Boxplot of weighted cells for one component across cell types"""
     if factor_matrix == "B":
