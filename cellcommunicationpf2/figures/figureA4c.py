@@ -31,7 +31,6 @@ def makeFigure():
 
     # # Import and prepare data
     # X = import_alad(gene_threshold=0.001, normalize=True)
-    # # X = X[X.obs["ALADstatus"] != "control"]
     # lr_pairs = import_ligand_receptor_pairs()
 
     # # Add numerical indices for each patient sample, which is the primary condition
@@ -39,8 +38,8 @@ def makeFigure():
     # X = add_cond_idxs(X, condition_column)
     
     # # Parameters for CCC-RISE
-    # rise_rank = 25
-    # cp_rank = 12
+    # rise_rank = 15
+    # cp_rank = 18
     # n_iter_max = 10000
     # tol = 1e-11
 
@@ -54,11 +53,11 @@ def makeFigure():
     #     n_iter_max=n_iter_max,
     #     tol=tol,
     #     complex_sep="&",
-    
+    #     random_state=0,
+    #     svd_init="random",
     # )
     # # Save anndata object with results
     # X.write_h5ad("cellcommunicationpf2/alad.h5ad")
-    
     
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_alad.h5ad")
     condition_column = "dsco_id"

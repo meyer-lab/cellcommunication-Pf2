@@ -5,17 +5,14 @@ Figure A4a: Prediction accuracy of RISE ranks using logistic regression on ALAD 
 import numpy as np
 from ..import_data import (
     add_cond_idxs,
-    import_alad,
-    import_ligand_receptor_pairs
+    import_alad
 )
 from .common import getSetup, subplotLabel
-import anndata
 import numpy as np
-from tensorly.cp_tensor import CPTensor
-from tlviz.factor_tools import factor_match_score as fms
 from ..import_data import add_cond_idxs
-
 from ..logreg import rise_ranks_logreg
+import pandas as pd
+
 
 def makeFigure():
     ax, f = getSetup((6, 6), (2, 2))
@@ -56,7 +53,7 @@ def makeFigure():
     ax[1].set_ylim(0, np.max(scores_accuracy) + 0.05)
 
             
-        
+  
     return f
 
 

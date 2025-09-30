@@ -86,7 +86,8 @@ def run_ccc_rise_workflow(
     tol: float = 1e-3,
     random_state: int | None = None,
     complex_sep: str = None,
-    doEmbedding: bool = True
+    doEmbedding: bool = True,
+    svd_init: str = "svd",
 ) -> tuple[anndata.AnnData, float]:
     """
     Executes the complete CCC-RISE workflow: decomposition, standardization,
@@ -130,6 +131,7 @@ def run_ccc_rise_workflow(
         random_state=random_state,
         complex_sep=complex_sep,
         lr_pairs=lr_pairs,
+        svd_init=svd_init
     )
     (cp_weights, factors), projections = results
 

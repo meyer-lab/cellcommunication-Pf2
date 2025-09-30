@@ -31,9 +31,9 @@ def makeFigure():
     
     # Run FMS and R2X analysis
     rank_list = list(range(1, 27, 1))
-    rank_list = list(range(1, 4, 2))
+    # rank_list = list(range(1, 4, 2))
     runs = 3
-    runs = 1
+    # runs = 1
     df = run_fms_r2x_analysis(interaction_tensor, rank_list=rank_list, runs=runs, svd_init="random")
 
     sns.lineplot(data=df, x="Component", y="FMS", ax=ax[0], label="FMS")

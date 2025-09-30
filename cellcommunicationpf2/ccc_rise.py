@@ -109,6 +109,7 @@ def ccc_rise(
     random_state: int | None = None,
     complex_sep: str = None,
     lr_pairs: pd.DataFrame = None,
+    svd_init: str = "svd",
 ) -> tuple[tuple, float, pd.DataFrame]:
     """
     Perform RISE on an AnnData object, followed by
@@ -172,7 +173,7 @@ def ccc_rise(
         cp_rank,
         n_iter_max=n_iter_max,
         tol=tol,
-        init="svd",  # Use random initialization
+        init=svd_init,  # Use random initialization
         normalize_factors=True,
         random_state=random_state,
     )
