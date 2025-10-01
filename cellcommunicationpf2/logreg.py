@@ -133,3 +133,22 @@ def cpd_ranks_logreg(
                 scores_accuracy.append(score)
 
     return scores_aucroc, scores_accuracy
+
+
+def ccc_rise_logreg_weights(
+    X,
+    sample_to_group,
+    scoring=["roc_auc", "accuracy"],
+):
+    """
+    Evaluate logistic regression weights using CPD factors.
+    """
+
+    for i in scoring:
+        lr_fit = logistic_regression(i).fit(X.uns["A"], sample_to_group)
+        if i == "roc_auc":
+            weights_aucroc = lr_fit.coef_[0]
+        elif i == "accuracy":
+            weights_accuracy = lr_fit.coef_[0]
+
+    return weights_aucroc, weights_accuracy

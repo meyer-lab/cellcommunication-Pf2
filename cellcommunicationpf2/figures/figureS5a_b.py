@@ -26,9 +26,9 @@ def makeFigure():
 
     # Parameters for stability plots
     rank_list = list(np.append([1], range(5, 66, 5)))
-    # rank_list = list(range(1, 11, 5))
+    rank_list = list(range(1, 11, 5))
     runs = 3
-    # runs = 1
+    runs = 1
 
     print("Plotting FMS vs. rank...")
     plot_fms_r2x_diff_ranks(

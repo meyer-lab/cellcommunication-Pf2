@@ -37,7 +37,7 @@ def makeFigure():
 
     interaction_tensor = calculate_interaction_tensor(X, lr_pairs, rise_rank=15)
 
-    rank_list = list(range(1, 27, 1))
+    # rank_list = list(range(2, 42, 2))
     rank_list = list(range(1, 4, 2))
 
     scoring = ["roc_auc", "accuracy"]
