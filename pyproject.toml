@@ -20,6 +20,9 @@ dependencies = [
     "tensorly-viz>=0.1.7",
     "parafac2 @ git+https://github.com/meyer-lab/parafac2.git@main",
     "zstandard>=0.23.0",
+    "ipykernel>=6.30.1",
+    "python-igraph>=0.11.9",
+    "leidenalg>=0.10.2",
 ]
 
 readme = "README.md"
