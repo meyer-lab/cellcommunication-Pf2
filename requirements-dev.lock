@@ -22,6 +22,8 @@ array-api-compat==1.11.2
     # via anndata
 certifi==2025.1.31
     # via requests
+cffi==2.0.0
+    # via rpy2-rinterface
 cfgv==3.4.0
     # via pre-commit
 charset-normalizer==3.4.1
@@ -57,6 +59,8 @@ idna==3.10
     # via requests
 iniconfig==2.1.0
     # via pytest
+jinja2==3.1.6
+    # via rpy2-robjects
 joblib==1.4.2
     # via pynndescent
     # via scanpy
@@ -70,6 +74,8 @@ liana==1.5.1
 llvmlite==0.44.0
     # via numba
     # via pynndescent
+markupsafe==3.0.3
+    # via jinja2
 matplotlib==3.10.1
     # via cellcommunicationpf2
     # via plotnine
@@ -160,6 +166,8 @@ pluggy==1.5.0
     # via pytest
 pre-commit==4.2.0
     # via liana
+pycparser==2.23
+    # via cffi
 pyct==0.5.0
     # via datashader
 pynndescent==0.5.13
@@ -183,6 +191,13 @@ pyyaml==6.0.2
 requests==2.32.3
     # via datashader
     # via tensorly-viz
+rpy2==3.6.4
+    # via cellcommunicationpf2
+rpy2-rinterface==3.6.3
+    # via rpy2
+    # via rpy2-robjects
+rpy2-robjects==3.6.3
+    # via rpy2
 scanpy==1.11.2
     # via liana
 scikit-learn==1.6.1
@@ -236,6 +251,8 @@ typing-extensions==4.12.2
     # via scanpy
 tzdata==2025.2
     # via pandas
+tzlocal==5.3.1
+    # via rpy2-robjects
 umap-learn==0.5.7
     # via scanpy
 urllib3==2.3.0

@@ -20,6 +20,7 @@ dependencies = [
     "tensorly-viz>=0.1.7",
     "parafac2 @ git+https://github.com/meyer-lab/parafac2.git@main",
     "zstandard>=0.23.0",
+    "rpy2>=3.6.4",
 ]
 
 readme = "README.md"
