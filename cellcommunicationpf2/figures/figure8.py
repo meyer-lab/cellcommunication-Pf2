@@ -14,18 +14,13 @@ def makeFigure():
     ax, f = getSetup((6, 3), (1, 2))
     subplotLabel(ax)
 
-    # Import and prepare data
+    # Import and prepare dat
     print("Importing and preparing")
     X = import_balf_covid(gene_threshold=0.001, normalize=True)
     lr_pairs = import_ligand_receptor_pairs()
 
     condition_column = "sample"
     X_filtered = add_cond_idxs(X, condition_column)
-
-    # Calculate interaction tensor
-    interaction_tensor = calculate_interaction_tensor(
-        X_filtered, lr_pairs, rise_rank=35
-    )
 
     # Run FMS and R2X analysis across data percentages
     percentage_list = list(range(100, 45, -5))
@@ -37,15 +32,20 @@ def makeFigure():
         print(f"Running analysis for {percentage}% of data")
         
         if percentage < 100:
-            n_samples = interaction_tensor.shape[0]
-            n_keep = int(n_samples * percentage / 100)
-            indices = np.random.choice(n_samples, n_keep, replace=False)
-            subsampled_tensor = interaction_tensor[indices, :, :]
+            n_cells = X_filtered.n_obs
+            n_keep = int(n_cells * percentage / 100)
+            cells_to_keep = np.random.choice(n_cells, n_keep, replace=False)
+            X_subsampled = X_filtered[cells_to_keep]
         else:
-            subsampled_tensor = interaction_tensor
+            X_subsampled = X_filtered
+        
+        # Calculate interaction tensor with subsampled data
+        interaction_tensor = calculate_interaction_tensor(
+            X_subsampled, lr_pairs, rise_rank=35
+        )
         
         df = run_fms_r2x_analysis(
-            subsampled_tensor, rank_list=[fixed_rank], runs=runs, svd_init="random"
+            interaction_tensor, rank_list=[fixed_rank], runs=runs, svd_init="random"
         )
         df['Data_Percentage'] = percentage
         all_results.append(df)
