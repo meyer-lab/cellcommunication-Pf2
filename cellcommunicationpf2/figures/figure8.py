@@ -23,7 +23,7 @@ def makeFigure():
     X_filtered = add_cond_idxs(X, condition_column)
 
     # Run FMS and R2X analysis across data percentages
-    percentage_list = list(range(100, 45, -5))
+    percentage_list = list(range(100, 0, -5))
     fixed_rank = 8
     runs = 3
     
