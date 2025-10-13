@@ -46,6 +46,8 @@ filelock==3.18.0
     # via virtualenv
 fonttools==4.56.0
     # via matplotlib
+gseapy==1.1.10
+    # via cellcommunicationpf2
 h5py==3.13.0
     # via anndata
     # via scanpy
@@ -68,6 +70,7 @@ llvmlite==0.44.0
     # via pynndescent
 matplotlib==3.10.1
     # via cellcommunicationpf2
+    # via gseapy
     # via plotnine
     # via scanpy
     # via seaborn
@@ -98,6 +101,7 @@ numpy==2.2.6
     # via contourpy
     # via cupy-cuda12x
     # via datashader
+    # via gseapy
     # via h5py
     # via matplotlib
     # via mizani
@@ -129,6 +133,7 @@ pacmap==0.8.0
 pandas==2.2.3
     # via anndata
     # via datashader
+    # via gseapy
     # via mizani
     # via plotnine
     # via scanpy
@@ -170,6 +175,7 @@ pyyaml==6.0.2
     # via pre-commit
 requests==2.32.3
     # via datashader
+    # via gseapy
     # via tensorly-viz
 scanpy==1.11.2
     # via liana
@@ -183,6 +189,7 @@ scipy==1.15.2
     # via anndata
     # via cellcommunicationpf2
     # via datashader
+    # via gseapy
     # via mizani
     # via parafac2
     # via plotnine
