@@ -1,0 +1,36 @@
+"""
+Figure S3: CCC-RISE on BALF alad data. Showing weighted sender and receiver cell factors.
+"""
+
+from .common import (
+    subplotLabel,
+    getSetup,
+)
+import anndata
+from .commonFuncs.plotPaCMAP import plot_wc_per_celltype, plot_wc_pacmap
+
+
+def makeFigure():
+    ax, f = getSetup((12, 12), (6, 6))
+    subplotLabel(ax)
+
+    X = anndata.read_h5ad("/opt/andrew/ccc/bal_alad.h5ad")
+    cp_rank = X.uns["A"].shape[1]
+
+    # for i in range(cp_rank):
+    #     plot_wc_per_celltype(X, i + 1, ax[i], cellType="celltype", factor_matrix="B")
+    #     ax[i].set_title(f"Cmp.{i+1} Sender Cells")
+
+    # for i in range(cp_rank):
+    #     plot_wc_per_celltype(X, i + 1, ax[i+cp_rank], cellType="celltype", factor_matrix="C")
+    #     ax[i+cp_rank].set_title(f"Cmp.{i+1} Receiver Cells")
+
+    for i in range(cp_rank):
+        plot_wc_pacmap(X, i + 1, ax[i], factor_matrix="B", cbarMax=0.3)
+        ax[i].set_title(f"Cmp.{i + 1} Sender Cells")
+
+    for i in range(cp_rank):
+        plot_wc_pacmap(X, i + 1, ax[i + cp_rank], factor_matrix="C", cbarMax=0.3)
+        ax[i + cp_rank].set_title(f"Cmp.{i + 1} Receiver Cells")
+
+    return f
