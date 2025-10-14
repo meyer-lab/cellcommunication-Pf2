@@ -2,20 +2,18 @@
 Figure 8: FMS and R2X across data percentage with fixed CPD and RISE ranks for COVID-19
 """
 
-import pandas as pd
 import seaborn as sns
 import numpy as np
 from ..import_data import add_cond_idxs, import_balf_covid, import_ligand_receptor_pairs
 from .common import getSetup, subplotLabel
-from ..tensor import run_fms_r2x_analysis, calculate_interaction_tensor
+from ..tensor import run_fms_r2x_data_percentage_analysis
 
 
 def makeFigure():
     ax, f = getSetup((6, 3), (1, 2))
     subplotLabel(ax)
 
-    # Import and prepare dat
-    print("Importing and preparing")
+    # Import and prepare data
     X = import_balf_covid(gene_threshold=0.001, normalize=True)
     lr_pairs = import_ligand_receptor_pairs()
 
@@ -24,33 +22,10 @@ def makeFigure():
 
     # Run FMS and R2X analysis across data percentages
     percentage_list = list(range(100, 0, -5))
-    fixed_rank = 8
-    runs = 3
-    
-    all_results = []
-    for percentage in percentage_list:
-        print(f"Running analysis for {percentage}% of data")
-        
-        if percentage < 100:
-            n_cells = X_filtered.n_obs
-            n_keep = int(n_cells * percentage / 100)
-            cells_to_keep = np.random.choice(n_cells, n_keep, replace=False)
-            X_subsampled = X_filtered[cells_to_keep]
-        else:
-            X_subsampled = X_filtered
-        
-        # Calculate interaction tensor with subsampled data
-        interaction_tensor = calculate_interaction_tensor(
-            X_subsampled, lr_pairs, rise_rank=35
-        )
-        
-        df = run_fms_r2x_analysis(
-            interaction_tensor, rank_list=[fixed_rank], runs=runs, svd_init="random"
-        )
-        df['Data_Percentage'] = percentage
-        all_results.append(df)
-    
-    df = pd.concat(all_results, ignore_index=True)
+    df = run_fms_r2x_data_percentage_analysis(
+        X_filtered, lr_pairs, rise_rank=35, cp_rank=8, 
+        percentage_list=percentage_list, runs=3, svd_init="random"
+    )
 
     sns.lineplot(data=df, x="Data_Percentage", y="FMS", ax=ax[0])
     ax[0].set_xlabel("Data Percentage (%)")
