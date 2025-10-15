@@ -16,6 +16,7 @@ def makeFigure():
 
     # Import and prepare data
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_alad.h5ad")
+    print(X)
 
     # Add numerical indices for each patient sample, which is the primary condition
     condition_column = "dsco_id"
