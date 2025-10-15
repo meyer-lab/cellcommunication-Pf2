@@ -27,19 +27,19 @@ def makeFigure():
         X_filtered, lr_pairs, rise_rank=35
     )
 
-    # Run FMS and R2X analysis
-    rank_list = list(range(1, 15, 2))
-    rank_list = list(range(1, 4, 2))
-    runs = 3
-    runs = 1
-    df = run_fms_r2x_analysis(
-        interaction_tensor, rank_list=rank_list, runs=runs, svd_init="random"
-    )
+    # # Run FMS and R2X analysis
+    # rank_list = list(range(1, 15, 2))
+    # rank_list = list(range(1, 4, 2))
+    # runs = 3
+    # runs = 1
+    # df = run_fms_r2x_analysis(
+    #     interaction_tensor, rank_list=rank_list, runs=runs, svd_init="random"
+    # )
 
-    sns.lineplot(data=df, x="Component", y="FMS", ax=ax[0], label="FMS")
-    ax[0].set_ylim(0, 1)
+    # sns.lineplot(data=df, x="Component", y="FMS", ax=ax[0], label="FMS")
+    # ax[0].set_ylim(0, 1)
 
-    sns.lineplot(data=df, x="Component", y="R2X", ax=ax[1], color="orange", label="R2X")
-    ax[1].set_ylim(0, np.max(df["R2X"]) + 0.02)
+    # sns.lineplot(data=df, x="Component", y="R2X", ax=ax[1], color="orange", label="R2X")
+    # ax[1].set_ylim(0, np.max(df["R2X"]) + 0.02)
 
     return f
