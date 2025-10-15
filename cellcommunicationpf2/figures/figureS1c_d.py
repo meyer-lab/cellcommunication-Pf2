@@ -22,10 +22,10 @@ def makeFigure():
     condition_column = "sample"
     X_filtered = add_cond_idxs(X, condition_column)
 
-    # Calculate interaction tensor
-    interaction_tensor = calculate_interaction_tensor(
-        X_filtered, lr_pairs, rise_rank=35
-    )
+    # # Calculate interaction tensor
+    # interaction_tensor = calculate_interaction_tensor(
+    #     X_filtered, lr_pairs, rise_rank=35
+    # )
 
     # # Run FMS and R2X analysis
     # rank_list = list(range(1, 15, 2))

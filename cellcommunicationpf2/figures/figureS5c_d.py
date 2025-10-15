@@ -22,11 +22,11 @@ def makeFigure():
     condition_column = "dsco_id"
     X_filtered = add_cond_idxs(X, condition_column)
 
-    # Calculate interaction tensor
-    interaction_tensor = calculate_interaction_tensor(
-        X_filtered, lr_pairs, rise_rank=15
-    )
-    print("Interaction tensor shape:", interaction_tensor.shape)
+    # # Calculate interaction tensor
+    # interaction_tensor = calculate_interaction_tensor(
+    #     X_filtered, lr_pairs, rise_rank=15
+    # )
+    # print("Interaction tensor shape:", interaction_tensor.shape)
 
     # Run FMS and R2X analysis
     # rank_list = list(range(1, 27, 1))
