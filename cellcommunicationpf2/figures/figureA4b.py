@@ -35,29 +35,29 @@ def makeFigure():
     )
     sample_to_group = sample_to_group.astype("category").cat.codes
 
-    interaction_tensor = calculate_interaction_tensor(X, lr_pairs, rise_rank=15)
+    # interaction_tensor = calculate_interaction_tensor(X, lr_pairs, rise_rank=15)
 
-    # rank_list = list(range(2, 42, 2))
-    rank_list = list(range(1, 4, 2))
+    # # rank_list = list(range(2, 42, 2))
+    # rank_list = list(range(1, 4, 2))
 
-    scoring = ["roc_auc", "accuracy"]
-    scores_aucroc, scores_accuracy = cpd_ranks_logreg(
-        X,
-        interaction_tensor,
-        rank_list,
-        sample_to_group,
-        scoring,
-        n_iter_max=10000,
-    )
+    # scoring = ["roc_auc", "accuracy"]
+    # scores_aucroc, scores_accuracy = cpd_ranks_logreg(
+    #     X,
+    #     interaction_tensor,
+    #     rank_list,
+    #     sample_to_group,
+    #     scoring,
+    #     n_iter_max=10000,
+    # )
 
-    ax[0].plot(rank_list, scores_aucroc)
-    ax[0].set_ylim(0, np.max(scores_aucroc) + 0.05)
-    ax[0].set_xlabel("CPD Rank")
-    ax[0].set_ylabel("10-Fold CV: roc_auc")
+    # ax[0].plot(rank_list, scores_aucroc)
+    # ax[0].set_ylim(0, np.max(scores_aucroc) + 0.05)
+    # ax[0].set_xlabel("CPD Rank")
+    # ax[0].set_ylabel("10-Fold CV: roc_auc")
 
-    ax[1].plot(rank_list, scores_accuracy)
-    ax[1].set_ylim(0, np.max(scores_accuracy) + 0.05)
-    ax[1].set_xlabel("CPD Rank")
-    ax[1].set_ylabel("10-Fold CV: accuracy")
+    # ax[1].plot(rank_list, scores_accuracy)
+    # ax[1].set_ylim(0, np.max(scores_accuracy) + 0.05)
+    # ax[1].set_xlabel("CPD Rank")
+    # ax[1].set_ylabel("10-Fold CV: accuracy")
 
     return f
