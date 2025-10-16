@@ -269,3 +269,100 @@ def run_fms_r2x_analysis(
     )
 
     return df
+
+
+def run_fms_r2x_data_percentage_analysis(
+    X_filtered: anndata.AnnData,
+    lr_pairs: pd.DataFrame,
+    rise_rank: int,
+    cp_rank: int,
+    percentage_list: list[int] = None,
+    runs: int = 1,
+    svd_init: str = "svd",
+) -> pd.DataFrame:
+    """Run FMS and R2X analysis across different data percentages with fixed ranks."""
+    if percentage_list is None:
+        percentage_list = list(range(100, 45, -5))
+
+    fms_list = []
+    r2xLists = []
+
+    for i in range(runs):
+        scores = []
+        r2x_scores = []
+        for percentage in percentage_list:
+            print(f"Run {i + 1}, Data Percentage {percentage}%")
+            
+            # Subsample cells
+            if percentage < 100:
+                n_cells = X_filtered.n_obs
+                n_keep = int(n_cells * percentage / 100)
+                cells_to_keep = np.random.choice(n_cells, n_keep, replace=False)
+                X_subsampled = X_filtered[cells_to_keep]
+            else:
+                X_subsampled = X_filtered
+            
+            # Calculate interaction tensor with subsampled data
+            interaction_tensor = calculate_interaction_tensor(
+                X_subsampled, lr_pairs, rise_rank=rise_rank
+            )
+            
+            # Bootstrap tensor
+            boot_tensor = resample_tensor(interaction_tensor)
+            
+            # Run CP decomposition on original and bootstrap
+            cp_weights, cp_factors = parafac(
+                tensor=interaction_tensor,
+                rank=cp_rank,
+                n_iter_max=1000,
+                init=svd_init,
+                normalize_factors=True,
+            )
+            r2x = calculate_r2x(cp_weights, cp_factors, interaction_tensor)
+            
+            cp_boot_weights, cp_boot_factors = parafac(
+                tensor=boot_tensor,
+                rank=cp_rank,
+                n_iter_max=1000,
+                init=svd_init,
+                normalize_factors=True,
+            )
+            
+            fms_score = calculate_fms_cpd(
+                cp_weights, cp_factors, cp_boot_weights, cp_boot_factors
+            )
+            scores.append(fms_score)
+            r2x_scores.append(r2x)
+        
+        fms_list.append(scores)
+        r2xLists.append(r2x_scores)
+
+    # Convert to DataFrame format
+    runsList_df = []
+    for i in range(runs):
+        for _j in range(len(percentage_list)):
+            runsList_df.append(i)
+
+    percentageList_df = []
+    for _i in range(runs):
+        for j in range(len(percentage_list)):
+            percentageList_df.append(percentage_list[j])
+
+    fmsList_df = []
+    for sublist in fms_list:
+        fmsList_df += sublist
+
+    r2xList_df = []
+    for sublist in r2xLists:
+        r2xList_df += sublist
+
+    df = pd.DataFrame(
+        {
+            "Run": runsList_df,
+            "Data_Percentage": percentageList_df,
+            "FMS": fmsList_df,
+            "R2X": r2xList_df,
+        }
+    )
+
+    return df
