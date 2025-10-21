@@ -72,6 +72,8 @@ def makeFigure():
                 yticks=corr_df.index,
                 mask=True,
                 ax=ax[i])
+        
+        ax[i].set_title(f"Pearson Correlation P-values - {status} Patients")
 
         
 

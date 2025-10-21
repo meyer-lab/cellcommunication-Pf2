@@ -80,6 +80,7 @@ def makeFigure():
     
     combined_df = pd.DataFrame(combined_data)
     
+    
     # Calculate Pearson correlations between components and continuous variables
     correlation_results = []
     

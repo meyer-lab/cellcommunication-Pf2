@@ -25,34 +25,18 @@ def makeFigure():
     ccc_rise_cmp2 = 5
 
     X_mdc_sender = X[X.obs["celltype"] == "Epithelial"]
-    X_mdc_sender = add_obs_cmp_both_label(
-        X_mdc_sender,
-        cmp1=ccc_rise_cmp1,
-        cmp2=ccc_rise_cmp2,
-        pos1=True,
-        pos2=True,
-        top_perc=10,
-        type="sender",
-    )
-    X_mdc_sender = add_obs_cmp_unique_two(
-        X_mdc_sender, cmp1=ccc_rise_cmp1, cmp2=ccc_rise_cmp2
-    )
-    X_mdc_sender = X_mdc_sender[X_mdc_sender.obs["Label"] != "NoLabel"]
+    
+    # Sample from whole cell population instead of filtering by top percentile
+    if len(X_mdc_sender) > 500:  # Limit sample size for computational efficiency
+        sample_indices = np.random.choice(len(X_mdc_sender), size=300, replace=False)
+        X_mdc_sender = X_mdc_sender[sample_indices]
 
     X_mdc_receiver = X[(X.obs["celltype"] == "Epithelial")]
-    X_mdc_receiver = add_obs_cmp_both_label(
-        X_mdc_receiver,
-        cmp1=ccc_rise_cmp1,
-        cmp2=ccc_rise_cmp2,
-        pos1=True,
-        pos2=True,
-        top_perc=10,
-        type="receiver",
-    )
-    X_mdc_receiver = add_obs_cmp_unique_two(
-        X_mdc_receiver, cmp1=ccc_rise_cmp1, cmp2=ccc_rise_cmp2
-    )
-    X_mdc_receiver = X_mdc_receiver[X_mdc_receiver.obs["Label"] != "NoLabel"]
+    
+    # Sample from whole cell population instead of filtering by top percentile
+    if len(X_mdc_receiver) > 500:  # Limit sample size for computational efficiency
+        sample_indices = np.random.choice(len(X_mdc_receiver), size=300, replace=False)
+        X_mdc_receiver = X_mdc_receiver[sample_indices]
 
     print("Epithelial sender cells:", X_mdc_sender.shape)
     print("Epithelial receiver cells:", X_mdc_receiver.shape)
@@ -79,36 +63,21 @@ def makeFigure():
         # Get expression product matrix
         df = expression_product_matrix(X_mdc_sender, X_mdc_receiver, lig, rec)
 
-        # Get sender and receiver labels
-        sender_labels = X_mdc_sender.obs["Label"].values
-        receiver_labels = X_mdc_receiver.obs["Label"].values
+        # Since we're sampling from whole population, calculate overall communication score
+        avg_comm_score = df.values.mean()
 
-        # Calculate average communication score for each sender-receiver label combination
-        for sender_label in np.unique(sender_labels):
-            for receiver_label in np.unique(receiver_labels):
-                # Get indices for this label combination
-                sender_idx = np.where(sender_labels == sender_label)[0]
-                receiver_idx = np.where(receiver_labels == receiver_label)[0]
-
-                if len(sender_idx) > 0 and len(receiver_idx) > 0:
-                    # Extract submatrix for this label combination
-                    submatrix = df.iloc[sender_idx, receiver_idx]
-
-                    # Calculate average communication score
-                    avg_comm_score = submatrix.values.mean()
-
-                    communication_data.append(
-                        {
-                            "pair": pair_name,
-                            "sender_label": sender_label,
-                            "receiver_label": receiver_label,
-                            "label_combination": f"{sender_label}→{receiver_label}",
-                            "communication_score": avg_comm_score,
-                            "n_sender_cells": len(sender_idx),
-                            "n_receiver_cells": len(receiver_idx),
-                            "n_interactions": len(sender_idx) * len(receiver_idx),
-                        }
-                    )
+        communication_data.append(
+            {
+                "pair": pair_name,
+                "sender_label": "All_Cells",
+                "receiver_label": "All_Cells", 
+                "label_combination": "All_Cells→All_Cells",
+                "communication_score": avg_comm_score,
+                "n_sender_cells": len(X_mdc_sender),
+                "n_receiver_cells": len(X_mdc_receiver),
+                "n_interactions": len(X_mdc_sender) * len(X_mdc_receiver),
+            }
+        )
 
     # Convert to DataFrame
     comm_df = pd.DataFrame(communication_data)

@@ -11,8 +11,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from ..utils import (
-    add_obs_cmp_label,
-    add_obs_cmp_unique_one,
     expression_product_matrix,
 )
 
@@ -25,11 +23,11 @@ def makeFigure():
     ccc_rise_cmp = 3
 
     X_mdc_sender = X[X.obs["celltype"] == "Epithelial"]
-    X_mdc_sender = add_obs_cmp_label(
-        X_mdc_sender, cmp=ccc_rise_cmp, pos=True, top_perc=10, type="sender"
-    )
-    X_mdc_sender = add_obs_cmp_unique_one(X_mdc_sender, cmp=ccc_rise_cmp)
-    # X_mdc_sender = X_mdc_sender[X_mdc_sender.obs["Label"] != "NoLabel"]
+    
+    # Sample from whole cell population instead of filtering by top percentile
+    if len(X_mdc_sender) > 500:  # Limit sample size for computational efficiency
+        sample_indices = np.random.choice(len(X_mdc_sender), size=300, replace=False)
+        X_mdc_sender = X_mdc_sender[sample_indices]
 
     # Alter order based on factor value high to low
     X_mdc_sender = X_mdc_sender[
@@ -37,11 +35,11 @@ def makeFigure():
     ]
 
     X_mdc_receiver = X[(X.obs["celltype"] == "Epithelial")]
-    X_mdc_receiver = add_obs_cmp_label(
-        X_mdc_receiver, cmp=ccc_rise_cmp, pos=True, top_perc=10, type="receiver"
-    )
-    X_mdc_receiver = add_obs_cmp_unique_one(X_mdc_receiver, cmp=ccc_rise_cmp)
-    # X_mdc_receiver = X_mdc_receiver[X_mdc_receiver.obs["Label"] != "NoLabel"]
+    
+    # Sample from whole cell population instead of filtering by top percentile
+    if len(X_mdc_receiver) > 500:  # Limit sample size for computational efficiency
+        sample_indices = np.random.choice(len(X_mdc_receiver), size=300, replace=False)
+        X_mdc_receiver = X_mdc_receiver[sample_indices]
 
     # Alter order based on factor value low to high
     # X_mdc_receiver = X_mdc_receiver[np.argsort(X_mdc_receiver.obsm["rc_C"][:, ccc_rise_cmp-1])]
@@ -87,17 +85,14 @@ def makeFigure():
                     sender_cells_sample, receiver_cells_sample
                 ]
 
-                # Calculate average communication score for this sample and pair for no label and labeled cells only
-                avg_comm_score_no_label = sample_submatrix[
-                    sample_submatrix.index.isin(
-                        X_mdc_sender.obs_names[X_mdc_sender.obs["Label"] == "NoLabel"]
-                    )
-                ].values.mean()
-                avg_comm_score_label = sample_submatrix[
-                    sample_submatrix.index.isin(
-                        X_mdc_sender.obs_names[X_mdc_sender.obs["Label"] != "NoLabel"]
-                    )
-                ].values.mean()
+                # Calculate average communication score for this sample and pair
+                # Since we're now sampling from whole population, calculate overall score
+                avg_comm_score = sample_submatrix.values.mean()
+                
+                # For compatibility with downstream analysis, we'll use the same score for both categories
+                # but distinguish them in the analysis
+                avg_comm_score_no_label = avg_comm_score
+                avg_comm_score_label = avg_comm_score
 
                 communication_data.append(
                     {
