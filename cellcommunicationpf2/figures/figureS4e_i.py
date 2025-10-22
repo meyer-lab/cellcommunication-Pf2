@@ -1,5 +1,5 @@
 """
-Figure A3k: Heatmaps of ligand-receptor expression products for selected cell types and components in CCC-RISE on BALF COVID-19 data.
+Figure S4e-i: Heatmaps of ligand-receptor expression products for NK cell to Dendritic Cell interactions in CCC-RISE on BALF alad data.
 """
 
 import anndata
@@ -19,7 +19,7 @@ def makeFigure():
     subplotLabel(ax)
 
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_covid19.h5ad")
-    ccc_rise_cmp = 5
+    ccc_rise_cmp = 3
 
 
     X_mdc_sender = X[X.obs["celltype"] == "Epithelial"]
@@ -49,7 +49,7 @@ def makeFigure():
     print("Epithelial sender cells:", X_mdc_sender.shape)
 
 
-    pairs = [["CDH1", "CDH1"], ["OCLN", "OCLN"], ["PRSS3", "F2RL1"]]
+    pairs = [["PTN", "PTPRZ1"], ["PTN", "SDC1"]]
     for i, (lig, rec) in enumerate(pairs):
         df = expression_product_matrix(X_mdc_sender, X_mdc_receiver, lig, rec)
         sns.heatmap(df, ax=ax[i], cmap="viridis")
@@ -59,5 +59,8 @@ def makeFigure():
         ax[i].set_title(f"{lig}-{rec} Interaction")
         ax[i].set_xticks([])
         ax[i].set_yticks([])
+        
+        
+    
 
     return f
