@@ -10,8 +10,6 @@ from .common import (
 import numpy as np
 import seaborn as sns
 from ..utils import (
-    add_obs_cmp_label,
-    add_obs_cmp_unique_one,
     expression_product_matrix,
 )
 
@@ -24,23 +22,23 @@ def makeFigure():
     ccc_rise_cmp = 6
 
     X_mdc_sender = X[X.obs["celltype"] == "mDC"]
-    X_mdc_sender = add_obs_cmp_label(
-        X_mdc_sender, cmp=ccc_rise_cmp, pos=True, top_perc=25, type="sender"
-    )
-    X_mdc_sender = add_obs_cmp_unique_one(X_mdc_sender, cmp=ccc_rise_cmp)
-    X_mdc_sender = X_mdc_sender[X_mdc_sender.obs["Label"] != "NoLabel"]
-
+    # Sample from whole cell population instead of filtering by top percentile
+    if len(X_mdc_sender) > 500:  # Limit sample size for computational efficiency
+        # np.random.seed(42)  # For reproducibility
+        sample_indices = np.random.choice(len(X_mdc_sender), size=300, replace=False)
+        X_mdc_sender = X_mdc_sender[sample_indices]
+    
     # Alter order based on factor value high to low
     X_mdc_sender = X_mdc_sender[
         np.argsort(-X_mdc_sender.obsm["sc_B"][:, ccc_rise_cmp - 1])
     ]
 
     X_mdc_receiver = X[(X.obs["celltype"] == "mDC")]
-    X_mdc_receiver = add_obs_cmp_label(
-        X_mdc_receiver, cmp=ccc_rise_cmp, pos=True, top_perc=25, type="receiver"
-    )
-    X_mdc_receiver = add_obs_cmp_unique_one(X_mdc_receiver, cmp=ccc_rise_cmp)
-    X_mdc_receiver = X_mdc_receiver[X_mdc_receiver.obs["Label"] != "NoLabel"]
+    # Sample from whole cell population instead of filtering by top percentile
+    if len(X_mdc_receiver) > 500:  # Limit sample size for computational efficiency
+        # np.random.seed(43)  # Different seed for receiver cells
+        sample_indices = np.random.choice(len(X_mdc_receiver), size=300, replace=False)
+        X_mdc_receiver = X_mdc_receiver[sample_indices]
 
     # Alter order based on factor value low to high
     X_mdc_receiver = X_mdc_receiver[
@@ -51,11 +49,11 @@ def makeFigure():
     sns.heatmap(df, ax=ax[0], cmap="viridis")
 
     X_b_receiver = X[(X.obs["celltype"] == "B")]
-    X_b_receiver = add_obs_cmp_label(
-        X_b_receiver, cmp=ccc_rise_cmp, pos=True, top_perc=25, type="receiver"
-    )
-    X_b_receiver = add_obs_cmp_unique_one(X_b_receiver, cmp=ccc_rise_cmp)
-    X_b_receiver = X_b_receiver[X_b_receiver.obs["Label"] != "NoLabel"]
+    # Sample from whole cell population instead of filtering by top percentile
+    if len(X_b_receiver) > 500:  # Limit sample size for computational efficiency
+        # np.random.seed(44)  # Different seed for B cells
+        sample_indices = np.random.choice(len(X_b_receiver), size=300, replace=False)
+        X_b_receiver = X_b_receiver[sample_indices]
 
     # Alter order based on factor value low to high
     X_b_receiver = X_b_receiver[
