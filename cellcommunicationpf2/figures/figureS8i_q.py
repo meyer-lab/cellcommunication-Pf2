@@ -1,5 +1,5 @@
 """
-Figure S12: Analysis of tensor decomposition components.
+Figure S8i-q: Box plots of condition and ALAD status comparisons for specific components in CCC-RISE on BALF alad data.
 """
 
 from .common import (
