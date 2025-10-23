@@ -133,11 +133,18 @@ def makeFigure():
 
     metric_kl = np.zeros((original_sc_B_sub.shape[1], resampled_sc_B_sub.shape[1]))
     metric_emd = np.zeros((original_sc_B_sub.shape[1], resampled_sc_B_sub.shape[1]))
+    metric_ttest = np.zeros((original_sc_B_sub.shape[1], resampled_sc_B_sub.shape[1]))
+    metric_kstest = np.zeros((original_sc_B_sub.shape[1], resampled_sc_B_sub.shape[1]))
     for i in range(original_sc_B_sub.shape[1]):
         for j in range(resampled_sc_B_sub.shape[1]):
+            
+                  
             orig_dist = original_sc_B_sub[:, i].reshape(-1, 1)  # Reshape to 2D for KDE
             resamp_dist = resampled_sc_B_sub[:, j].reshape(-1, 1)  # Reshape to 2D for KDE
             
+            metric_ttest[i, j] = stats.ttest_ind(orig_dist, resamp_dist).pvalue
+            metric_kstest[i, j] = ks_2samp(orig_dist.flatten(), resamp_dist.flatten()).pvalue
+      
             kl, emd = distance_metric(orig_dist, resamp_dist)
             metric_kl[i, j] = kl
             metric_emd[i, j] = emd
@@ -152,10 +159,25 @@ def makeFigure():
     ax[1].set_title("EMD between Original and Resampled sc_B Components")
     ax[1].set_xlabel("Resampled sc_B Components")
     ax[1].set_ylabel("Original sc_B Components")    
-            
+    
+    sns.heatmap(metric_ttest, ax=ax[2], cmap="viridis")
+    ax[2].set_title("T-test p-values between Original and Resampled sc_B Components")
+    ax[2].set_xlabel("Resampled sc_B Components")
+    ax[2].set_ylabel("Original sc_B Components")    
+    
+    sns.heatmap(metric_kstest, ax=ax[3], cmap="viridis")
+    ax[3].set_title("KS-test p-values between Original and Resampled sc_B Components")
+    ax[3].set_xlabel("Resampled sc_B Components")
+    ax[3].set_ylabel("Original sc_B Components")
+    
+    # Log coloring for p-value heatmaps
+    for a in [ax[2], ax[3]]:
+        norm = plt.Normalize(vmin=1e-10, vmax=1)
+        sm = plt.cm.ScalarMappable(cmap="viridis", norm=norm)
+        sm.set_array([])
+        a.figure.colorbar(sm, ax=a, orientation='vertical', label='p-value (log scale)')
+        
 
-
-    # Bigger means worse!
     
     
 
