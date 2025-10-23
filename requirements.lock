@@ -115,6 +115,7 @@ numpy==2.2.6
     # via parafac2
     # via patsy
     # via plotnine
+    # via pot
     # via pyscipopt
     # via scanpy
     # via scikit-learn
@@ -160,6 +161,8 @@ platformdirs==4.3.8
     # via virtualenv
 plotnine==0.15.0
     # via liana
+pot==0.9.6.post1
+    # via cellcommunicationpf2
 pre-commit==4.2.0
     # via liana
 pyct==0.5.0
@@ -197,6 +200,7 @@ scipy==1.16.2
     # via mizani
     # via parafac2
     # via plotnine
+    # via pot
     # via pynndescent
     # via scanpy
     # via scikit-learn
