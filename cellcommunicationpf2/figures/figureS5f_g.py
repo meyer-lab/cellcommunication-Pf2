@@ -23,7 +23,7 @@ def makeFigure():
     X_filtered = add_cond_idxs(X, condition_column)
 
     # # Calculate interaction tensor
-    # interaction_tensor = calculate_interaction_tensor(
+    # interaction_tensor, _ = calculate_interaction_tensor(
     #     X_filtered, lr_pairs, rise_rank=15
     # )
     # print("Interaction tensor shape:", interaction_tensor.shape)
