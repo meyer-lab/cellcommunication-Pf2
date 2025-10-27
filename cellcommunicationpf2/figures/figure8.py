@@ -1,17 +1,17 @@
-# """
-# Figure 8: FMS and R2X across data percentage with fixed CPD and RISE ranks for COVID-19
-# """
+"""
+Figure 8: FMS and R2X across data percentage with fixed CPD and RISE ranks for COVID-19
+"""
 
-# import seaborn as sns
-# import numpy as np
-# from ..import_data import add_cond_idxs, import_balf_covid, import_ligand_receptor_pairs
-# from .common import getSetup, subplotLabel
-# from ..tensor import run_fms_r2x_data_percentage_analysis
+import seaborn as sns
+import numpy as np
+from ..import_data import add_cond_idxs, import_balf_covid, import_ligand_receptor_pairs
+from .common import getSetup, subplotLabel
+from ..tensor import run_fms_r2x_data_percentage_analysis
 
 
-# def makeFigure():
-#     ax, f = getSetup((6, 3), (1, 2))
-#     subplotLabel(ax)
+def makeFigure():
+    ax, f = getSetup((6, 3), (1, 2))
+    subplotLabel(ax)
 
 #     # Import and prepare data
 #     X = import_balf_covid(gene_threshold=0.001, normalize=True)
@@ -39,4 +39,4 @@
 #     ax[1].set_ylim(0, np.max(df["R2X"]) + 0.02)
 #     ax[1].invert_xaxis()
 
-#     return f
+    return f
