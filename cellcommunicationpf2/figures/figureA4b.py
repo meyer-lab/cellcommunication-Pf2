@@ -35,7 +35,7 @@ def makeFigure():
     )
     sample_to_group = sample_to_group.astype("category").cat.codes
 
-    # interaction_tensor = calculate_interaction_tensor(X, lr_pairs, rise_rank=15)
+    # interaction_tensor, _ = calculate_interaction_tensor(X, lr_pairs, rise_rank=15)
 
     # # rank_list = list(range(2, 42, 2))
     # rank_list = list(range(1, 4, 2))

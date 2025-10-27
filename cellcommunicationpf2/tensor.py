@@ -194,7 +194,7 @@ def calculate_interaction_tensor(
         projected_matrices, gene_names=gene_names, lr_pairs=lr_pairs, complex_sep="&"
     )
 
-    return interaction_tensor
+    return interaction_tensor, projections
 
 
 def run_fms_r2x_analysis(
