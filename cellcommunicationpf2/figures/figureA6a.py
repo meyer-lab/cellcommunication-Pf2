@@ -1,5 +1,5 @@
 """
-Figure A4a: Prediction accuracy of RISE ranks using logistic regression on ALAD data.
+Figure A6a: RISE Rank Analysis on ALAD data distinguishing 'declined' vs 'stable' conditions.
 """
 
 import numpy as np
@@ -30,16 +30,17 @@ def makeFigure():
     sample_to_group = sample_to_group.loc[
         np.unique(X.obs[condition_column], return_index=True)[0]
     ]
+     # Combine 'recovered' and 'control' into 'control', 'declined' into its own category
     sample_to_group = sample_to_group.apply(
-        lambda x: "alad" if x != "control" else "control"
+        lambda x: "declined" if x == "declined" else "stable"
     )
     print(sample_to_group)
     sample_to_group = sample_to_group.astype("category").cat.codes
     print(sample_to_group)
     scoring = ["roc_auc", "accuracy"]
 
-    rank_list = list(np.append([1], range(5, 66, 5)))
-    rank_list = list(range(1, 4, 2))
+    # rank_list = list(np.append([1], range(5, 66, 5)))
+    # # rank_list = list(range(1, 4, 2))
 
     # scores_aucroc, scores_accuracy = rise_ranks_logreg(
     #     X, rank_list, sample_to_group, scoring, n_iter_max=10000, tolerance=1e-9

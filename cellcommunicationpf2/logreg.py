@@ -6,11 +6,11 @@ from .utils import correct_conditions
 from tensorly.decomposition import parafac
 
 
-def logistic_regression(scoring):
+def logistic_regression(scoring, random_state=0):
     """Standardizing LogReg for all functions"""
     cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=5)
     return LogisticRegressionCV(
-        random_state=0,
+        random_state=random_state,
         max_iter=10000,
         penalty="l1",
         solver="saga",
@@ -123,7 +123,7 @@ def cpd_ranks_logreg(
 
         # Calculate scores for this rank
         for i in scoring:
-            lr_fit = logistic_regression(i).fit(cp_factors[0], sample_to_group)
+            lr_fit = logistic_regression(i, random_state=random_state).fit(cp_factors[0], sample_to_group)
             score = float(
                 np.max(np.mean(lr_fit.scores_[1], axis=0))
             )  # Convert to plain float
