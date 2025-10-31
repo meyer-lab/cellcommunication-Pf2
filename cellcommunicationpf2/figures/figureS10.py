@@ -15,7 +15,9 @@ def makeFigure():
     subplotLabel(ax)
 
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_alad_stable.h5ad")
-    
+
+    cp_rank = X.uns["A"].shape[1]
+
     # for i in range(cp_rank):
     #     plot_wc_per_celltype(X, i + 1, ax[i], cellType="cell_type", factor_matrix="B")
     #     ax[i].set_title(f"Cmp.{i+1} Sender Cells")
