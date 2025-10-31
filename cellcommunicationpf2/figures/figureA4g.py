@@ -19,22 +19,21 @@ def makeFigure():
     subplotLabel(ax)
 
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_alad.h5ad")
-    ccc_rise_cmp = 6
+    ccc_rise_cmp = 5
 
-    X_mdc_sender = X[X.obs["broad_cell_type"] == "Dendritic Cells"]
-    print("Dendritic Cells sender cells:", X_mdc_sender.shape)
+    X_mdc_sender = X[X.obs["broad_cell_type"] == "CD4 T cells"]
     X_mdc_sender = X_mdc_sender[
-        np.argsort(-X_mdc_sender.obsm["sc_B"][:, ccc_rise_cmp - 1])
+        np.argsort(X_mdc_sender.obsm["sc_B"][:, ccc_rise_cmp - 1])
     ]
 
-    X_mdc_receiver = X[(X.obs["broad_cell_type"] == "CD4 T cells")]
+    X_mdc_receiver = X[(X.obs["broad_cell_type"] == "Epithelial cells")]
 
     X_mdc_receiver = X_mdc_receiver[
         np.argsort(X_mdc_receiver.obsm["rc_C"][:, ccc_rise_cmp - 1])
     ]
 
 
-    pairs = [["CCL17", "CCR4"], ["CCL22", "CCR4"]]
+    pairs = [["CD40LG", "CD40"], ["LTA", "TNFRSF1A"]]
     for i, (lig, rec) in enumerate(pairs):
         df = expression_product_matrix(X_mdc_sender, X_mdc_receiver, lig, rec)
         print(f"Original matrix shape: {df.shape}")
@@ -64,12 +63,9 @@ def makeFigure():
         print(f"Final grouped matrix shape: {df_grouped.shape}")
         print(df_grouped)
         # Keep max value consistent across heatmaps for better comparison
-        sns.heatmap(df_grouped, ax=ax[i], cmap="rocket", vmax=0.03)
+        sns.heatmap(df_grouped, ax=ax[i], cmap="rocket", vmax=.003)
         ax[i].set_title(f"{lig}-{rec} Interaction")
-        ax[i].set_xlabel("Receiver CD4 T Cells")
-        ax[i].set_ylabel("Sender Dendritic Cells")
-    
-
-
+        ax[i].set_xlabel("Receiver Epithelial Cells")
+        ax[i].set_ylabel("Sender CD4 T Cells")
 
     return f

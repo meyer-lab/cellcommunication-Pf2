@@ -37,7 +37,7 @@ def makeFigure():
 
     auc_roc_weights, _ = ccc_rise_logreg_weights(X, sample_to_group)
 
-    ax[0].bar(np.arange(len(auc_roc_weights)), auc_roc_weights)
+    ax[0].bar(np.arange(len(auc_roc_weights))+1, auc_roc_weights)
 
     ax[0].set_xlabel("Component")
     ax[0].set_ylabel("Logistic Regression Weight")

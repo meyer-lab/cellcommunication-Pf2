@@ -21,8 +21,8 @@ def makeFigure():
     subplotLabel(ax)
 
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_alad.h5ad")
-    ccc_rise_cmp1 = 12
-    ccc_rise_cmp2 = 14
+    ccc_rise_cmp1 = 13
+    ccc_rise_cmp2 = 17
 
 
     plot_pair_lr_factors(X, ccc_rise_cmp1, ccc_rise_cmp2, ax[6])
