@@ -6,11 +6,11 @@ from .utils import correct_conditions
 from tensorly.decomposition import parafac
 
 
-def logistic_regression(scoring):
+def logistic_regression(scoring, random_state=0):
     """Standardizing LogReg for all functions"""
     cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=5)
     return LogisticRegressionCV(
-        random_state=0,
+        random_state=random_state,
         max_iter=10000,
         penalty="l1",
         solver="saga",
@@ -62,7 +62,7 @@ def rise_ranks_logreg(
 
         # Calculate scores for this rank
         for metric in scoring:
-            lr_fit = logistic_regression(metric).fit(X_work.uns["A"], sample_to_group)
+            lr_fit = logistic_regression(metric, random_state=random_state).fit(X_work.uns["A"], sample_to_group)
             score = float(
                 np.max(np.mean(lr_fit.scores_[1], axis=0))
             )  # Convert to plain float
@@ -123,7 +123,7 @@ def cpd_ranks_logreg(
 
         # Calculate scores for this rank
         for i in scoring:
-            lr_fit = logistic_regression(i).fit(cp_factors[0], sample_to_group)
+            lr_fit = logistic_regression(i, random_state=random_state).fit(cp_factors[0], sample_to_group)
             score = float(
                 np.max(np.mean(lr_fit.scores_[1], axis=0))
             )  # Convert to plain float
@@ -139,13 +139,14 @@ def ccc_rise_logreg_weights(
     X,
     sample_to_group,
     scoring=["roc_auc", "accuracy"],
+    random_state=0,
 ):
     """
     Evaluate logistic regression weights using CPD factors.
     """
 
     for i in scoring:
-        lr_fit = logistic_regression(i).fit(X.uns["A"], sample_to_group)
+        lr_fit = logistic_regression(i, random_state=random_state).fit(X.uns["A"], sample_to_group)
         if i == "roc_auc":
             weights_aucroc = lr_fit.coef_[0]
         elif i == "accuracy":
