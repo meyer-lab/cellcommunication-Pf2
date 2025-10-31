@@ -76,7 +76,7 @@ def makeFigure():
     sample_to_idx = {sample: idx for idx, sample in enumerate(X.obs["dsco_id"].cat.categories)}
     
     # Only analyze components 12, 16, and 4
-    target_components = [4, 12, 16]  # 1-indexed component numbers
+    target_components = [5, 13, 17]  # 1-indexed component numbers
     target_indices = [comp - 1 for comp in target_components]  # Convert to 0-indexed
     
     # Create DataFrame with factor values and sample metadata
