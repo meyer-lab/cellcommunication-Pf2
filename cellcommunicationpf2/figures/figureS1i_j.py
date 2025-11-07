@@ -23,25 +23,15 @@ def makeFigure():
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_covid19.h5ad")
     ccc_rise_cmp = 6
 
-    X_mdc_sender = X[X.obs["celltype"] == "T"]
+    X_mdc_sender = X[X.obs["celltype"] == "Macrophages"]
     print("Macrophage sender cells:", X_mdc_sender.shape)
-    X_mdc_sender = add_obs_cmp_label(
-        X_mdc_sender, cmp=ccc_rise_cmp, pos=True, top_perc=1, type="sender"
-    )
-    X_mdc_sender = add_obs_cmp_unique_one(X_mdc_sender, cmp=ccc_rise_cmp)
-    X_mdc_sender = X_mdc_sender[X_mdc_sender.obs["Label"] != "NoLabel"]
 
     # Alter order based on factor value high to low
     X_mdc_sender = X_mdc_sender[
         np.argsort(-X_mdc_sender.obsm["sc_B"][:, ccc_rise_cmp - 1])
     ]
 
-    X_mdc_receiver = X[(X.obs["celltype"] == "T")]
-    X_mdc_receiver = add_obs_cmp_label(
-        X_mdc_receiver, cmp=ccc_rise_cmp, pos=True, top_perc=1, type="receiver"
-    )
-    X_mdc_receiver = add_obs_cmp_unique_one(X_mdc_receiver, cmp=ccc_rise_cmp)
-    X_mdc_receiver = X_mdc_receiver[X_mdc_receiver.obs["Label"] != "NoLabel"]
+    X_mdc_receiver = X[(X.obs["celltype"] == "Macrophages")]
 
     # Alter order based on factor value low to high
     X_mdc_receiver = X_mdc_receiver[
@@ -49,15 +39,11 @@ def makeFigure():
     ]
 
     df = expression_product_matrix(X_mdc_sender, X_mdc_receiver, "CCL19", "CCR7")
-    sns.heatmap(df, ax=ax[0], cmap="viridis")
+    df = group_matrix(df)
+    sns.heatmap(df, ax=ax[0], cmap="viridis", vmax=0.12)
 
     X_b_receiver = X[(X.obs["celltype"] == "NK")]
     print("NK cell receiver shape:", X_b_receiver.shape)
-    X_b_receiver = add_obs_cmp_label(
-        X_b_receiver, cmp=ccc_rise_cmp, pos=True, top_perc=5, type="receiver"
-    )
-    X_b_receiver = add_obs_cmp_unique_one(X_b_receiver, cmp=ccc_rise_cmp)
-    X_b_receiver = X_b_receiver[X_b_receiver.obs["Label"] != "NoLabel"]
 
     # Alter order based on factor value low to high
     X_b_receiver = X_b_receiver[
@@ -65,7 +51,8 @@ def makeFigure():
     ]
 
     df = expression_product_matrix(X_mdc_sender, X_b_receiver, "CCL19", "CCR7")
-    sns.heatmap(df, ax=ax[1], cmap="viridis")
+    df = group_matrix(df)
+    sns.heatmap(df, ax=ax[1], cmap="viridis", vmax=0.12)
 
     ax[0].set_xlabel("Receiver Cells (Macrophages)")
     ax[0].set_ylabel("Sender Cells (Macrophages)")
@@ -79,3 +66,25 @@ def makeFigure():
     ax[1].set_title("CCL19-CCR7 Interaction")
 
     return f
+
+
+def group_matrix(df):
+    """
+    Groups a DataFrame into a 10x10 matrix by binning rows and columns and averaging within bins.
+    Prints shape information for debugging.
+    """
+    print(f"Original matrix shape: {df.shape}")
+    n_rows = len(df)
+    n_cols = len(df.columns)
+    row_group_size = n_rows // 10
+    col_group_size = n_cols // 10
+    print(f"Row group size: {row_group_size}, Col group size: {col_group_size}")
+    row_groups = np.arange(n_rows) // row_group_size
+    col_groups = np.arange(n_cols) // col_group_size
+    row_groups = np.clip(row_groups, 0, 9)
+    col_groups = np.clip(col_groups, 0, 9)
+    df_grouped = df.groupby(row_groups).mean()
+    df_grouped = df_grouped.groupby(col_groups, axis=1).mean()
+    print(f"Final grouped matrix shape: {df_grouped.shape}")
+    print(df_grouped)
+    return df_grouped
