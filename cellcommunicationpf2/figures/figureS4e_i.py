@@ -24,22 +24,12 @@ def makeFigure():
 
     X_mdc_sender = X[X.obs["celltype"] == "Epithelial"]
     
-    # Sample from whole cell population instead of filtering by top percentile
-    if len(X_mdc_sender) > 500:  # Limit sample size for computational efficiency
-        sample_indices = np.random.choice(len(X_mdc_sender), size=300, replace=False)
-        X_mdc_sender = X_mdc_sender[sample_indices]
-
     # Alter order based on factor value high to low
     X_mdc_sender = X_mdc_sender[
         np.argsort(-X_mdc_sender.obsm["sc_B"][:, ccc_rise_cmp - 1])
     ]
 
     X_mdc_receiver = X[(X.obs["celltype"] == "Epithelial")]
-    
-    # Sample from whole cell population instead of filtering by top percentile
-    if len(X_mdc_receiver) > 500:  # Limit sample size for computational efficiency
-        sample_indices = np.random.choice(len(X_mdc_receiver), size=300, replace=False)
-        X_mdc_receiver = X_mdc_receiver[sample_indices]
 
     # Alter order based on factor value low to high
     X_mdc_receiver = X_mdc_receiver[
@@ -52,6 +42,7 @@ def makeFigure():
     pairs = [["PTN", "PTPRZ1"], ["PTN", "SDC1"]]
     for i, (lig, rec) in enumerate(pairs):
         df = expression_product_matrix(X_mdc_sender, X_mdc_receiver, lig, rec)
+        df = group_matrix(df)
         sns.heatmap(df, ax=ax[i], cmap="viridis")
 
         ax[i].set_xlabel("Receiver Epithelial Cells")
@@ -64,3 +55,25 @@ def makeFigure():
     
 
     return f
+
+
+def group_matrix(df):
+    """
+    Groups a DataFrame into a 10x10 matrix by binning rows and columns and averaging within bins.
+    Prints shape information for debugging.
+    """
+    print(f"Original matrix shape: {df.shape}")
+    n_rows = len(df)
+    n_cols = len(df.columns)
+    row_group_size = n_rows // 10
+    col_group_size = n_cols // 10
+    print(f"Row group size: {row_group_size}, Col group size: {col_group_size}")
+    row_groups = np.arange(n_rows) // row_group_size
+    col_groups = np.arange(n_cols) // col_group_size
+    row_groups = np.clip(row_groups, 0, 9)
+    col_groups = np.clip(col_groups, 0, 9)
+    df_grouped = df.groupby(row_groups).mean()
+    df_grouped = df_grouped.groupby(col_groups, axis=1).mean()
+    print(f"Final grouped matrix shape: {df_grouped.shape}")
+    print(df_grouped)
+    return df_grouped
