@@ -19,7 +19,7 @@ from matplotlib.axes import Axes
 
 
 def makeFigure():
-    ax, f = getSetup((8, 8), (4, 4))
+    ax, f = getSetup((10, 4), (1, 2))
     subplotLabel(ax)
 
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_alad.h5ad")
@@ -35,7 +35,7 @@ def makeFigure():
     patient_info = ["diagnosisgroup", "sex", "transplanttype", "cmvstatus", "cmv_status", "cmvstatus2", "ethnicity", "6monthcondition", "1yearcondition"]
     
     # Define patient continuous variables
-    patient_continuous = ["percent.mt", "percent.ribo", "isotype_ctl_max", "doubletFinderScore", "S.Score", "G2M.Score", "age", "timeaftertx", "Cells (M)", "baselineFEV1", "FEV16monthsb4", "FEV16monthsb4p", "FEV1alad", "FEV1aladp", "FEV16monthsafter", "FEV16monthsafterp", "FEV11yearafter", "FEV1pyearafter", "d2b_index"]
+    patient_continuous = ["age", "timeaftertx", "baselineFEV1", "FEV16monthsb4", "FEV16monthsb4p", "FEV1alad", "FEV1aladp", "FEV16monthsafter", "FEV16monthsafterp", "FEV11yearafter", "FEV1pyearafter", "d2b_index"]
 
     # Get unique samples with their information
     samples_df = X.obs[["dsco_id", "alad_status"] + patient_info].drop_duplicates(subset=["dsco_id"]).reset_index(drop=True)
@@ -44,9 +44,6 @@ def makeFigure():
     patient_continuous_df = X.obs[["dsco_id", "alad_status"] + patient_continuous].drop_duplicates(subset=["dsco_id"]).reset_index(drop=True)
     patient_info_df = X.obs[["dsco_id", "alad_status"] + patient_info].drop_duplicates(subset=["dsco_id"]).reset_index(drop=True)
 
-    
-    
-    # Calculate Pearson correlations between components and continuous variables
     # Get the tensor decomposition factor matrix A (condition/sample factors)
     factor_A = X.uns["A"]  # Shape: (n_samples, n_components)
     n_components = factor_A.shape[1]
@@ -54,116 +51,102 @@ def makeFigure():
     # Create a mapping from sample to factor values
     sample_to_idx = {sample: idx for idx, sample in enumerate(X.obs["dsco_id"].cat.categories)}
     
-    # Target components for analysis
-    target_components = [5, 13, 17]  # 1-indexed component numbers
+    # Analyze all components
+    target_components = [5, 13, 17]  # Specific components of interest
     target_indices = [comp - 1 for comp in target_components]  # Convert to 0-indexed
     
     # Create DataFrame combining factor values with continuous variables
-    combined_data = []
+    combined_data_cont = []
     for _, sample_row in patient_continuous_df.iterrows():
         sample = sample_row["dsco_id"]
         if sample in sample_to_idx:
             sample_idx = sample_to_idx[sample]
-            
             row_data = {"sample": sample}
-            
-            # Add factor values for target components
             for comp_idx in target_indices:
                 comp_name = f"Component_{comp_idx + 1}"
                 row_data[comp_name] = factor_A[sample_idx, comp_idx]
-            
-            # Add continuous variables
             for cont_var in patient_continuous:
                 row_data[cont_var] = sample_row[cont_var]
-                
-            combined_data.append(row_data)
-    
-    combined_df = pd.DataFrame(combined_data)
-    
-    
-    # Calculate Pearson correlations between components and continuous variables
+            combined_data_cont.append(row_data)
+    combined_df_cont = pd.DataFrame(combined_data_cont)
+
+    # Pearson correlations for continuous variables
     correlation_results = []
-    
     for comp_idx in target_indices:
         comp_name = f"Component_{comp_idx + 1}"
-        comp_values = combined_df[comp_name].dropna()
-        
         for cont_var in patient_continuous:
-            # Get corresponding continuous variable values (aligned by sample)
-            var_values = combined_df[cont_var].dropna()
-            
-            # Find common samples (no NaN in either component or variable)
-            valid_mask = combined_df[comp_name].notna() & combined_df[cont_var].notna()
-            valid_comp = combined_df.loc[valid_mask, comp_name]
-            valid_var = combined_df.loc[valid_mask, cont_var]
-            
-            # Calculate correlation if we have sufficient data points
-            if len(valid_comp) > 3:  # Need at least 4 points for meaningful correlation
+            valid_mask = combined_df_cont[comp_name].notna() & combined_df_cont[cont_var].notna()
+            valid_comp = combined_df_cont.loc[valid_mask, comp_name]
+            valid_var = combined_df_cont.loc[valid_mask, cont_var]
+            if len(valid_comp) > 3:
                 try:
-                    corr_coef, p_value = pearsonr(valid_comp, valid_var)
+                    _, p_value = pearsonr(valid_comp, valid_var)
                     correlation_results.append({
                         "component": comp_name,
                         "variable": cont_var,
-                        "correlation": corr_coef,
-                        "p_value": p_value,
-                        "abs_correlation": abs(corr_coef),
-                        "n_samples": len(valid_comp)
+                        "p_value": p_value
                     })
                 except Exception as e:
-                    print(f"Correlation failed for {comp_name}, {cont_var}: {e}")
-    
-    # Create results dataframe and sort by absolute correlation strength
-    correlation_df = pd.DataFrame(correlation_results)
-    if not correlation_df.empty:
-        # Sort by absolute correlation (strongest correlations first)
-        sorted_correlations = correlation_df.sort_values("abs_correlation", ascending=False)
-        
-        # Show top correlations
-        print("Top correlations (sorted by absolute correlation strength):")
-        print(sorted_correlations[["component", "variable", "correlation", "p_value"]].head(10))
-        
-        # Plot the top correlations (up to 9 for 3x3 layout)
-        n_plots = min(9, len(sorted_correlations))
-        print(sorted_correlations)
-        for i in range(10):
-            row = sorted_correlations.iloc[i]
-            comp_name = row["component"]
-            var_name = row["variable"]
-            corr_val = row["correlation"]
-            p_val = row["p_value"]
-            
-            # Get data for scatter plot
-            valid_mask = combined_df[comp_name].notna() & combined_df[var_name].notna()
-            x_data = combined_df.loc[valid_mask, comp_name]
-            y_data = combined_df.loc[valid_mask, var_name]
-            n_samples = len(x_data)
-            
-            # Create scatter plot with regression line
-            sns.scatterplot(x=x_data, y=y_data, ax=ax[i], alpha=0.7)
-            sns.regplot(x=x_data, y=y_data, ax=ax[i], scatter=False, color='red', line_kws={'linewidth': 2})
-            
-            # Format title with correlation, p-value, and sample size
-            if p_val < 0.001:
-                p_str = "p < 0.001"
-            elif p_val < 0.01:
-                p_str = "p < 0.01"
-            elif p_val < 0.05:
-                p_str = "p < 0.05"
-            else:
-                p_str = f"p = {p_val:.3f}"
-            
-            title = f"{comp_name} vs {var_name}\nr = {corr_val:.3f}, {p_str} (n={n_samples})"
-            ax[i].set_title(title, fontsize=10)
-            ax[i].set_xlabel(comp_name)
-            ax[i].set_ylabel(var_name)
- 
-            ax[i].set_ylabel(var_name, rotation=90, ha='center')
-    else:
-        print("No correlation results found")
-        # Add empty plots with informative titles
-        for i in range(9):
-            ax[i].text(0.5, 0.5, "No correlation\nresults found", 
-                      ha='center', va='center', transform=ax[i].transAxes)
-            ax[i].set_title(f"Plot {i+1}")
+                    print(f"Pearson failed for {comp_name}, {cont_var}: {e}")
+    pearson_df = pd.DataFrame(correlation_results)
 
+    # Create DataFrame combining factor values with categorical variables
+    combined_data_cat = []
+    for _, sample_row in patient_info_df.iterrows():
+        sample = sample_row["dsco_id"]
+        if sample in sample_to_idx:
+            sample_idx = sample_to_idx[sample]
+            row_data = {"sample": sample}
+            for comp_idx in target_indices:
+                comp_name = f"Component_{comp_idx + 1}"
+                row_data[comp_name] = factor_A[sample_idx, comp_idx]
+            for cat_var in patient_info:
+                row_data[cat_var] = sample_row[cat_var]
+            combined_data_cat.append(row_data)
+    combined_df_cat = pd.DataFrame(combined_data_cat)
+
+    # T-test p-values for categorical variables
+    ttest_results = []
+    for comp_idx in target_indices:
+        comp_name = f"Component_{comp_idx + 1}"
+        for cat_var in patient_info:
+            valid_mask = combined_df_cat[comp_name].notna() & combined_df_cat[cat_var].notna()
+            valid_comp = combined_df_cat.loc[valid_mask, comp_name]
+            valid_cat = combined_df_cat.loc[valid_mask, cat_var]
+            if valid_cat.nunique() == 2 and len(valid_comp) > 3:
+                try:
+                    groups = [valid_comp[valid_cat == g] for g in valid_cat.unique()]
+                    if all(len(g) > 1 for g in groups):
+                        _, p_value = ttest_ind(groups[0], groups[1], nan_policy='omit')
+                        ttest_results.append({
+                            "component": comp_name,
+                            "variable": cat_var,
+                            "p_value": p_value
+                        })
+                except Exception as e:
+                    print(f"T-test failed for {comp_name}, {cat_var}: {e}")
+    ttest_df = pd.DataFrame(ttest_results)
+    # Plot heatmaps
+    if not pearson_df.empty:
+        pearson_pval_matrix = pearson_df.pivot(index="component", columns="variable", values="p_value")
+        sns.heatmap(pearson_pval_matrix, ax=ax[0], cmap="viridis_r", cbar_kws={'label': 'Pearson p-value'},  vmin=0, vmax=1)
+        ax[0].set_xlabel("Continuous Variable")
+        ax[0].set_ylabel("Component")
+        ax[0].tick_params(axis='x', rotation=90)
+    else:
+        ax[0].text(0.5, 0.5, "No Pearson p-values", ha='center', va='center', transform=ax[0].transAxes)
+        ax[0].set_title("Pearson p-value Heatmap (Continuous)")
+    if not ttest_df.empty:
+        ttest_pval_matrix = ttest_df.pivot(index="component", columns="variable", values="p_value")
+        sns.heatmap(ttest_pval_matrix, ax=ax[1], cmap="mako_r", cbar_kws={'label': 'T-test p-value'}, vmin=0, vmax=1)
+        ax[1].set_xlabel("Categorical Variable")
+        ax[1].set_ylabel("Component")
+        
+        ax[1].tick_params(axis='x', rotation=45)
+    else:
+        ax[1].text(0.5, 0.5, "No T-test p-values", ha='center', va='center', transform=ax[1].transAxes)
+        ax[1].set_title("T-test p-value Heatmap (Categorical)")
+    # Hide unused axes
+    for i in range(2, len(ax)):
+        ax[i].axis('off')
     return f
