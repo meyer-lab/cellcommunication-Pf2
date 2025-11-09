@@ -21,7 +21,7 @@ def makeFigure():
     subplotLabel(ax)
 
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_alad.h5ad")
-    ccc_rise_cmp = 12
+    ccc_rise_cmp = 13
 
     # Check unique sex values in the data
     print("Unique sex values:", X.obs["sex"].unique())

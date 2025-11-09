@@ -149,11 +149,11 @@ def plot_wc_per_celltype(
 
     df = pd.DataFrame({cmpName: XX, "Cell Type": X.obs[cellType].to_numpy()})
 
-    sns.boxplot(
+    sns.violinplot(
         data=df,
         x=cmpName,
         y="Cell Type",
-        showfliers=outliers,
+        # showfliers=outliers,
         ax=ax,
     )
     maxvalue = np.max(np.abs(ax.get_xticks()))
