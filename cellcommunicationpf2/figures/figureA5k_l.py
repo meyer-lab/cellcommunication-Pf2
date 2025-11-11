@@ -47,12 +47,12 @@ def makeFigure():
         ax[i].set_ylabel("NK Cells")
         
         
-    X_mdc_sender = X[X.obs["broad_cell_type"] == "CD4 T cells"]
+    X_mdc_sender = X[X.obs["broad_cell_type"] == "CD8 T cells"]
     X_mdc_sender = X_mdc_sender[
         np.argsort(-X_mdc_sender.obsm["sc_B"][:, ccc_rise_cmp - 1])
     ]
 
-    X_mdc_receiver = X[(X.obs["broad_cell_type"] == "CD4 T cells")]
+    X_mdc_receiver = X[(X.obs["broad_cell_type"] == "CD8 T cells")]
 
     # Alter order based on factor value low to high
     X_mdc_receiver = X_mdc_receiver[

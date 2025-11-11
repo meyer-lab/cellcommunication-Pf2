@@ -37,31 +37,48 @@ def makeFigure():
     df = expression_product_matrix(X_mdc_sender, X_mdc_receiver, pairs[0], pairs[1])
     df_grouped = group_matrix(df)
     # Keep max value consistent across heatmaps for better comparison
-    sns.heatmap(df_grouped, ax=ax[0], cmap="rocket")
+    sns.heatmap(df_grouped, ax=ax[0], cmap="rocket", vmax=0.003)
     ax[0].set_title(f"{pairs[0]}-{pairs[1]} Interaction")
-    ax[0].set_xlabel("Receiver Epithelial Cells")
+    ax[0].set_xlabel("Receiver Dendritic Cells")
     ax[0].set_ylabel("Sender CD4 T Cells")
     
+    pairs = ["LTB", "LTBR"]
+    df = expression_product_matrix(X_mdc_sender, X_mdc_receiver, pairs[0], pairs[1], )
+    df_grouped = group_matrix(df)
+    # Keep max value consistent across heatmaps for better comparison
+    sns.heatmap(df_grouped, ax=ax[1], cmap="rocket", vmax=0.003)
+    ax[1].set_title(f"{pairs[0]}-{pairs[1]} Interaction")
+    ax[1].set_xlabel("Receiver Dendritic Cells")
+    ax[1].set_ylabel("Sender CD4 T Cells")
     
     
-    X_mdc_sender = X[(X.obs["broad_cell_type"] == "Epithelial cells")]
+    X_mdc_sender = X[(X.obs["broad_cell_type"] == "NK cells")]
     X_mdc_sender = X_mdc_sender[
         np.argsort(-X_mdc_sender.obsm["sc_B"][:, ccc_rise_cmp - 1])
     ]
 
-    X_mdc_receiver = X[(X.obs["broad_cell_type"] == "Epithelial cells")]
+    X_mdc_receiver = X[(X.obs["broad_cell_type"] == "Dendritic Cells")]
 
     X_mdc_receiver = X_mdc_receiver[
         np.argsort(X_mdc_receiver.obsm["rc_C"][:, ccc_rise_cmp - 1])
     ]
 
+
+    pairs = ["CD40LG", "CD40"]
     df = expression_product_matrix(X_mdc_sender, X_mdc_receiver, pairs[0], pairs[1])
     df_grouped = group_matrix(df)
-    sns.heatmap(df_grouped, ax=ax[1], cmap="rocket")
-    ax[1].set_title(f"{pairs[0]}-{pairs[1]} Interaction")
-    ax[1].set_xlabel("Receiver Epithelial Cells")
-    ax[1].set_ylabel("Sender Macrophages")
+    # Keep max value consistent across heatmaps for better comparison
+    sns.heatmap(df_grouped, ax=ax[2], cmap="rocket", vmax=0.003)
+    ax[2].set_title(f"{pairs[0]}-{pairs[1]} Interaction")
+    ax[2].set_xlabel("Receiver Dendritic Cells")
+    ax[2].set_ylabel("Sender NK Cells")
+    
 
+    
+    
+    
+    
+ 
     return f
 
 
