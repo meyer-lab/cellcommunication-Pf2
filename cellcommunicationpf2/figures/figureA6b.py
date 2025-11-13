@@ -34,6 +34,7 @@ def makeFigure():
         lambda x: "declined" if x == "declined" else "stable"
     )
     sample_to_group = sample_to_group.astype("category").cat.codes
+    
 
     # interaction_tensor = calculate_interaction_tensor(X, lr_pairs, rise_rank=30)
 
