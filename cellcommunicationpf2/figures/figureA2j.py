@@ -1,5 +1,5 @@
 """
-Figure A2i: Violin plots of cell weight distributions for specific cell types and components in CCC-RISE on BALF COVID-19 data.
+Figure A2j: Violin plot of cell weight distributions for mDCs in CCC-RISE on BALF COVID-19 data.
 """
 
 import anndata
@@ -29,14 +29,4 @@ def makeFigure():
     ax[0].set_xlabel("mDC Weight Distribution")
     ax[0].set_ylabel(f"Sender Cell Component {ccc_rise_cmp} Association")
     
-
-    # Keep only cells with mast cells for the violin plot
-    X_mdc = X[X.obs["celltype"] == "B"]
-    X_mdc = X_mdc.obsm["sc_B"][:, ccc_rise_cmp - 1]
-
-    sns.violinplot(data=X_mdc, ax=ax[1])
-    ax[1].set_ylim(-0.1, 0.85)
-    ax[1].set_xlabel("B cells Weight Distribution")
-    ax[1].set_ylabel(f"Sender Cell Component {ccc_rise_cmp} Association")
-
     return f

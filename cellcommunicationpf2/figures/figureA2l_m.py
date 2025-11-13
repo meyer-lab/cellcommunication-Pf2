@@ -10,9 +10,8 @@ from .common import (
 import numpy as np
 import seaborn as sns
 from ..utils import (
-    add_obs_cmp_label,
-    add_obs_cmp_unique_one,
     expression_product_matrix,
+    average_product_matrix_ccc
 )
 
 def makeFigure():
@@ -24,31 +23,27 @@ def makeFigure():
     
     X_mdc_sender = X[X.obs["celltype"] == "mDC"]
     X_mdc_sender = X_mdc_sender[np.argsort(-X_mdc_sender.obsm["sc_B"][:, ccc_rise_cmp-1])]
-
+    
     X_mdc_receiver = X[(X.obs["celltype"] == "mDC")]
-
-
-    # Alter order based on factor value low to high
     X_mdc_receiver = X_mdc_receiver[np.argsort(X_mdc_receiver.obsm["rc_C"][:, ccc_rise_cmp-1])]
 
     df = expression_product_matrix(X_mdc_sender, X_mdc_receiver, "CCL19", "CCR7")    
-    df = group_matrix(df)
+    df = average_product_matrix_ccc(df)
     
     sns.heatmap(df, ax=ax[0], cmap="viridis", vmax=0.12)
 
     X_b_receiver = X[(X.obs["celltype"] == "B")]
-    # Alter order based on factor value low to high
     X_b_receiver = X_b_receiver[np.argsort(X_b_receiver.obsm["rc_C"][:, ccc_rise_cmp-1])]
 
     df = expression_product_matrix(X_mdc_sender, X_b_receiver, "CCL19", "CCR7")
-    df = group_matrix(df)
+    df = average_product_matrix_ccc(df)
     
     sns.heatmap(df, ax=ax[1], cmap="viridis", vmax=0.12)
 
-    ax[0].set_xlabel("Receiver Cells (mDCs)")
-    ax[0].set_ylabel("Sender Cells (mDCs)")
-    ax[1].set_xlabel("Receiver Cells (B cells)")
-    ax[1].set_ylabel("Sender Cells (mDCs)")
+    ax[0].set_xlabel("Receiver mDCs")
+    ax[0].set_ylabel("Sender mDCs")
+    ax[1].set_xlabel("Receiver B cells")
+    ax[1].set_ylabel("Sender mDCs")
     ax[0].set_xticks([])
     ax[0].set_yticks([])
     ax[1].set_xticks([])
@@ -59,23 +54,3 @@ def makeFigure():
     
     return f
 
-def group_matrix(df):
-    """
-    Groups a DataFrame into a 10x10 matrix by binning rows and columns and averaging within bins.
-    Prints shape information for debugging.
-    """
-    print(f"Original matrix shape: {df.shape}")
-    n_rows = len(df)
-    n_cols = len(df.columns)
-    row_group_size = n_rows // 10
-    col_group_size = n_cols // 10
-    print(f"Row group size: {row_group_size}, Col group size: {col_group_size}")
-    row_groups = np.arange(n_rows) // row_group_size
-    col_groups = np.arange(n_cols) // col_group_size
-    row_groups = np.clip(row_groups, 0, 9)
-    col_groups = np.clip(col_groups, 0, 9)
-    df_grouped = df.groupby(row_groups).mean()
-    df_grouped = df_grouped.groupby(col_groups, axis=1).mean()
-    print(f"Final grouped matrix shape: {df_grouped.shape}")
-    print(df_grouped)
-    return df_grouped

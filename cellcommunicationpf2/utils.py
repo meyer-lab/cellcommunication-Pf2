@@ -247,3 +247,19 @@ def add_obs_cmp_unique_two(X: anndata.AnnData, cmp1: str, cmp2: str):
     ] = "NoLabel"
 
     return X
+
+def average_product_matrix_ccc(df):
+    """
+    Groups a DataFrame into a 10x10 matrix by binning rows and columns and averaging within bins.
+    Prints shape information for debugging.
+    """
+    n_rows = len(df)
+    n_cols = len(df.columns)
+    row_group_size = n_rows // 10
+    col_group_size = n_cols // 10
+    row_groups = np.arange(n_rows) // row_group_size
+    col_groups = np.arange(n_cols) // col_group_size
+    row_groups = np.clip(row_groups, 0, 9)
+    col_groups = np.clip(col_groups, 0, 9)
+    df_grouped = df.groupby(row_groups).mean()
+    return df_grouped

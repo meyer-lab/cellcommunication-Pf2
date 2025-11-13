@@ -1,5 +1,5 @@
 """
-Figure A2b-c: CCC-RISE on BALF COVID-19 data. Showing PaCMAP of cells colored by cell type.
+Figure A2c_d: CCC-RISE on BALF COVID-19 data. Showing PaCMAP of cells colored by cell type and disease condition.
 """
 
 import anndata
