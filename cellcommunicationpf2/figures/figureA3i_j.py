@@ -1,5 +1,5 @@
 """
-Figure A3i-j: Violin plots of cell weight distributions for specific cell types and components in CCC-RISE on BALF COVID-19 data.
+Figure A3i-j: Violin plots of cell weight distributions for epithelial cell in CCC-RISE on BALF COVID-19 data.
 """
 
 import anndata
@@ -15,13 +15,10 @@ def makeFigure():
     ax, f = getSetup((6, 6), (2, 2))
     subplotLabel(ax)
 
-    # Import Anndata file
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_covid19.h5ad")
 
     ccc_rise_cmp = 5
 
-    # Violin plot of cell weighting distribution for Mast cells for a component
-    # Keep only cells with mast cells for the violin plot
     X_epithelial = X[X.obs["celltype"] == "Epithelial"]
     X_epithelial_send = X_epithelial.obsm["sc_B"][:, ccc_rise_cmp - 1]
 

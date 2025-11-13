@@ -14,19 +14,20 @@ from ..utils import (
     add_obs_cmp_unique_two,
     expression_product_matrix,
 )
+import pandas as pd
 
 
 def makeFigure():
-    ax, f = getSetup((10, 10), (3, 3))  # 1 row, 3 columns for 3 L-R  pairs
+    ax, f = getSetup((10, 10), (3, 3))  
     subplotLabel(ax)
 
     X = anndata.read_h5ad("/opt/andrew/ccc/bal_covid19.h5ad")
     ccc_rise_cmp1 = 3
     ccc_rise_cmp2 = 5
 
-    X_mdc_sender = X[X.obs["celltype"] == "Epithelial"]
-    X_mdc_sender = add_obs_cmp_both_label(
-        X_mdc_sender,
+    X_epi_sender = X[X.obs["celltype"] == "Epithelial"]
+    X_epi_sender = add_obs_cmp_both_label(
+        X_epi_sender,
         cmp1=ccc_rise_cmp1,
         cmp2=ccc_rise_cmp2,
         pos1=True,
@@ -34,14 +35,14 @@ def makeFigure():
         top_perc=10,
         type="sender",
     )
-    X_mdc_sender = add_obs_cmp_unique_two(
-        X_mdc_sender, cmp1=ccc_rise_cmp1, cmp2=ccc_rise_cmp2
+    X_epi_sender = add_obs_cmp_unique_two(
+        X_epi_sender, cmp1=ccc_rise_cmp1, cmp2=ccc_rise_cmp2
     )
-    X_mdc_sender = X_mdc_sender[X_mdc_sender.obs["Label"] != "NoLabel"]
+    X_epi_sender = X_epi_sender[X_epi_sender.obs["Label"] != "NoLabel"]
 
-    X_mdc_receiver = X[(X.obs["celltype"] == "Epithelial")]
-    X_mdc_receiver = add_obs_cmp_both_label(
-        X_mdc_receiver,
+    X_epi_receiver = X[(X.obs["celltype"] == "Epithelial")]
+    X_epi_receiver = add_obs_cmp_both_label(
+        X_epi_receiver,
         cmp1=ccc_rise_cmp1,
         cmp2=ccc_rise_cmp2,
         pos1=True,
@@ -54,13 +55,6 @@ def makeFigure():
     )
     X_mdc_receiver = X_mdc_receiver[X_mdc_receiver.obs["Label"] != "NoLabel"]
 
-    print("Epithelial sender cells:", X_mdc_sender.shape)
-    print("Epithelial receiver cells:", X_mdc_receiver.shape)
-
-    # Calculate average communication scores for each label category
-    import pandas as pd
-
-    # Define ligand-receptor pairs to analyze
     pairs = [
         ["PTN", "PTPRZ1"],
         ["PTN", "SDC1"],
@@ -70,18 +64,13 @@ def makeFigure():
         ["PRSS3", "F2RL1"],
     ]
 
-    # Collect communication scores for all label combinations
     communication_data = []
-
     for lig, rec in pairs:
         pair_name = f"{lig}-{rec}"
+        df = expression_product_matrix(X_epi_sender, X_epi_receiver, lig, rec)
 
-        # Get expression product matrix
-        df = expression_product_matrix(X_mdc_sender, X_mdc_receiver, lig, rec)
-
-        # Get sender and receiver labels
-        sender_labels = X_mdc_sender.obs["Label"].values
-        receiver_labels = X_mdc_receiver.obs["Label"].values
+        sender_labels = X_epi_sender.obs["Label"].values
+        receiver_labels = X_epi_receiver.obs["Label"].values
 
         # Calculate average communication score for each sender-receiver label combination
         for sender_label in np.unique(sender_labels):
@@ -131,25 +120,15 @@ def makeFigure():
             columns="receiver_label",
             aggfunc="mean",
         )
-
-        print(f"\nPivot data for {pair_label}:")
-        print(pivot_data)
-        # Normalize from 0 to 1 for better visualization
         pivot_data = (pivot_data - pivot_data.min().min()) / (
             pivot_data.max().max() - pivot_data.min().min()
         )
-
-        # Create heatmap
         sns.heatmap(
             pivot_data,
-            # annot=True,
-            fmt=".4f",
             cmap="Purples",
             cbar_kws={"label": "Avg Communication Score"},
             ax=ax[i],
         )
-
-        ax[i].set_title(f"{pair_label} Communication Scores\n(Sender → Receiver)")
         ax[i].set_xlabel("Receiver Label")
         ax[i].set_ylabel("Sender Label")
 
