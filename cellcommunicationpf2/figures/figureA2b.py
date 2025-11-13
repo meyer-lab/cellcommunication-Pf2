@@ -1,5 +1,5 @@
 """
-Figure A2a: CCC-RISE on BALF COVID-19 data.
+Figure A2b: CCC-RISE on BALF COVID-19 data. Plotting factors for conditions, sender cells, receiver cells, and ligand-receptor pairs.
 """
 
 from .common import (

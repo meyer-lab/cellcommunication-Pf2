@@ -1,5 +1,5 @@
 """
-Figure A2d-g: Comparison of CCC-RISE and Pseudobulk CPD on BALF COVID-19
+Figure A2e-h: Comparison of CCC-RISE and Pseudobulk CPD on BALF COVID-19
 """
 
 import numpy as np
