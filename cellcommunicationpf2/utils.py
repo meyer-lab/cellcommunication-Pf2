@@ -248,7 +248,7 @@ def add_obs_cmp_unique_two(X: anndata.AnnData, cmp1: str, cmp2: str):
 
     return X
 
-def average_CCC(df):
+def average_product_matrix_CCC(df):
     """
     Groups a DataFrame into a 10x10 matrix by binning rows and columns and averaging within bins.
     Prints shape information for debugging.
