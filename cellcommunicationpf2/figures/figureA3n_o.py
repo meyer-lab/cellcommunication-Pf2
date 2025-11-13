@@ -50,10 +50,10 @@ def makeFigure():
         top_perc=10,
         type="receiver",
     )
-    X_mdc_receiver = add_obs_cmp_unique_two(
-        X_mdc_receiver, cmp1=ccc_rise_cmp1, cmp2=ccc_rise_cmp2
+    X_epi_receiver = add_obs_cmp_unique_two(
+        X_epi_receiver, cmp1=ccc_rise_cmp1, cmp2=ccc_rise_cmp2
     )
-    X_mdc_receiver = X_mdc_receiver[X_mdc_receiver.obs["Label"] != "NoLabel"]
+    X_epi_receiver = X_epi_receiver[X_epi_receiver.obs["Label"] != "NoLabel"]
 
     pairs = [
         ["PTN", "PTPRZ1"],
