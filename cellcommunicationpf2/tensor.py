@@ -119,12 +119,33 @@ def run_ccc_rise_workflow(
         Convergence tolerance for the decomposition.
     random_state : int | None
         Random seed for reproducibility.
+    complex_sep : str, optional
+        Separator for complexed ligand-receptor pairs. If None, complexes 
+        are not processed. Default is None.
+    doEmbedding : bool, default=True
+        Whether to perform dimensionality reduction embedding (PaCMAP).
+    svd_init : str, default="svd"
+        Initialization method for the decomposition. Options: "svd", "random".
 
     Returns
     -------
     tuple[anndata.AnnData, float]
         A tuple containing the updated AnnData object with stored results
         and the R2X value of the decomposition.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> lr_pairs = pd.DataFrame({
+    ...     'ligand': ['L1', 'L2'],
+    ...     'receptor': ['R1', 'R2'],
+    ...     'interaction_symbol': ['L1-R1', 'L2-R2']
+    ... })
+    >>> adata, r2x = run_ccc_rise_workflow(adata, 10, lr_pairs)
+
+    See Also
+    --------
+    ccc_rise : Core function for CCC-RISE decomposition
     """
     # Ensure condition indices are present before running the model
     adata = add_cond_idxs(adata, condition_column)
@@ -171,9 +192,51 @@ def run_ccc_rise_workflow(
 
 
 def calculate_interaction_tensor(
-    X_filtered: anndata.AnnData, lr_pairs: pd.DataFrame, rise_rank: int
-):
-    """Calculate interaction tensor from AnnData object using PARAFAC2 and communication scores."""
+    X_filtered: anndata.AnnData, 
+    lr_pairs: pd.DataFrame, 
+    rise_rank: int
+) -> tuple[np.ndarray, list[np.ndarray]]:
+    """
+    Construct interaction tensor from expression data using RISE and 
+    ligand-receptor communication scores.
+
+    This function is a convenience wrapper that combines RISE decomposition
+    with communication score calculation in a single step.
+
+    Parameters
+    ----------
+    X_filtered : anndata.AnnData
+        Preprocessed annotated data object with expression data in `.X`.
+        Should have condition annotations in `.obs`.
+    lr_pairs : pd.DataFrame
+        Ligand-receptor pair annotations with 'ligand' and 'receptor' columns.
+    rise_rank : int
+        Rank for PARAFAC2 decomposition. Determines dimensionality of the
+        latent space for cell expression patterns.
+
+    Returns
+    -------
+    interaction_tensor : np.ndarray
+        4D tensor of shape (n_conditions, rise_rank, rise_rank, n_lr_pairs)
+        containing computed communication scores.
+    projections : list of np.ndarray
+        List of projection matrices, one per condition, each of shape
+        (n_cells_in_condition, rise_rank). Maps cells to cell eigen-states.
+
+    Examples
+    --------
+    >>> from cellcommunicationpf2 import add_cond_idxs
+    >>> X = add_cond_idxs(adata, "sample")
+    >>> tensor, projs = calculate_interaction_tensor(X, lr_pairs, rise_rank=35)
+    >>> print(f"Tensor shape: {tensor.shape}")
+    >>> print(f"Number of conditions: {len(projs)}")
+
+    See Also
+    --------
+    calc_communication_score : Communication score calculation
+    parafac2_nd : PARAFAC2 decomposition
+    run_ccc_rise_workflow : Full analysis workflow
+    """
     pf2_out, rise_rank = parafac2_nd(
         X_filtered, rank=rise_rank, n_iter_max=1000, tol=1e-9
     )
@@ -203,7 +266,65 @@ def run_fms_r2x_analysis(
     runs: int = 1,
     svd_init: str = "svd",
 ) -> pd.DataFrame:
-    """Run FMS and R2X analysis across different CP ranks and bootstrap runs."""
+    """
+    Evaluate CP decomposition stability across different ranks using bootstrapping.
+
+    This analysis helps determine the optimal rank for CP decomposition by
+    computing two key metrics:
+    
+    1. **FMS (Factor Match Score)**: Measures similarity between factors from
+       original data vs. bootstrapped data. Higher FMS indicates more stable
+       decomposition.
+    2. **R²X**: Variance explained by the decomposition. Indicates goodness of fit.
+
+    Parameters
+    ----------
+    interaction_tensor : np.ndarray
+        4D interaction tensor of shape (n_conditions, n_sender_eigen_states, 
+        n_receiver_eigen_states, n_lr_pairs) to decompose and analyze.
+    rank_list : list of int, optional
+        List of ranks to evaluate. If None, defaults to range(1, 4, 2).
+        Recommended to test multiple ranks, e.g., [2, 4, 6, 8, 10, 12].
+        Default is None.
+    runs : int, default=1
+        Number of bootstrap iterations per rank. Higher values give more reliable
+        stability estimates but increase computation time.
+    svd_init : {'svd', 'random'}, default='svd'
+        Initialization method for CP decomposition:
+        
+        - 'svd': SVD-based (deterministic, recommended)
+        - 'random': Random initialization
+
+    Returns
+    -------
+    results_df : pd.DataFrame
+        Results with columns:
+        
+        - 'Run': Bootstrap run number (0 to runs-1)
+        - 'Component': Rank being evaluated
+        - 'FMS': Factor Match Score (0 to 1, higher is better)
+        - 'R2X': Variance explained (0 to 1, higher is better)
+
+    Examples
+    --------
+    >>> from cellcommunicationpf2.figures import plot_fms_r2x
+    >>> rank_list = [2, 4, 6, 8, 10, 12]
+    >>> results = run_fms_r2x_analysis(
+    ...     interaction_tensor, 
+    ...     rank_list=rank_list, 
+    ...     runs=10
+    ... )
+    >>> # Plot results
+    >>> import seaborn as sns
+    >>> sns.lineplot(data=results, x='Component', y='FMS')
+    >>> sns.lineplot(data=results, x='Component', y='R2X')
+
+    See Also
+    --------
+    run_fms_r2x_data_percentage_analysis : Stability vs. data size
+    calculate_fms_cpd : FMS calculation between two decompositions
+    factor_match_score : Underlying FMS implementation (tlviz)
+    """
     if rank_list is None:
         rank_list = list(range(1, 4, 2))
 

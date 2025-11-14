@@ -5,11 +5,51 @@ import pandas as pd
 
 
 def resample(
-    data: anndata.AnnData, condition_name: str, random_seed: int = None
+    data: anndata.AnnData, 
+    condition_name: str, 
+    random_seed: int = None
 ) -> anndata.AnnData:
-    """Perform stratified bootstrap sampling by resampling cells within each sample.
+    """
+    Perform stratified bootstrap resampling by condition/sample.
 
-    This maintains the same number of cells per sample in the resampled dataset.
+    This implements within-sample bootstrap resampling, which maintains the
+    original number of cells per sample while creating variation for stability
+    analysis. Useful for assessing decomposition robustness.
+
+    Parameters
+    ----------
+    data : anndata.AnnData
+        Annotated data object to resample. Cells will be resampled within
+        each unique value of `condition_name`.
+    condition_name : str
+        Column name in `data.obs` that defines sampling strata (e.g., 'sample',
+        'patient', 'condition'). Resampling occurs independently within each
+        stratum.
+    random_seed : int, optional
+        Random seed for reproducibility. If None, results will vary between
+        calls. Default is None.
+
+    Returns
+    -------
+    resampled_data : anndata.AnnData
+        New AnnData object with resampled cells. Has the same total number of
+        cells as the input, but with replacement within each condition.
+
+    Examples
+    --------
+    >>> from cellcommunicationpf2 import import_balf_covid
+    >>> adata = import_balf_covid()
+    >>> # Create 5 bootstrap samples
+    >>> bootstrap_samples = [
+    ...     resample(adata, 'sample', random_seed=i) 
+    ...     for i in range(5)
+    ... ]
+    >>> # Each has same total cells
+    >>> print([bs.n_obs for bs in bootstrap_samples])
+
+    See Also
+    --------
+    run_fms_r2x_analysis : Uses resampling for stability analysis
     """
     # Set random seed for reproducibility if provided
     if random_seed is not None:
@@ -53,10 +93,55 @@ def correct_conditions(X: anndata.AnnData) -> np.ndarray:
 
 
 def pseudobulk_X(
-    X: anndata, condition_name: str, groupby: str, type: str
+    X: anndata.AnnData, 
+    condition_name: str, 
+    groupby: str, 
+    type: str
 ) -> list[pd.DataFrame]:
     """
-    Calculate average gene expression for each groupby in each sample
+    Calculate average gene expression for each groupby in each sample.
+
+    Parameters
+    ----------
+    X : anndata.AnnData
+        Single-cell expression data with genes in `.var` and cells in `.obs`.
+    condition_name : str
+        Column in `X.obs` defining conditions/samples (e.g., 'sample', 'patient').
+        Pseudobulks are created separately for each unique value.
+    groupby : str
+        Column in `X.obs` defining cell groups to aggregate (e.g., 'cell_type',
+        'cluster'). Expression is averaged within each group.
+    type : {'mean', 'fraction'}
+        Aggregation method:
+        
+        - 'mean': Average expression across cells in each group
+        - 'fraction': Fraction of cells expressing each gene (expression > 0)
+
+    Returns
+    -------
+    pseudobulk_matrices : list of pd.DataFrame
+        List of DataFrames, one per condition. Each DataFrame has:
+        
+        - Rows: genes (from `X.var_names`)
+        - Columns: cell types/groups (from unique `groupby` values)
+        - Values: aggregated expression
+
+        Missing combinations (cell type not present in a condition) are filled
+        with zeros.
+
+    Examples
+    --------
+    >>> # Create pseudobulk by cell type per sample
+    >>> pseudobulk_mean = pseudobulk_X(adata, 'sample', 'cell_type', 'mean')
+    >>> print(f"Number of samples: {len(pseudobulk_mean)}")
+    >>> print(f"First sample shape: {pseudobulk_mean[0].shape}")
+    >>> 
+    >>> # Create detection rate pseudobulk
+    >>> pseudobulk_frac = pseudobulk_X(adata, 'sample', 'cell_type', 'fraction')
+
+    See Also
+    --------
+    calc_communication_score_pseudobulk : Communication scores for pseudobulk
     """
     # Get unique samples and cell types
     samples = np.unique(X.obs[condition_name].unique())
