@@ -20,6 +20,11 @@ dependencies = [
     "tensorly-viz>=0.1.7",
     "parafac2 @ git+https://github.com/meyer-lab/parafac2.git@main",
     "zstandard>=0.23.0",
+    "sphinx>=8.2.3",
+    "sphinx-rtd-theme>=3.0.2",
+    "sphinx-autodoc-typehints>=3.5.2",
+    "numpydoc>=1.9.0",
+    "myst-parser>=4.0.1",
 ]
 
 readme = "README.md"

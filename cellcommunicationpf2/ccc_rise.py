@@ -16,27 +16,71 @@ def calc_communication_score(
     complex_sep: str = None,
     complex_agg_method: str = "min",
     verbose: bool = False,
-) -> np.ndarray:
+) -> tuple[np.ndarray, pd.DataFrame]:
     """
-    Calculate cell-cell communication scores using build_context_ccc_tensor
-    from Tensor Cell2Cell for all conditions at once.
+    Calculate cell-cell communication scores using build_context_ccc_tensor.
 
-    Parameters:
-    -----------
-    projected_matrices : list[np.ndarray]
-        List of matrices of shape (rank, genes) representing projected cell expressions
-        across different conditions
-    gene_names : list[str], optional
-        List of gene names corresponding to columns in the matrices
+    This function computes communication scores for all conditions simultaneously
+    using projected cell expression matrices and ligand-receptor pair information.
+    It leverages the Tensor Cell2Cell framework to generate interaction tensors.
+
+    Parameters
+    ----------
+    projected_matrices : list of np.ndarray
+        List of matrices of shape (rank, genes) representing projected cell 
+        expressions across different conditions. Each matrix corresponds to one
+        condition/sample/context.
+    gene_names : list of str, optional
+        List of gene names corresponding to columns in the matrices. If None,
+        generates generic names like 'gene_0', 'gene_1', etc. Default is None.
     lr_pairs : pd.DataFrame, optional
-        DataFrame with 'ligand' and 'receptor' columns
+        DataFrame containing ligand-receptor pairs with columns 'ligand' and 
+        'receptor'. If None, loads default pairs via import_ligand_receptor_pairs().
+        Default is None.
+    complex_sep : str, optional
+        Symbol separating protein subunits in multimeric complexes (e.g., '&').
+        If None, complexes are not processed. Default is None.
+    complex_agg_method : {'min', 'mean', 'gmean'}, default='min'
+        Method to aggregate expression values for protein complexes:
+        
+        - 'min': Minimum expression among subunits
+        - 'mean': Average expression among subunits
+        - 'gmean': Geometric mean of expression among subunits
+    verbose : bool, default=False
+        If True, prints progress information during computation.
 
-    Returns:
+    Returns
+    -------
+    interaction_tensor : np.ndarray
+        4D interaction tensor of shape (n_conditions, rank, rank, n_lr_pairs)
+        containing communication scores. Dimensions represent:
+        
+        - axis 0: conditions/samples/contexts
+        - axis 1: sender cell ranks
+        - axis 2: receiver cell ranks
+        - axis 3: ligand-receptor pairs
+    filtered_lr_pairs : pd.DataFrame
+        Filtered ligand-receptor pairs that correspond to the tensor's last
+        dimension. Only includes pairs where both ligand and receptor genes
+        are present in the expression data.
+
+    Notes
+    -----
+    This function internally converts matrices to DataFrames with genes as rows
+    and cells/ranks as columns, following the Tensor Cell2Cell convention.
+
+    Examples
     --------
-    np.ndarray
-        4D interaction tensor of shape (conditions, rank, rank, n_lr_pairs)
-    pd.DataFrame
-        The filtered ligand-receptor pairs that correspond to the tensor's last dimension.
+    >>> projected_mats = [np.random.rand(10, 100) for _ in range(5)]
+    >>> gene_names = [f"gene_{i}" for i in range(100)]
+    >>> tensor, lr_pairs = calc_communication_score(projected_mats, gene_names)
+    >>> print(tensor.shape)
+    (5, 10, 10, 2000)
+
+    See Also
+    --------
+    ccc_rise : Main workflow function that uses this internally
+    build_context_ccc_tensor : Underlying Tensor Cell2Cell function
     """
     if lr_pairs is None:
         lr_pairs = import_ligand_receptor_pairs()
@@ -117,31 +161,109 @@ def ccc_rise(
     svd_init: str = "svd",
 ) -> tuple[tuple, float, pd.DataFrame]:
     """
-    Perform RISE on an AnnData object, followed by
-    CP decomposition on the resulting interaction tensor.
+    Perform RISE followed by CP decomposition.
 
-    Parameters:
-    -----------
+    This is the core analytical workflow that:
+    1. Applies RISE to expression data across conditions
+    2. Projects cells x genes matrices onto cell eigen-state x genes space
+    3. Computes cell-cell communication scores across all conditions
+    4. Performs CP tensor decomposition on the resulting interaction tensor
+
+    Parameters
+    ----------
     adata : anndata.AnnData
-        Annotated data object with expression data in `.X`
+        Annotated data object containing expression data in `.X`. Must have
+        consistent gene names across all observations and condition annotations.
     rise_rank : int
-        Rank for the PARAFAC2 decomposition (RISE)
+        Rank for the PARAFAC2 decomposition (RISE step). Determines the number
+        of cell eigen-states to project into. Typical values range from 10-50 
+        depending on complexity.
     n_iter_max : int
-        Maximum number of iterations for PARAFAC2
+        Maximum number of iterations for both PARAFAC2 and CP decomposition
+        algorithms.
     tol : float
-        Convergence tolerance for PARAFAC2
+        Convergence tolerance for both decomposition algorithms. Algorithm stops
+        when the relative change in reconstruction error falls below this threshold.
     cp_rank : int, optional
-        Rank for the CP decomposition. If None, defaults to `rise_rank`.
+        Rank for the final CP decomposition on the interaction tensor. If None, 
+        defaults to `rise_rank`. Can be set lower than rise_rank to reduce 
+        dimensionality of communication patterns while capturing more cell 
+        populations. Default is None.
     random_state : int, optional
-        Seed for reproducibility
+        Random seed for reproducibility of decomposition algorithms. If None,
+        results may vary between runs. Default is None.
+    complex_sep : str, optional
+        Separator symbol for protein complexes in ligand-receptor annotations
+        (e.g., '&' for "CD74&CD44"). If None, protein complexes are not handled
+        specially. Default is None.
+    lr_pairs : pd.DataFrame, optional
+        Custom ligand-receptor pairs DataFrame with 'ligand' and 'receptor' columns.
+        If None, uses default database via import_ligand_receptor_pairs(). 
+        Default is None.
+    svd_init : {'svd', 'random'}, default='svd'
+        Initialization method for CP decomposition:
+        
+        - 'svd': Uses SVD-based initialization
+        - 'random': Random initialization
 
-    Returns:
+    Returns
+    -------
+    results : tuple
+        Nested tuple containing:
+        
+        - ((cp_weights, cp_factors), projections) where:
+            - cp_weights : np.ndarray of shape (cp_rank,)
+                Component importance weights
+            - cp_factors : list of 4 np.ndarray
+                [condition_factor, sender_factor, receiver_factor, lr_pair_factor]
+            - projections : list of np.ndarray
+                PARAFAC2 projections for each condition
+    r2x : float
+        Variance explained (R²X) by the CP decomposition on the interaction tensor.
+        Values range from 0 to 1, where higher is better. Typical good values: >0.7.
+    filtered_lr_pairs : pd.DataFrame
+        Ligand-receptor pairs actually used in the analysis after filtering for
+        gene availability in the expression data.
+
+    Raises
+    ------
+    ValueError
+        If `adata` is missing required fields or has inconsistent dimensions.
+
+    Notes
+    -----
+    The RISE algorithm extends PARAFAC2 to handle irregular tensors where different
+    conditions may have different numbers of cells. The resulting interaction tensor
+    has regular dimensions based on the learned cell eigen-state dimension.
+
+    The R²X metric indicates how well the CP decomposition reconstructs the
+    interaction tensor.
+
+    Examples
     --------
-    tuple
-        A tuple containing:
-        - A nested tuple with CP results and projections: ((cp_weights, cp_factors), projections)
-        - The R2X (variance explained) of the CP decomposition on the interaction tensor.
-        - The filtered ligand-receptor pairs DataFrame used in the analysis.
+    Basic usage with COVID-19 BALF data:
+
+    >>> from cellcommunicationpf2 import import_balf_covid, import_ligand_receptor_pairs
+    >>> adata = import_balf_covid(gene_threshold=0.001, normalize=True)
+    >>> lr_pairs = import_ligand_receptor_pairs()
+    >>> results, r2x, lr_pairs_used = ccc_rise(
+    ...     adata, 
+    ...     rise_rank=35, 
+    ...     cp_rank=8,
+    ...     n_iter_max=1000, 
+    ...     tol=1e-9,
+    ...     complex_sep='&',
+    ...     lr_pairs=lr_pairs
+    ... )
+    >>> print(f"Variance explained: {r2x:.3f}")
+    >>> (cp_weights, cp_factors), projections = results
+
+    See Also
+    --------
+    run_ccc_rise_workflow : High-level wrapper with additional post-processing
+    calc_communication_score : Communication score calculation
+    standardize_cc_pf2 : Factor standardization for interpretability
+    parafac2_nd : Underlying PARAFAC2 implementation
     """
     gene_names = list(adata.var_names)
     X_list = anndata_to_list(adata)
@@ -196,22 +318,45 @@ def ccc_rise(
 
 def standardize_cc_pf2(
     weights: np.ndarray | None = None, factors: list[np.ndarray] = None
-) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray]]:
+) -> tuple[np.ndarray, list[np.ndarray]]:
     """
-    Standardize CP factors for better interpretability.
-    This function expects all inputs to be NumPy arrays on the CPU.
+    Standardize CP tensor factors for improved interpretability and consistency.
+
+    This function performs three key standardization steps:
+    1. Orders components by condition variance (Gini coefficient)
+    2. Normalizes factor magnitudes using cp_normalize
+    3. Resolves sign ambiguity using cp_flip_sign
 
     Parameters
     ----------
-    factors : list[np.ndarray]
-        CP factors from the decomposition.
     weights : np.ndarray, optional
-        Component weights from the CP decomposition. If None, they are initialized to ones.
+        Component importance weights of shape (n_components,). If None,
+        initialized to ones. Default is None.
+    factors : list of np.ndarray, optional
+        List of factor matrices from CP decomposition. Expected order:
+        [conditions, senders, receivers, lr_pairs]. Default is None.
 
     Returns
     -------
-    tuple
-        (weights, factors) after standardization.
+    weights : np.ndarray
+        Standardized component weights of shape (n_components,).
+    factors : list of np.ndarray
+        Standardized factor matrices in the same order as input.
+
+    Examples
+    --------
+    >>> cp_weights = np.array([1.5, 2.3, 0.8])
+    >>> cp_factors = [
+    ...     np.random.rand(10, 3),  # conditions
+    ...     np.random.rand(20, 3),  # senders
+    ...     np.random.rand(20, 3),  # receivers
+    ...     np.random.rand(50, 3),  # lr_pairs
+    ... ]
+    >>> std_weights, std_factors = standardize_cc_pf2(cp_weights, cp_factors)
+
+    See Also
+    --------
+    run_ccc_rise_workflow : Workflow that uses this standardization
     """
     # Order components by condition variance
     gini = np.var(factors[0], axis=0) / np.mean(factors[0], axis=0)

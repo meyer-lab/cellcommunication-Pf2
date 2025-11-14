@@ -131,8 +131,71 @@ def add_cond_idxs(X, condition_key):
 
 
 def prepare_dataset(
-    X: anndata.AnnData, condition_name: str, geneThreshold: float, normalize=False
+    X: anndata.AnnData, 
+    condition_name: str, 
+    geneThreshold: float, 
+    normalize: bool = False
 ) -> anndata.AnnData:
+    """
+    Preprocess and filter AnnData object for CCC-RISE analysis.
+
+    Applies comprehensive quality control, filtering, and normalization
+    to prepare single-cell data for tensor decomposition.
+
+    Parameters
+    ----------
+    X : anndata.AnnData
+        Input single-cell expression data. Should have:
+        
+        - `.X`: Raw or normalized counts (will be converted to sparse CSR)
+        - `.obs`: Cell metadata with `condition_name` column
+        - `.var_names`: Gene identifiers
+        - `.raw` (optional): If present, uses raw counts from here
+    condition_name : str
+        Column name in `X.obs` that defines experimental conditions/samples
+        (e.g., 'sample', 'patient_id', 'batch'). Used to create numeric indices
+        for tensor decomposition.
+    geneThreshold : float
+        Minimum mean expression threshold for gene inclusion. Genes with mean
+        expression < threshold across all cells are removed.
+    normalize : bool, default=False
+        Whether to perform library size normalization and log-transformation.
+
+    Returns
+    -------
+    X_processed : anndata.AnnData
+        Preprocessed dataset with:
+        
+        - `.X`: Filtered and optionally normalized expression (sparse CSR)
+        - `.obs['condition_unique_idxs']`: Numeric indices for conditions (0, 1, 2, ...)
+        - `.var['means']`: Pre-computed gene means for efficiency
+        - Filtered genes and cells based on QC thresholds
+
+    Raises
+    ------
+    AssertionError
+        If `.X` contains negative values (invalid for count data).
+
+    Examples
+    --------
+    >>> import anndata
+    >>> import numpy as np
+    >>> # Create example data
+    >>> adata = anndata.AnnData(
+    ...     X=np.random.negative_binomial(5, 0.3, (1000, 500)),
+    ...     obs=pd.DataFrame({'sample': ['A']*500 + ['B']*500})
+    ... )
+    >>> # Preprocess with normalization
+    >>> adata_proc = prepare_dataset(
+    ...     adata, 
+    ...     condition_name='sample',
+    ...     geneThreshold=0.01,
+    ...     normalize=True
+    ... )
+    >>> print(f"Filtered to {adata_proc.n_vars} genes")
+    >>> print(f"Condition indices: {adata_proc.obs['condition_unique_idxs'].unique()}")
+    """
+
     assert issparse(X.X)
     # Use raw data if available, otherwise use the current X data
     if X.raw is not None:
