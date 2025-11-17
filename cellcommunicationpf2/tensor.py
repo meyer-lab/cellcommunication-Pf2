@@ -105,8 +105,9 @@ def run_ccc_rise_workflow(
     ----------
     adata : anndata.AnnData
         The AnnData object with expression data.
-    rank : int
-        The rank for the decomposition.
+    rise_rank : int
+        The rank for the PARAFAC2 (RISE) decomposition. Determines the number
+        of cell eigen-states to extract during RISE.
     lr_pairs : pd.DataFrame
         The ligand-receptor pairs used in the decomposition.
     cp_rank : int, optional
@@ -195,7 +196,7 @@ def calculate_interaction_tensor(
     X_filtered: anndata.AnnData, 
     lr_pairs: pd.DataFrame, 
     rise_rank: int
-) -> tuple[np.ndarray, list[np.ndarray]]:
+) -> np.ndarray:
     """
     Construct interaction tensor from expression data using RISE and 
     ligand-receptor communication scores.
@@ -219,9 +220,14 @@ def calculate_interaction_tensor(
     interaction_tensor : np.ndarray
         4D tensor of shape (n_conditions, rise_rank, rise_rank, n_lr_pairs)
         containing computed communication scores.
-    projections : list of np.ndarray
-        List of projection matrices, one per condition, each of shape
-        (n_cells_in_condition, rise_rank). Maps cells to cell eigen-states.
+
+    Notes
+    -----
+    The function computes projection matrices internally (PARAFAC2 outputs)
+    and uses them to build the interaction tensor, but it currently returns
+    only the interaction tensor. If callers require the `projections` list,
+    they should compute RISE/PARAFAC2 outside this wrapper or request the
+    function be changed to return the projections as well.
 
     Examples
     --------

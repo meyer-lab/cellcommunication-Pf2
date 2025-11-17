@@ -465,7 +465,7 @@ def pseudobulk_cp_decomposition(
     n_iter_max: int,
     tol: float | None = None,
     random_state: int | None = None,
-) -> tuple[tuple[np.ndarray, list[np.ndarray]], float, pd.DataFrame]:
+) -> tuple[np.ndarray, list[np.ndarray], float]:
     """
     Perform non-negative CP decomposition on the pseudobulk interaction tensors.
     Parameters
@@ -482,9 +482,19 @@ def pseudobulk_cp_decomposition(
         Random seed for reproducibility.
     Returns
     -------
-    tuple[tuple[np.ndarray, list[np.ndarray]], float, pd.DataFrame]
-        A tuple containing the CP decomposition results, the R2X value,
-        and the filtered ligand-receptor pairs.
+    tuple[np.ndarray, list[np.ndarray], float]
+        A tuple containing the CP decomposition results and the R2X value:
+
+        - cp_weights : np.ndarray
+            Component weights from the CP decomposition.
+        - cp_factors : list[np.ndarray]
+            List of factor matrices returned by the CP decomposition.
+        - r2x : float
+            Variance explained (R²X) by the decomposition.
+
+    Note: this function does NOT currently return a DataFrame of ligand-receptor
+    pairs. If a filtered `lr_pairs` DataFrame is required, compute it prior to
+    calling this function or modify the function to return it.
     """
     # CP decomposition
     cp_weights, cp_factors = parafac(
@@ -512,7 +522,27 @@ def save_ccc_rise_results(
     weights: np.ndarray,
     lr_pairs: np.array,
 ):
-    """Save CPD results in an AnnData object."""
+    """Save CPD results in an AnnData object.
+
+    Notes
+    -----
+    - This function will write factor matrices and weights into `X.uns` under
+      the keys: 'A', 'B', 'C', 'D', and 'weights'.
+    - It expects `lr_pairs` to be a DataFrame containing an
+      'interaction_symbol' column; otherwise the assignment to
+      `X.uns['lr_pairs']` will fail.
+
+    Parameters
+    ----------
+    X : anndata.AnnData
+        AnnData object to store results in.
+    cpd_factors : list[np.ndarray]
+        List of factor matrices in order [conditions, senders, receivers, lr_pairs].
+    weights : np.ndarray
+        Component weights corresponding to the CP decomposition.
+    lr_pairs : pandas.DataFrame
+        DataFrame of ligand-receptor pairs. Must contain 'interaction_symbol'.
+    """
     X.uns["A"] = cpd_factors[0]  # Condition factor
     X.uns["B"] = cpd_factors[1]  # Sender cell types factor
     X.uns["C"] = cpd_factors[2]  # Receiver cell types factor
@@ -535,10 +565,11 @@ def get_genes_from_complexes(ppi_data, complex_sep="&", interaction_columns=("A"
         List of protein-protein interactions (or ligand-receptor pairs) used
         for inferring the cell-cell interactions and communication.
 
-    complex_sep : str, default=None
+    complex_sep : str, default='&'
         Symbol that separates the protein subunits in a multimeric complex.
         For example, '&' is the complex_sep for a list of ligand-receptor pairs
-        where a protein partner could be "CD74&CD44".
+        where a protein partner could be "CD74&CD44". The implementation
+        uses '&' by default and will split complex names on this separator.
 
     interaction_columns : tuple, default=('A', 'B')
         Contains the names of the columns where to find the partners in a

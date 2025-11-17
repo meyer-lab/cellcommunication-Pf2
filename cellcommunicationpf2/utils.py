@@ -197,7 +197,29 @@ def add_obs_cmp_label(
     top_perc: float = 1,
     type: str = "receiver",
 ):
-    """Adds a boolean label to X.obs for cells in the top or bottom percentage of a single component."""
+    """Adds a boolean label to `X.obs` for cells in the top or bottom percentage of a single component.
+
+    Notes
+    -----
+    - This function expects that the projection-based factor matrices are
+      present in `X.obsm` under the keys 'sc_B' (sender components) and
+      'rc_C' (receiver components). The `type` parameter selects which one
+      to use ('sender' or 'receiver').
+    - The new boolean column added will be named `Cmp{cmp}`.
+
+    Parameters
+    ----------
+    X : anndata.AnnData
+        AnnData with `obsm['sc_B']` and/or `obsm['rc_C']` available.
+    cmp : int
+        Component index (1-based) to use for labeling.
+    pos : bool, default=True
+        If True label cells in the top percentage; if False label the bottom.
+    top_perc : float, default=1
+        Percentage threshold (0-100) used to determine the top/bottom cutoff.
+    type : str, default='receiver'
+        Either 'sender' or 'receiver' to select which factor to use.
+    """
     if type == "sender":
         factor_type = X.obsm["sc_B"]
     elif type == "receiver":
@@ -262,7 +284,15 @@ def add_obs_cmp_both_label(
     top_perc=1,
     type="sender",
 ):
-    """Adds if cells in top/bot percentage"""
+    """Add boolean labels for membership in two components and a combined 'Both' column.
+
+    Notes
+    -----
+    - This function expects `X.obsm['sc_B']` (for sender) or `X.obsm['rc_C']`
+      (for receiver) to be present depending on `type`.
+    - It will set `X.obs[f"Cmp{cmp}"]` for each component and `X.obs['Both']`
+      for the combined criterion.
+    """
     if type == "sender":
         factor_type = X.obsm["sc_B"]
     elif type == "receiver":
@@ -276,7 +306,6 @@ def add_obs_cmp_both_label(
                 thres_value = 100 - top_perc
                 threshold1 = np.percentile(factor_type, thres_value, axis=0)
                 idx = factor_type[:, cmp - 1] > threshold1[cmp - 1]
-
             else:
                 thres_value = top_perc
                 threshold1 = np.percentile(factor_type, thres_value, axis=0)
@@ -317,19 +346,20 @@ def add_obs_cmp_both_label(
 
 
 def add_obs_cmp_unique_two(X: anndata.AnnData, cmp1: str, cmp2: str):
-    """Creates AnnData observation column"""
+    """Create a single-label `Label` column from two existing `Cmp` boolean columns.
+
+    Notes
+    -----
+    - This function expects `X.obs` already contains boolean columns
+      `Cmp{cmp1}` and `Cmp{cmp2}` (created e.g. by `add_obs_cmp_label`).
+    - It will populate `X.obs['Label']` with one of {`Cmp{cmp1}`, `Cmp{cmp2}`,
+      'Both', 'NoLabel'} depending on membership.
+    """
+    X.obs.loc[(X.obs[f"Cmp{cmp1}"] == True) & (X.obs[f"Cmp{cmp2}"] == False), "Label"] = f"Cmp{cmp1}"
     X.obs.loc[
-        ((X.obs[f"Cmp{cmp1}"] == True) & (X.obs[f"Cmp{cmp2}"] == False), "Label")
-    ] = f"Cmp{cmp1}"
-    X.obs.loc[
-        (X.obs[f"Cmp{cmp1}"] == False) & (X.obs[f"Cmp{cmp2}"] == True), "Label"
-    ] = f"Cmp{cmp2}"
-    X.obs.loc[
-        (X.obs[f"Cmp{cmp1}"] == True) & (X.obs[f"Cmp{cmp2}"] == True), "Label"
-    ] = "Both"
-    X.obs.loc[
-        (X.obs[f"Cmp{cmp1}"] == False) & (X.obs[f"Cmp{cmp2}"] == False), "Label"
-    ] = "NoLabel"
+    (X.obs[f"Cmp{cmp1}"] == False) & (X.obs[f"Cmp{cmp2}"] == True), "Label"] = f"Cmp{cmp2}"
+    X.obs.loc[(X.obs[f"Cmp{cmp1}"] == True) & (X.obs[f"Cmp{cmp2}"] == True), "Label"] = "Both"
+    X.obs.loc[(X.obs[f"Cmp{cmp1}"] == False) & (X.obs[f"Cmp{cmp2}"] == False), "Label"] = "NoLabel"
 
     return X
 

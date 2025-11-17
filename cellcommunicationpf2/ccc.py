@@ -114,10 +114,11 @@ def get_genes_from_complexes(ppi_data, complex_sep="&", interaction_columns=("A"
         List of protein-protein interactions (or ligand-receptor pairs) used
         for inferring the cell-cell interactions and communication.
 
-    complex_sep : str, default=None
+    complex_sep : str, default='&'
         Symbol that separates the protein subunits in a multimeric complex.
         For example, '&' is the complex_sep for a list of ligand-receptor pairs
-        where a protein partner could be "CD74&CD44".
+        where a protein partner could be "CD74&CD44". The function default
+        is '&' and the code will split complex entries on that separator.
 
     interaction_columns : tuple, default=('A', 'B')
         Contains the names of the columns where to find the partners in a
@@ -436,17 +437,17 @@ def build_context_ccc_tensor(
         all elements across the samples. When this value is 1, it acts as using
         `how='inner'`.
 
-    communication_score : str, default='expression_mean'
+    communication_score : str, default='expression_product'
         Type of communication score to infer the potential use of a given ligand-
         receptor pair by a pair of cells/tissues/samples.
         Available communication_scores are:
 
+        - 'expression_product' : Computes the product between the expression of a
+                                ligand from a sender cell and the expression of a
+                                receptor on a receiver cell. (DEFAULT)
         - 'expression_mean' : Computes the average between the expression of a ligand
                               from a sender cell and the expression of a receptor on a
                               receiver cell.
-        - 'expression_product' : Computes the product between the expression of a
-                                ligand from a sender cell and the expression of a
-                                receptor on a receiver cell.
         - 'expression_gmean' : Computes the geometric mean between the expression
                                of a ligand from a sender cell and the
                                expression of a receptor on a receiver cell.
@@ -619,17 +620,17 @@ def generate_ccc_tensor(
         contain at least two columns, one for the first protein partner in the
         interaction as well as the second protein partner.
 
-    communication_score : str, default='expression_mean'
+    communication_score : str, default='expression_product'
         Type of communication score to infer the potential use of a given ligand-
-        receptor pair by a pair of cells/tissues/samples.
-        Available communication_scores are:
+        receptor pair by a pair of cells/tissues/samples. The implementation
+        defaults to 'expression_product'. Available communication_scores are:
 
+        - 'expression_product' : Computes the product between the expression of a
+                                ligand from a sender cell and the expression of a
+                                receptor on a receiver cell. (DEFAULT)
         - 'expression_mean' : Computes the average between the expression of a ligand
                               from a sender cell and the expression of a receptor on a
                               receiver cell.
-        - 'expression_product' : Computes the product between the expression of a
-                                ligand from a sender cell and the expression of a
-                                receptor on a receiver cell.
         - 'expression_gmean' : Computes the geometric mean between the expression
                                of a ligand from a sender cell and the
                                expression of a receptor on a receiver cell.

@@ -116,7 +116,20 @@ def import_alad(gene_threshold: float = 0.1, normalize: bool = True):
 
 
 def add_cond_idxs(X, condition_key):
-    """Add unique condition indices to an AnnData object."""
+    """Add unique condition indices to an AnnData object.
+
+    This function expects that `condition_key` exists in `X.obs`.
+    It creates a new column `X.obs['condition_unique_idxs']` containing
+    integer indices (0, 1, 2, ...) mapping each unique condition value
+    to a numeric index used by downstream functions (for example, RISE).
+
+    Parameters
+    ----------
+    X : anndata.AnnData
+        Annotated data object with an `.obs` DataFrame containing `condition_key`.
+    condition_key : str
+        Column name in `X.obs` used to define experimental conditions/samples.
+    """
     # Create a copy to avoid modifying a view
     # X = X.copy()
 
