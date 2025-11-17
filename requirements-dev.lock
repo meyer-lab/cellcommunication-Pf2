@@ -10,6 +10,8 @@
 #   universal: false
 
 -e file:.
+alabaster==1.0.0
+    # via sphinx
 anndata==0.12.3
     # via cellcommunicationpf2
     # via liana
@@ -20,6 +22,8 @@ annoy==1.17.3
     # via pacmap
 array-api-compat==1.11.2
     # via anndata
+babel==2.17.0
+    # via sphinx
 certifi==2025.1.31
     # via requests
 cfgv==3.4.0
@@ -44,6 +48,10 @@ distlib==0.3.9
     # via virtualenv
 docrep==0.3.2
     # via liana
+docutils==0.21.2
+    # via myst-parser
+    # via sphinx
+    # via sphinx-rtd-theme
 donfig==0.8.1.post1
     # via zarr
 fastrlock==0.8.3
@@ -59,8 +67,13 @@ identify==2.6.12
     # via pre-commit
 idna==3.10
     # via requests
+imagesize==1.4.1
+    # via sphinx
 iniconfig==2.1.0
     # via pytest
+jinja2==3.1.6
+    # via myst-parser
+    # via sphinx
 joblib==1.4.2
     # via pynndescent
     # via scanpy
@@ -75,18 +88,29 @@ liana==1.5.1
 llvmlite==0.44.0
     # via numba
     # via pynndescent
+markdown-it-py==3.0.0
+    # via mdit-py-plugins
+    # via myst-parser
+markupsafe==3.0.3
+    # via jinja2
 matplotlib==3.10.1
     # via cellcommunicationpf2
     # via plotnine
     # via scanpy
     # via seaborn
     # via tensorly-viz
+mdit-py-plugins==0.5.0
+    # via myst-parser
+mdurl==0.1.2
+    # via markdown-it-py
 mizani==0.14.2
     # via plotnine
 mudata==0.3.2
     # via liana
 multipledispatch==1.0.0
     # via datashader
+myst-parser==4.0.1
+    # via cellcommunicationpf2
 natsort==8.4.0
     # via anndata
     # via scanpy
@@ -131,12 +155,15 @@ numpy==2.2.6
     # via umap-learn
     # via xarray
     # via zarr
+numpydoc==1.9.0
+    # via cellcommunicationpf2
 packaging==24.2
     # via anndata
     # via datashader
     # via matplotlib
     # via pytest
     # via scanpy
+    # via sphinx
     # via statsmodels
     # via xarray
     # via zarr
@@ -172,6 +199,8 @@ pre-commit==4.2.0
     # via liana
 pyct==0.5.0
     # via datashader
+pygments==2.19.2
+    # via sphinx
 pynndescent==0.5.13
     # via scanpy
     # via umap-learn
@@ -190,10 +219,14 @@ pytz==2025.1
     # via pandas
 pyyaml==6.0.2
     # via donfig
+    # via myst-parser
     # via pre-commit
 requests==2.32.3
     # via datashader
+    # via sphinx
     # via tensorly-viz
+roman-numerals-py==3.1.0
+    # via sphinx
 scanpy==1.11.2
     # via liana
 scikit-learn==1.6.1
@@ -224,6 +257,33 @@ session-info2==0.1.2
 six==1.17.0
     # via docrep
     # via python-dateutil
+snowballstemmer==3.0.1
+    # via sphinx
+sphinx==8.2.3
+    # via cellcommunicationpf2
+    # via myst-parser
+    # via numpydoc
+    # via sphinx-autodoc-typehints
+    # via sphinx-rtd-theme
+    # via sphinxcontrib-jquery
+sphinx-autodoc-typehints==3.5.2
+    # via cellcommunicationpf2
+sphinx-rtd-theme==3.0.2
+    # via cellcommunicationpf2
+sphinxcontrib-applehelp==2.0.0
+    # via sphinx
+sphinxcontrib-devhelp==2.0.0
+    # via sphinx
+sphinxcontrib-htmlhelp==2.1.0
+    # via sphinx
+sphinxcontrib-jquery==4.1
+    # via sphinx-rtd-theme
+sphinxcontrib-jsmath==1.0.1
+    # via sphinx
+sphinxcontrib-qthelp==2.0.0
+    # via sphinx
+sphinxcontrib-serializinghtml==2.0.0
+    # via sphinx
 statsmodels==0.14.5
     # via plotnine
     # via scanpy
