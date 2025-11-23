@@ -15,7 +15,7 @@ def makeFigure():
     subplotLabel(ax)
 
     # Import and prepare data
-    X = anndata.read_h5ad("/opt/andrew/ccc/bal_alad_stable.h5ad")
+    X = anndata.read_h5ad("/opt/andrew/ccc/bal_alad.h5ad")
 
     # Add numerical indices for each patient sample, which is the primary condition
     condition_column = "dsco_id"
@@ -35,17 +35,24 @@ def makeFigure():
 
     X.uns["A"] = correct_conditions(X)
 
-    auc_roc_weights, _ = ccc_rise_logreg_weights(X, sample_to_group)
+    auc_roc_weights, pred_acc_weights = ccc_rise_logreg_weights(X, sample_to_group)
+    
+    print(auc_roc_weights)
+    print(pred_acc_weights)
 
     ax[0].bar(np.arange(len(auc_roc_weights))+1, auc_roc_weights)
-
-    print(auc_roc_weights)
-
     ax[0].set_xlabel("Component")
     ax[0].set_ylabel("Logistic Regression Weight")
 
     ym = np.max(np.abs(auc_roc_weights)) * 1.1
     ax[0].set_ylim(-ym, ym)
     ax[0].set_xticks(np.arange(len(auc_roc_weights))+1)
+    
+    ax[1].bar(np.arange(len(pred_acc_weights))+1, pred_acc_weights)
+    ax[1].set_xlabel("Component")
+    ax[1].set_ylabel("Logistic Regression Weight")
+    ym = np.max(np.abs(pred_acc_weights)) * 1.1
+    ax[1].set_ylim(-ym, ym)
+    ax[1].set_xticks(np.arange(len(pred_acc_weights))+1)
 
     return f

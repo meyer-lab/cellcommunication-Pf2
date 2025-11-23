@@ -152,4 +152,11 @@ def ccc_rise_logreg_weights(
         elif i == "accuracy":
             weights_accuracy = lr_fit.coef_[0]
 
+    
+    # Print scores for logisitc regressoin
+    for i in scoring:
+        score = float(
+            np.max(np.mean(lr_fit.scores_[1], axis=0))
+        )  # Convert to plain float
+        print(f"Logistic Regression {i} Score: {score}")
     return weights_aucroc, weights_accuracy
