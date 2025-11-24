@@ -11,13 +11,13 @@ Overview
 CCC-RISE identifies cell-cell communication patterns by:
 
 1. Performing RISE dimensionality reduction on gene expression data across conditions
-2. Computing communication scores between cell types using ligand-receptor pairs
-3. Decomposing the resulting communication tensor to identify key patterns
+2. Computing communication scores between cell eigen-states (previously computed by RISE) using ligand-receptor pairs
+3. Decomposing the resulting communication tensor using CP decomposition to identify key patterns
 
 The workflow produces interpretable factors that reveal:
 
 * **Condition patterns**: How communication changes across experimental conditions
-* **Cell type patterns**: Which sender and receiver cell types drive communication
+* **Cell patterns**: Which sender and receiver cells drive communication
 * **Ligand-receptor patterns**: Which signaling pathways are most important
 
 Basic Workflow
@@ -69,7 +69,7 @@ This function loads bronchoalveolar lavage fluid (BALF) immune cell data from CO
 
 **Parameters:**
 
-* ``gene_threshold`` (float, default=0.01): Minimum mean expression level for a gene to be included in the analysis. Genes with average expression below this threshold across all cells are filtered out. Lower values (e.g., 0.001) retain more genes; higher values (e.g., 0.01) perform more aggressive filtering. This removes lowly expressed genes that add noise to the analysis.
+* ``gene_threshold`` (float, default=0.01): Minimum mean expression level for a gene to be included in the analysis. Genes with average expression below this threshold across all cells are filtered out. Lower values (e.g., 0.001) retain more genes; higher values (e.g., 0.1) perform more aggressive filtering. This removes lowly expressed genes that add noise to the analysis.
 
 * ``normalize`` (bool, default=True): Whether to normalize the expression data. When True, the function:
   
@@ -90,7 +90,7 @@ An AnnData object containing:
 
 **Function: import_ligand_receptor_pairs()**
 
-This function loads a curated database of known ligand-receptor interactions from the literature. These pairs define which genes encode ligands (signaling molecules) and which encode their corresponding receptors.
+This function loads a curated database of known ligand-receptor interactions.
 
 **Returns:**
 
@@ -102,7 +102,42 @@ A pandas DataFrame with columns:
 
 The function loads ~2,000 validated human ligand-receptor pairs used to compute communication scores.
 
-Note: the implementation of `import_ligand_receptor_pairs` reads a zstd-compressed CSV by default (filename set in the code). When `update_interaction_names=True` (the default) the function will try to populate/normalize `ligand`, `receptor`, and `interaction_symbol` columns from available fields (for example `interaction_name_2`), and will upper-case / replace some characters ("+" → "&"). If you supply your own CSV/DataFrame, ensure it contains at least `ligand` and `receptor`, and optionally `interaction_symbol`.
+Note: the implementation of import_ligand_receptor_pairs reads a zstd-compressed CSV by default (filename set in the code). When update_interaction_names=True (the default) the function will try to populate/normalize ligand, receptor, and interaction_symbol columns from available fields (for example interaction_name_2), and will upper-case / replace some characters ("+" → "&"). If you supply your own CSV/DataFrame, ensure it contains at least ligand and receptor, and optionally interaction_symbol.
+
+Ligand–Receptor file format and compression
+-------------------------------------------
+
+The library expects a simple CSV with at minimum the columns `ligand` and `receptor`. An optional `interaction_symbol` column is used to store a combined name. Example minimal CSV (first row = header):
+
+    ligand,receptor,interaction_symbol
+    IL6,IL6R&IL6ST,IL6-IL6R&IL6ST
+    TNF,TNFRSF1A,TNF-TNFRSF1A
+    TGFB1,TGFBR1&TGFBR2,TGFB1-TGFBR1&TGFBR2
+
+Notes:
+- Receptor entries may include multi-subunit complexes; the code uses `complex_sep` (default '&') to split subunits (e.g., `TGFBR1&TGFBR2`).
+- Column names are case-sensitive in the code paths that expect `ligand`, `receptor`, and `interaction_symbol`. If your file uses different column names, rename them or supply a pre-built DataFrame.
+
+Compressing with zstd (two options)
+
+- Using the zstd CLI:
+    zstd -c Human-LR-pairs.csv > Human-LR-pairs.csv.zst
+
+- Using Python (zstandard library):
+.. code-block:: python
+
+    import zstandard as zstd
+    import io
+    import pandas as pd
+
+    df = pd.read_csv("Human-LR-pairs.csv")
+    cctx = zstd.ZstdCompressor()
+    with open("Human-LR-pairs.csv.zst", "wb") as f:
+        with cctx.stream_writer(f) as compressor:
+            text = df.to_csv(index=False).encode("utf-8")
+            compressor.write(text)
+
+If you supply a DataFrame directly to `import_ligand_receptor_pairs` (instead of a filename), make sure it contains the required columns.
 
 Step 3: Prepare Data for Analysis
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -193,8 +228,8 @@ This is the main function that executes the complete CCC-RISE pipeline. It perfo
 
 **What this function does:**
 
-1. Performs RISE decomposition on gene expression data separately for each condition
-2. Projects cells onto the RISE factors to get low-dimensional representations
+1. Performs RISE decomposition on the scRNA-seq data
+2. Projects cells into cell eigen-states using the projection matrices solved by RISE
 3. Computes communication scores between all sender-receiver cell state pairs for each ligand-receptor pair
 4. Creates a 4D interaction tensor: (conditions × sender states × receiver states × LR pairs)
 5. Decomposes this tensor using CP decomposition to identify major communication patterns
@@ -245,46 +280,42 @@ The CCC-RISE decomposition breaks down the complex 4D communication tensor into 
 **1. Condition Factors (Factor A):**
 
 * **Shape**: (n_samples, n_components)
+
 * **Interpretation**: Each row represents one experimental condition/sample (e.g., control, moderate COVID, severe COVID). Each column represents one communication component.
-* **Values**: Positive values indicate the component is more active in that condition; negative values indicate it is suppressed. The magnitude indicates strength.
-* **Example**: If component 1 has high positive values for severe COVID samples and negative values for controls, it represents communication patterns enriched in severe disease.
+
+* **Values**: Positive values indicate the component is more active in that condition. The magnitude indicates strength.
+
+* **Example**: If component 1 has high positive values for severe COVID samples and low values for controls, it represents communication patterns enriched in severe disease.
 
 **2. Sender Cell State Factors (Factor B):**
 
-* **Shape**: (rise_rank, n_components)  
+* **Shape**: (rise_rank, n_components)
+
 * **Interpretation**: Each row represents one of the latent cell states identified by RISE (these are combinations of cell types with similar expression). Each column represents one communication component.
-* **Values**: Positive values indicate the cell state acts as an important sender (produces ligands) in that component; negative values indicate it does not.
+
+* **Values**: Positive values indicate the cell state acts as an important sender (produces ligands) in that component.
+
 * **Example**: If component 1 has high values for cell state 5, then cells in state 5 are key signal senders for that communication pattern.
 
 **3. Receiver Cell State Factors (Factor C):**
 
 * **Shape**: (rise_rank, n_components)
+
 * **Interpretation**: Each row represents one latent cell state. Each column represents one communication component.
-* **Values**: Positive values indicate the cell state acts as an important receiver (expresses receptors) in that component; negative values indicate it does not.
+
+* **Values**: Positive values indicate the cell state acts as an important receiver (expresses receptors) in that component.
+
 * **Example**: If component 1 has high values for cell state 12, then cells in state 12 are key signal receivers for that communication pattern.
 
 **4. Ligand-Receptor Factors (Factor D):**
 
 * **Shape**: (n_lr_pairs, n_components)
+
 * **Interpretation**: Each row represents one ligand-receptor interaction pair. Each column represents one communication component.
-* **Values**: Positive values indicate the LR pair is important in that component; negative values indicate it is not.
+
+* **Values**: Positive values indicate the LR pair is important in that component.
+
 * **Example**: If component 1 has high values for "IL6-IL6R" and "TNF-TNFRSF1A", these inflammatory signaling pathways drive that communication pattern.
-
-**5. Component Weights:**
-
-* **Shape**: (n_components,)
-* **Interpretation**: The relative importance of each component. Components with larger weights explain more variance in the communication data.
-* **Values**: Always positive. Components are ordered by condition variance (Gini coefficient) rather than by weight magnitude.
-* **Example**: If weights = [2.5, 1.8, 1.2, ...], these indicate the relative importance of each identified pattern.
-
-**How to Interpret Components Together:**
-
-Each component tells a coordinated story by combining information from all four factors:
-
-* **Component 1** might represent: "In severe COVID (high in Factor A), macrophage-like cell states (high sender in Factor B) signal to T cell-like states (high receiver in Factor C) via IL6-IL6R and TNF-TNFRSF1A pathways (high in Factor D)"
-* **Component 2** might represent: "In control samples (high in Factor A), epithelial-like states signal to immune cell states via homeostatic pathways"
-
-The model identifies these patterns automatically without prior knowledge of the biology.
 
 Advanced Usage Tips
 -------------------

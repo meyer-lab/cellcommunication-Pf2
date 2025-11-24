@@ -30,12 +30,30 @@ def rise_ranks_logreg(
 ):
     """
     Evaluate logistic regression performance across different RISE ranks.
-    Returns:
-    --------
+
+    Parameters
+    ----------
+    X : AnnData-like
+        Input object containing decomposition results.
+    rank_list : list[int]
+        List of ranks to evaluate.
+    sample_to_group : array-like
+        Labels used for classification.
+    scoring : list[str], optional
+        Scoring metrics to evaluate (e.g., ['roc_auc', 'accuracy']).
+    n_iter_max : int, optional
+        Maximum iterations for decomposition steps.
+    tolerance : float, optional
+        Convergence tolerance.
+    random_state : int, optional
+        Random seed.
+
+    Returns
+    -------
     scores_aucroc : list
-        AUC scores for each rank
+        AUC scores for each rank.
     scores_accuracy : list
-        Accuracy scores for each rank
+        Accuracy scores for each rank.
     """
     # Initialize score lists
     scores_aucroc = []
@@ -85,14 +103,32 @@ def cpd_ranks_logreg(
     random_state=0,
 ):
     """
-    Evaluate logistic regression performance across different CPD ranks with adaptive initialization.
+    Evaluate logistic regression performance across different CPD ranks with
+    adaptive initialization.
 
-    Returns:
-    --------
+    Parameters
+    ----------
+    X : AnnData-like
+        Input object containing CPD factors.
+    interaction_tensor : np.ndarray
+        Interaction tensor to decompose.
+    rank_list : list[int]
+        List of CP ranks to evaluate.
+    sample_to_group : array-like
+        Labels used for classification.
+    scoring : list[str], optional
+        Scoring metrics to evaluate.
+    n_iter_max : int, optional
+        Maximum iterations for decomposition.
+    random_state : int, optional
+        Random seed.
+
+    Returns
+    -------
     scores_aucroc : list
-        AUC scores for each rank
+        AUC scores for each rank.
     scores_accuracy : list
-        Accuracy scores for each rank
+        Accuracy scores for each rank.
     """
 
     # Initialize score lists

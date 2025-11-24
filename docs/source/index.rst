@@ -8,15 +8,6 @@ communication using tensor decomposition methods. It combines RISE decomposition
 with CANDECOMP/PARAFAC (CP) tensor decomposition to identify communication patterns 
 from single-cell RNA-seq data.
 
-Key Features
-------------
-
-* **CCC-RISE Algorithm**: Combines RISE and CP decomposition for cell communication analysis
-* **Ligand-Receptor Analysis**: Built-in database of protein-protein interactions
-* **COVID-19 Dataset**: Pre-configured access to published BALF COVID-19 data
-* **Stability Analysis**: Tools for evaluating decomposition robustness (FMS, R²X)
-* **Pseudobulk Support**: Analysis at both single-cell and aggregated levels
-
 Quick Links
 -----------
 
@@ -25,15 +16,17 @@ Quick Links
 
 .. toctree::
    :maxdepth: 2
-   :caption: User Guide
-   :hidden:
+   :caption: User guide
 
    quickstart
+   preprocessing
+   rank_selection
+   scoring_methods
+   pacmap_guidance
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: API Reference
-   :hidden:
 
    api/index
 

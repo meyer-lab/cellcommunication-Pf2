@@ -379,27 +379,37 @@ def calc_communication_score_pseudobulk(
     verbose: bool = False,
 ) -> np.ndarray:
     """
-    Calculate cell-cell communication scores for pseudobulk
-    Parameters:
-    -----------
+    Calculate cell-cell communication scores for pseudobulk.
+
+    Parameters
+    ----------
     pseudobulk_matrices_df : list[pd.DataFrame]
-        List of dataframes of shape (genes, groupby)
+        List of DataFrames with shape (genes, groups) representing pseudobulked
+        expression for each condition.
     gene_names : list[str], optional
-        List of gene names corresponding to columns in the matrices
+        List of gene names corresponding to rows in the DataFrames. If None,
+        generic names are generated. Default is None.
     lr_pairs : pd.DataFrame, optional
-        DataFrame with 'ligand' and 'receptor' columns
+        DataFrame with 'ligand' and 'receptor' columns describing LR pairs.
+        If None, the default database is loaded. Default is None.
     complex_sep : str, default="&"
-        Symbol that separates the protein subunits in a multimeric complex
-    complex_agg_method : str, default="min"
-        Method to aggregate expression values for complexes
+        Symbol separating multimeric complex subunits (e.g., '&'). If None,
+        complexes are not expanded. Default is '&'.
+    complex_agg_method : str, default='min'
+        Aggregation method for complex expression values: 'min', 'mean', or
+        'gmean'. Default is 'min'.
     verbose : bool, default=False
-        Print verbose output
-    Returns:
-    --------
-    np.ndarray
-        4D interaction tensor of shape (conditions, sender, receiver, n_lr_pairs)
-    pd.DataFrame
-        The filtered ligand-receptor pairs that correspond to the tensor's last dimension.
+        If True, print progress information.
+
+    Returns
+    -------
+    tuple
+        A tuple containing:
+
+        - interaction_tensor (np.ndarray): 4D interaction tensor of shape
+          (n_conditions, sender_rank, receiver_rank, n_lr_pairs).
+        - filtered_lr_pairs (pd.DataFrame): Filtered LR pairs corresponding
+          to the tensor's last dimension.
     """
     if lr_pairs is None:
         lr_pairs = import_ligand_receptor_pairs()
