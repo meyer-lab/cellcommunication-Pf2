@@ -11,7 +11,7 @@ What the code currently does
 The implementation of `prepare_dataset` (in `cellcommunicationpf2.import_data`) performs
 the following exact steps:
 
-1. Assert that `X.X` is sparse. If `X.raw` is present the code uses `X.raw.X`.
+1. Assert that `X.X` is sparse. If `X.raw` is present and not None, the code uses `X.raw.X`; otherwise it uses `X.X`.
 
 2. Convert the count matrix to `csr_array` and check there are no negative
    values.
@@ -49,10 +49,12 @@ Mapping genes to ligand-receptor pairs
 
 The `import_ligand_receptor_pairs` helper reads a ligand–receptor table and
 attempts to populate `ligand`, `receptor`, and `interaction_symbol` columns.
-When the table encodes complexes, the `get_genes_from_complexes` helper will
-split complex names on the configured separator (default '&'). The code often
-upper-cases the ligand/receptor names for matching; ensure your `var_names`
-use the same case or normalize them prior to running the pipeline.
+When `update_interaction_names=True` (the default), the code upper-cases the
+ligand/receptor names from `interaction_name_2` or `interaction_symbol` columns
+for matching. When the table encodes complexes, the `get_genes_from_complexes`
+helper will split complex names on the configured separator (default '&').
+Since gene matching is case-sensitive, ensure your `var_names` use the same
+case (typically uppercase) or normalize them prior to running the pipeline.
 
 Common pitfalls
 ---------------
