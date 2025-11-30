@@ -23,28 +23,32 @@ The workflow produces interpretable factors that reveal:
 Basic Workflow
 --------------
 
-Step 1: Import Required Modules
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Step 1: Import and Prepare Your Data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-First, import the necessary functions from the cellcommunicationpf2 package:
+You can use your own single-cell dataset or the provided example COVID-19 BALF dataset. For convenience, we provide a helper function to load a curated, preprocessed AnnData object:
 
 .. code-block:: python
 
     import anndata
-    from cellcommunicationpf2 import (
-        import_balf_covid, 
-        import_ligand_receptor_pairs,
+    from cellcommunicationpf2 import import_balf_covid
+
+    # Load example single-cell data (will download if not present)
+    adata = import_balf_covid(
+        gene_threshold=0.01,   # Minimum mean expression (per gene)
+        normalize=True         # Normalize and log1p-transform (recommended)
     )
-    from cellcommunicationpf2.tensor import run_ccc_rise_workflow
-    from cellcommunicationpf2.import_data import add_cond_idxs
 
-**What these modules do:**
+**Required AnnData structure (if using your own data):**
+- `adata.X`: (cells × genes) gene expression matrix (normalized and log-transformed recommended)
+- `adata.obs`: must contain a column that uniquely identifies experimental conditions or samples
+- `adata.var_names`: gene symbols matching those in your ligand-receptor table
 
-* ``anndata``: Provides the AnnData structure for storing single-cell data
-* ``import_balf_covid``: Loads the example COVID-19 BALF dataset
-* ``import_ligand_receptor_pairs``: Loads curated ligand-receptor interaction pairs
-* ``run_ccc_rise_workflow``: Main function that performs the complete CCC-RISE analysis
-* ``add_cond_idxs``: Helper function to add numeric indices for experimental conditions
+**Ligand-receptor pairs:**
+- You may use our provided ligand-receptor resource or import your own as a DataFrame with columns: 'ligand', 'receptor', and 'interaction_symbol'.
+
+Please ensure your dataset is preprocessed for single-cell analysis (doublets removed, gene filtering, normalization, and log1p-transformation) for optimal results.
+
 
 Step 2: Load and Inspect Data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -63,81 +67,6 @@ Load the preprocessed COVID-19 BALF dataset and ligand-receptor pairs:
     print(f"Samples: {adata.obs['sample'].nunique()}")
     print(f"Cell types: {adata.obs['cell_type'].nunique()}")
 
-**Function: import_balf_covid()**
-
-This function loads bronchoalveolar lavage fluid (BALF) immune cell data from COVID-19 patients. The dataset contains ~63,000 cells from 3 control patients, 3 moderate COVID-19 patients, and 6 severe COVID-19 patients.
-
-**Parameters:**
-
-* ``gene_threshold`` (float, default=0.01): Minimum mean expression level for a gene to be included in the analysis. Genes with average expression below this threshold across all cells are filtered out. Lower values (e.g., 0.001) retain more genes; higher values (e.g., 0.1) perform more aggressive filtering. This removes lowly expressed genes that add noise to the analysis.
-
-* ``normalize`` (bool, default=True): Whether to normalize the expression data. When True, the function:
-  
-  - Normalizes library sizes (total counts per cell) to account for technical variation
-  - Scales gene expression to make values comparable across cells
-  - Log-transforms the data to stabilize variance
-  
-  Normalization is recommended for most analyses to ensure cells with different sequencing depths are comparable.
-
-**Returns:**
-
-An AnnData object containing:
-
-* ``.X``: Normalized gene expression matrix (cells × genes)
-* ``.obs``: Cell metadata including sample IDs, cell types, patient severity
-* ``.var``: Gene metadata including gene names
-* ``.obs['condition_unique_idxs']``: Numeric indices (0, 1, 2, ...) for each sample/condition
-
-**Function: import_ligand_receptor_pairs()**
-
-This function loads a curated database of known ligand-receptor interactions.
-
-**Returns:**
-
-A pandas DataFrame with columns:
-
-* ``ligand``: Gene name of the signaling ligand
-* ``receptor``: Gene name(s) of the receptor (may include protein complexes like "ITGA1&ITGB1")
-* ``interaction_symbol``: Combined name for the interaction pair
-
-The function loads ~2,000 validated human ligand-receptor pairs used to compute communication scores.
-
-Note: the implementation of import_ligand_receptor_pairs reads a zstd-compressed CSV by default (filename set in the code). When update_interaction_names=True (the default) the function will try to populate/normalize ligand, receptor, and interaction_symbol columns from available fields (for example interaction_name_2), and will upper-case / replace some characters ("+" → "&"). If you supply your own CSV/DataFrame, ensure it contains at least ligand and receptor, and optionally interaction_symbol.
-
-Ligand–Receptor file format and compression
--------------------------------------------
-
-The library expects a simple CSV with at minimum the columns `ligand` and `receptor`. An optional `interaction_symbol` column is used to store a combined name. Example minimal CSV (first row = header):
-
-    ligand,receptor,interaction_symbol
-    IL6,IL6R&IL6ST,IL6-IL6R&IL6ST
-    TNF,TNFRSF1A,TNF-TNFRSF1A
-    TGFB1,TGFBR1&TGFBR2,TGFB1-TGFBR1&TGFBR2
-
-Notes:
-- Receptor entries may include multi-subunit complexes; the code uses `complex_sep` (default '&') to split subunits (e.g., `TGFBR1&TGFBR2`).
-- Column names are case-sensitive in the code paths that expect `ligand`, `receptor`, and `interaction_symbol`. If your file uses different column names, rename them or supply a pre-built DataFrame.
-
-Compressing with zstd (two options)
-
-- Using the zstd CLI:
-    zstd -c Human-LR-pairs.csv > Human-LR-pairs.csv.zst
-
-- Using Python (zstandard library):
-.. code-block:: python
-
-    import zstandard as zstd
-    import io
-    import pandas as pd
-
-    df = pd.read_csv("Human-LR-pairs.csv")
-    cctx = zstd.ZstdCompressor()
-    with open("Human-LR-pairs.csv.zst", "wb") as f:
-        with cctx.stream_writer(f) as compressor:
-            text = df.to_csv(index=False).encode("utf-8")
-            compressor.write(text)
-
-If you supply a DataFrame directly to `import_ligand_receptor_pairs` (instead of a filename), make sure it contains the required columns.
 
 Step 3: Prepare Data for Analysis
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -179,6 +108,8 @@ The same AnnData object with an added column ``condition_unique_idxs`` in ``.obs
 Step 4: Run CCC-RISE Analysis
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+**How do I choose the rank values?** See :doc:`rank_selection` for a detailed explanation and practical advice on selecting both the RISE and CP decomposition ranks.
+
 Perform the complete CCC-RISE workflow to identify communication patterns:
 
 .. code-block:: python
@@ -213,7 +144,7 @@ This is the main function that executes the complete CCC-RISE pipeline. It perfo
 
 * ``condition_column`` (str, default="sample"): The column name in ``adata.obs`` that defines experimental conditions. Must match the column used in ``add_cond_idxs()``.
 
-* ``cp_rank`` (int, optional): The rank for the final CP (CANDECOMP/PARAFAC) tensor decomposition. This determines how many communication "components" or patterns are identified. Lower values provide more interpretable results; higher values capture more complex patterns.
+* ``cp_rank`` (int, optional): The rank for the final CP (CANDECOMP/PARAFAC) tensor decomposition. If not specified, it defaults to the same value as ``rise_rank``. This determines how many communication "components" or patterns are identified. Lower values provide more interpretable results; higher values capture more complex patterns.
 
 * ``n_iter_max`` (int, default=100): Maximum number of optimization iterations. The algorithm will stop either when it converges or reaches this limit. Higher values allow more time for convergence but take longer to run.
 
@@ -229,200 +160,116 @@ This is the main function that executes the complete CCC-RISE pipeline. It perfo
 **What this function does:**
 
 1. Performs RISE decomposition on the scRNA-seq data
-2. Projects cells into cell eigen-states using the projection matrices solved by RISE
-3. Computes communication scores between all sender-receiver cell state pairs for each ligand-receptor pair
-4. Creates a 4D interaction tensor: (conditions × sender states × receiver states × LR pairs)
-5. Decomposes this tensor using CP decomposition to identify major communication patterns
-6. Standardizes factors for interpretability (scales and orients them consistently)
-7. Stores all results in the AnnData object for downstream analysis
+2. RISE projects cells into cell eigen-states using the projection matrices solved by RISE
+3. Computes communication scores between all sender-receiver cell state pairs for each ligand-receptor (LR) pair
+4. Creates a 4D interaction tensor: (conditions × sender eigen-states × receiver eigen-states × LR pairs)
+5. Decomposes this 4D interaction tensor using CPD
+6. Stores all results in the AnnData object for downstream analysis
 
 **Returns:**
 
 A tuple of two values:
 
 1. ``adata`` (AnnData): The input object updated with results stored in:
-   
+
    - ``.uns["A"]``: Condition factor matrix
-   - ``.uns["B"]``: Sender cell state factor matrix  
-   - ``.uns["C"]``: Receiver cell state factor matrix
+   - ``.uns["B"]``: Sender eigen-state factor matrix
+   - ``.uns["C"]``: Receiver eigen-state factor matrix
    - ``.uns["D"]``: Ligand-receptor pair factor matrix
    - ``.uns["weights"]``: Component importance weights
    - ``.uns["r2x"]``: Variance explained by the model
    - ``.uns["lr_pairs"]``: Names of included ligand-receptor pairs
-   - ``.obsm["projections"]``: Cell projections onto RISE factors
-   - ``.obsm["sc_B"]``: Sender cell embeddings
-   - ``.obsm["rc_C"]``: Receiver cell embeddings
+   - ``.obsm["projections"]``: Cell projections based on RISE  
+   - ``.obsm["sc_B"]``: Cell projections weighted by sender cell state factors (each cell × n_components)
+   - ``.obsm["rc_C"]``: Cell projections weighted by receiver cell state factors (each cell × n_components)
 
 2. ``r2x`` (float): The proportion of variance explained by the model (0 to 1). Higher values indicate the model captures more of the communication patterns in the data.
 
-Step 5: Access and Interpret Results
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Step 5: Visualize and Interpret Results
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Extract and examine the decomposition factors to understand communication patterns:
+The best way to interpret your CCC-RISE results is by using the visualization helpers provided in the `cellcommunicationpf2.figures` module. These functions are used in our main and supplementary figures (e.g., see `figures/figureA2b.py`) and provide clean, publication-ready plots of all major outputs with minimal code.
 
-.. code-block:: python
-
-    # Get factor matrices
-    condition_factors = adata.uns["A"]     # (n_samples, n_components)
-    sender_factors = adata.uns["B"]        # (rise_rank, n_components)
-    receiver_factors = adata.uns["C"]      # (rise_rank, n_components)
-    lr_factors = adata.uns["D"]            # (n_lr_pairs, n_components)
-    weights = adata.uns["weights"]         # (n_components,)
-    
-    print(f"Condition factors shape: {condition_factors.shape}")
-    print(f"Component weights: {weights}")
-    print(f"Number of components identified: {len(weights)}")
-
-**Understanding the Factor Matrices:**
-
-The CCC-RISE decomposition breaks down the complex 4D communication tensor into four interpretable factor matrices. Each factor matrix reveals a different aspect of the communication patterns:
-
-**1. Condition Factors (Factor A):**
-
-* **Shape**: (n_samples, n_components)
-
-* **Interpretation**: Each row represents one experimental condition/sample (e.g., control, moderate COVID, severe COVID). Each column represents one communication component.
-
-* **Values**: Positive values indicate the component is more active in that condition. The magnitude indicates strength.
-
-* **Example**: If component 1 has high positive values for severe COVID samples and low values for controls, it represents communication patterns enriched in severe disease.
-
-**2. Sender Cell State Factors (Factor B):**
-
-* **Shape**: (rise_rank, n_components)
-
-* **Interpretation**: Each row represents one of the latent cell states identified by RISE (these are combinations of cell types with similar expression). Each column represents one communication component.
-
-* **Values**: Positive values indicate the cell state acts as an important sender (produces ligands) in that component.
-
-* **Example**: If component 1 has high values for cell state 5, then cells in state 5 are key signal senders for that communication pattern.
-
-**3. Receiver Cell State Factors (Factor C):**
-
-* **Shape**: (rise_rank, n_components)
-
-* **Interpretation**: Each row represents one latent cell state. Each column represents one communication component.
-
-* **Values**: Positive values indicate the cell state acts as an important receiver (expresses receptors) in that component.
-
-* **Example**: If component 1 has high values for cell state 12, then cells in state 12 are key signal receivers for that communication pattern.
-
-**4. Ligand-Receptor Factors (Factor D):**
-
-* **Shape**: (n_lr_pairs, n_components)
-
-* **Interpretation**: Each row represents one ligand-receptor interaction pair. Each column represents one communication component.
-
-* **Values**: Positive values indicate the LR pair is important in that component.
-
-* **Example**: If component 1 has high values for "IL6-IL6R" and "TNF-TNFRSF1A", these inflammatory signaling pathways drive that communication pattern.
-
-Advanced Usage Tips
--------------------
-
-Choosing RISE Rank
-^^^^^^^^^^^^^^^^^^
-
-The RISE rank determines how many latent cell states are extracted. To choose an appropriate rank:
-
-1. **Plot variance explained (R²X) vs. rank**: Run RISE with different ranks and plot R²X values. Look for an "elbow" where R²X plateaus.
-
-2. **Use Factor Match Score (FMS)**: Compute FMS between factorizations of the original data and bootstrapped versions. Higher FMS indicates more stable components.
-
-3. **Biological interpretability**: Choose a rank where the latent cell states correspond to meaningful biological populations.
-
-Example code to test multiple ranks:
+**Example: Recreating Figure A2b—visualizing all factor matrices**
 
 .. code-block:: python
 
-    ranks = [10, 20, 30, 40, 50]
-    r2x_values = []
-    
-    for rank in ranks:
-        adata_test, r2x = run_ccc_rise_workflow(
-            adata=adata.copy(),
-            rise_rank=rank,
-            lr_pairs=lr_pairs,
-            condition_column="sample",
-            cp_rank=8,
-            n_iter_max=500,
-            tol=1e-6
-        )
-        r2x_values.append(r2x)
-        print(f"Rank {rank}: R²X = {r2x:.3f}")
-    
-    # Plot results
     import matplotlib.pyplot as plt
-    plt.figure(figsize=(8, 5))
-    plt.plot(ranks, r2x_values, 'o-', linewidth=2, markersize=8)
-    plt.xlabel('RISE Rank')
-    plt.ylabel('Variance Explained (R²X)')
-    plt.title('Model Selection: RISE Rank vs. R²X')
-    plt.grid(True, alpha=0.3)
+    from cellcommunicationpf2.figures.commonFuncs.plotFactors import (
+        plot_condition_factors,
+        plot_eigenstate_factors,
+        plot_lr_factors,
+    )
+    from cellcommunicationpf2.figures.common import getSetup, subplotLabel
+    from cellcommunicationpf2.figures.commonFuncs.plotGeneral import rotate_yaxis
+
+    # Setup: 4 horizontal subplots for the 4 factor matrices (as in Figure A2b)
+    axs, fig = getSetup((20, 8), (1, 4))
+    subplotLabel(axs)
+
+    # You may want to cluster or annotate by group (see figureA2b for further customization)
+    # For this example, we'll just use default settings
+
+    # Patient/sample condition factors
+    plot_condition_factors(
+        adata, 
+        axs[0],
+        cond="sample",
+        normalize=True,
+    )
+    axs[0].set_title("Condition Factors")
+
+    # Sender cell eigen-states
+    plot_eigenstate_factors(
+        adata,
+        axs[1],
+        factor_type="B"
+    )
+    axs[1].set_title("Sender Cell Eigen-states")
+    rotate_yaxis(axs[1], rotation=0)
+
+    # Receiver cell eigen-states
+    plot_eigenstate_factors(
+        adata, 
+        axs[2],
+        factor_type="C"
+    )
+    axs[2].set_title("Receiver Cell Eigen-states")
+    rotate_yaxis(axs[2], rotation=0)
+
+    # Ligand-Receptor pair factors (sorted & trimmed for readability)
+    plot_lr_factors(
+        adata, 
+        axs[3], 
+        trim=True, 
+        weight=0.06
+    )
+    axs[3].set_title("Ligand-Receptor Pairs")
+
+    plt.tight_layout()
     plt.show()
 
-Choosing CP Rank
-^^^^^^^^^^^^^^^^
+**What do these plots show?**
 
-The CP rank determines how many communication components are identified. To choose an appropriate rank:
+- **Condition Factors:** Samples grouped/annotated by patient or experimental label, revealing shifts in communication patterns across conditions.
+- **Sender/Receiver Eigen-states:** Heatmaps showing which cell states (identified by RISE) act as strong senders or receivers in each communication program/component.
+- **Ligand-Receptor Factors:** The LR pairs that drive each program (optionally sorted and trimmed for clarity).
 
-1. **Biological interpretability**: Choose a rank where most components have clear biological interpretations.
+All these high-level helpers handle normalization, annotation, and color scales for you—see `figures/figureA2b.py` for full details and advanced grouping/formatting options.
 
-2. **Check component weights**: If many components have very small weights relative to others, you may be using too many components.
+If you want to do further/custom analysis or plotting, you can always access the raw factor arrays in the AnnData object:
 
-3. **Use cross-validation**: Hold out samples and test how well the model predicts their communication patterns.
+.. code-block:: python
 
-Working with Your Own Data
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    condition_factors = adata.uns["A"]      # (n_samples, n_components)
+    sender_factors = adata.uns["B"]         # (rise_rank, n_components)
+    receiver_factors = adata.uns["C"]       # (rise_rank, n_components)
+    lr_factors = adata.uns["D"]             # (n_lr_pairs, n_components)
+    weights = adata.uns["weights"]          # (n_components,)
 
-To analyze your own single-cell dataset:
-
-1. **Prepare your AnnData object** with:
-   
-   - ``.X``: Gene expression matrix (cells × genes), preferably sparse
-   - ``.obs``: Cell metadata with a column defining experimental conditions
-   - ``.var_names``: Gene symbols (must match ligand-receptor pair database)
-
-2. **Preprocess your data**:
-
-   .. code-block:: python
-   
-       from cellcommunicationpf2.import_data import prepare_dataset
-       
-       # Load your data
-       adata = anndata.read_h5ad("your_data.h5ad")
-       
-       # Preprocess (filter genes, normalize)
-       adata = prepare_dataset(
-           adata,
-           condition_name="your_condition_column",  # e.g., "sample" or "timepoint"
-           geneThreshold=0.01,                      # Filter low-expression genes
-           normalize=True                           # Normalize and log-transform
-       )
-
-3. **Run CCC-RISE workflow** as shown in the examples above.
-
-4. **Use your own ligand-receptor pairs** (optional):
-
-   .. code-block:: python
-   
-       import pandas as pd
-       
-       # Load custom LR pairs
-       custom_lr = pd.DataFrame({
-           'ligand': ['TGFB1', 'IL6', 'TNF'],
-           'receptor': ['TGFBR1&TGFBR2', 'IL6R&IL6ST', 'TNFRSF1A'],
-           'interaction_symbol': ['TGFB1-TGFBR1&TGFBR2', 'IL6-IL6R&IL6ST', 'TNF-TNFRSF1A']
-       })
-       
-       # Run with custom pairs
-       adata, r2x = run_ccc_rise_workflow(
-           adata=adata,
-           rise_rank=30,
-           lr_pairs=custom_lr,  # Use custom pairs instead
-           condition_column="sample",
-           cp_rank=8
-       )
+    print("Condition factors shape:", condition_factors.shape)
+    print("Component weights:", weights)
+    print("Number of components identified:", len(weights))
 
 Next Steps
 ----------

@@ -1,12 +1,14 @@
-.. cellcommunication-Pf2 documentation master file
+.. CCC-RISE documentation master file
 
-CellCommunication-Pf2 Documentation
-===================================
+CCC-RISE Documentation
+======================
 
-**CellCommunication-Pf2** is a computational biology tool for analyzing cell-cell 
-communication using tensor decomposition methods. It combines RISE decomposition 
-with CANDECOMP/PARAFAC (CP) tensor decomposition to identify communication patterns 
-from single-cell RNA-seq data.
+CCC-RISE is a computational tool for analyzing cell-cell communication across 
+experimental conditions or contexts at single-cell resolution. CCC-RISE is based 
+on the unsupervised tensor decomposition PARAFAC2, which has been tailored to 
+analyze scRNA-seq data through Reduction and Insight in Single-cell Exploration 
+(RISE). CCC-RISE deconvolves signaling patterns into modules across sender cells, 
+receiver cells, ligand-receptor pairs, and experimental conditions or samples.
 
 Quick Links
 -----------
@@ -36,4 +38,3 @@ Indices and Tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
