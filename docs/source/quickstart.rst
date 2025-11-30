@@ -11,14 +11,14 @@ Overview
 CCC-RISE identifies cell-cell communication patterns by:
 
 1. Performing RISE dimensionality reduction on gene expression data across conditions
-2. Computing communication scores between cell eigen-states (previously computed by RISE) using ligand-receptor pairs
+2. Computing communication scores between cell eigen-states (previously computed by RISE) using ligand–receptor pairs
 3. Decomposing the resulting communication tensor using CP decomposition to identify key patterns
 
 The workflow produces interpretable factors that reveal:
 
 * **Condition patterns**: How communication changes across experimental conditions
 * **Cell patterns**: Which sender and receiver cells drive communication
-* **Ligand-receptor patterns**: Which signaling pathways are most important
+* **Ligand–receptor patterns**: Which signaling pathways are most important
 
 Basic Workflow
 --------------
@@ -42,10 +42,10 @@ You can use your own single-cell dataset or the provided example COVID-19 BALF d
 **Required AnnData structure (if using your own data):**
 - `adata.X`: (cells × genes) gene expression matrix (normalized and log-transformed recommended)
 - `adata.obs`: must contain a column that uniquely identifies experimental conditions or samples
-- `adata.var_names`: gene symbols matching those in your ligand-receptor table
+- `adata.var_names`: gene symbols matching those in your ligand–receptor table
 
-**Ligand-receptor pairs:**
-- You may use our provided ligand-receptor resource or import your own as a DataFrame with columns: 'ligand', 'receptor', and 'interaction_symbol'.
+**Ligand–receptor pairs:**
+- You may use our provided ligand–receptor resource or import your own as a DataFrame with columns: 'ligand', 'receptor', and 'interaction_symbol'.
 
 Please ensure your dataset is preprocessed for single-cell analysis (doublets removed, gene filtering, normalization, and log1p-transformation) for optimal results.
 
@@ -53,14 +53,14 @@ Please ensure your dataset is preprocessed for single-cell analysis (doublets re
 Step 2: Load and Inspect Data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Load the preprocessed COVID-19 BALF dataset and ligand-receptor pairs:
+Load the preprocessed COVID-19 BALF dataset and ligand–receptor pairs:
 
 .. code-block:: python
 
-    # Load single-cell data (automatically downloads if needed)
+    # Load single-cell data (automatically downloads if not present)
     adata = import_balf_covid(gene_threshold=0.01, normalize=True)
     
-    # Load ligand-receptor pairs
+    # Load ligand–receptor pairs
     lr_pairs = import_ligand_receptor_pairs()
     
     print(f"Loaded {adata.n_obs} cells and {adata.n_vars} genes")
@@ -140,7 +140,7 @@ This is the main function that executes the complete CCC-RISE pipeline. It perfo
   
   In this example, ``rise_rank=35`` means we extract 35 cell eigen-states from the gene expression data.
 
-* ``lr_pairs`` (DataFrame): The ligand-receptor interaction pairs loaded from ``import_ligand_receptor_pairs()``. This defines which gene pairs are considered for communication scoring.
+* ``lr_pairs`` (DataFrame): The ligand–receptor interaction pairs loaded from ``import_ligand_receptor_pairs()``. This defines which gene pairs are considered for communication scoring.
 
 * ``condition_column`` (str, default="sample"): The column name in ``adata.obs`` that defines experimental conditions. Must match the column used in ``add_cond_idxs()``.
 
@@ -152,7 +152,7 @@ This is the main function that executes the complete CCC-RISE pipeline. It perfo
 
 * ``complex_sep`` (str, optional): Separator character for protein complexes in receptor names. Many receptors are multi-subunit complexes (e.g., "ITGA1&ITGB1" for integrin alpha-1/beta-1). The '&' character separates the subunits.
   
-  - Use ``'&'`` if your ligand-receptor pairs include complexes
+  - Use ``'&'`` if your ligand–receptor pairs include complexes
   - Use ``None`` to ignore complexes
   
   When specified, the function computes complex expression as the minimum expression of all subunits.
@@ -161,7 +161,7 @@ This is the main function that executes the complete CCC-RISE pipeline. It perfo
 
 1. Performs RISE decomposition on the scRNA-seq data
 2. RISE projects cells into cell eigen-states using the projection matrices solved by RISE
-3. Computes communication scores between all sender-receiver cell state pairs for each ligand-receptor (LR) pair
+3. Computes communication scores between all sender-receiver cell state pairs for each ligand–receptor (LR) pair
 4. Creates a 4D interaction tensor: (conditions × sender eigen-states × receiver eigen-states × LR pairs)
 5. Decomposes this 4D interaction tensor using CPD
 6. Stores all results in the AnnData object for downstream analysis
@@ -175,10 +175,10 @@ A tuple of two values:
    - ``.uns["A"]``: Condition factor matrix
    - ``.uns["B"]``: Sender eigen-state factor matrix
    - ``.uns["C"]``: Receiver eigen-state factor matrix
-   - ``.uns["D"]``: Ligand-receptor pair factor matrix
+   - ``.uns["D"]``: Ligand–receptor pair factor matrix
    - ``.uns["weights"]``: Component importance weights
    - ``.uns["r2x"]``: Variance explained by the model
-   - ``.uns["lr_pairs"]``: Names of included ligand-receptor pairs
+   - ``.uns["lr_pairs"]``: Names of included ligand–receptor pairs
    - ``.obsm["projections"]``: Cell projections based on RISE  
    - ``.obsm["sc_B"]``: Cell projections weighted by sender cell state factors (each cell × n_components)
    - ``.obsm["rc_C"]``: Cell projections weighted by receiver cell state factors (each cell × n_components)
@@ -237,14 +237,14 @@ The best way to interpret your CCC-RISE results is by using the visualization he
     axs[2].set_title("Receiver Cell Eigen-states")
     rotate_yaxis(axs[2], rotation=0)
 
-    # Ligand-Receptor pair factors (sorted & trimmed for readability)
+    # Ligand–receptor pair factors (sorted & trimmed for readability)
     plot_lr_factors(
         adata, 
         axs[3], 
         trim=True, 
         weight=0.06
     )
-    axs[3].set_title("Ligand-Receptor Pairs")
+    axs[3].set_title("Ligand–Receptor Pairs")
 
     plt.tight_layout()
     plt.show()
@@ -253,7 +253,7 @@ The best way to interpret your CCC-RISE results is by using the visualization he
 
 - **Condition Factors:** Samples grouped/annotated by patient or experimental label, revealing shifts in communication patterns across conditions.
 - **Sender/Receiver Eigen-states:** Heatmaps showing which cell states (identified by RISE) act as strong senders or receivers in each communication program/component.
-- **Ligand-Receptor Factors:** The LR pairs that drive each program (optionally sorted and trimmed for clarity).
+- **Ligand–Receptor Factors:** The ligand-receptor pairs that drive each program (optionally sorted and trimmed for clarity).
 
 All these high-level helpers handle normalization, annotation, and color scales for you—see `figures/figureA2b.py` for full details and advanced grouping/formatting options.
 

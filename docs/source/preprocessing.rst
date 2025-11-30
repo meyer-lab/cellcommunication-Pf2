@@ -44,13 +44,13 @@ Suggested checks before running CCC-RISE
 2. Run a small diagnostic: compute the number of genes kept by `geneThreshold`
    and inspect that useful marker genes are not filtered out.
 
-Mapping genes to ligand-receptor pairs
+Mapping genes to ligand–receptor pairs
 --------------------------------------
 
 The `import_ligand_receptor_pairs` helper reads a ligand–receptor table and
 attempts to populate `ligand`, `receptor`, and `interaction_symbol` columns.
 When `update_interaction_names=True` (the default), the code upper-cases the
-ligand/receptor names from `interaction_name_2` or `interaction_symbol` columns
+ligand–receptor names from `interaction_name_2` or `interaction_symbol` columns
 for matching. When the table encodes complexes, the `get_genes_from_complexes`
 helper will split complex names on the configured separator (default '&').
 Since gene matching is case-sensitive, ensure your `var_names` use the same

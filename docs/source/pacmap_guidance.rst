@@ -13,29 +13,45 @@ global structure. You can use it to visualize cell embeddings (e.g., the
 per-condition projections `X.obsm['sc_B']` and `X.obsm['rc_C']` produced by
 RISE) or to visualize factor scores from the CP decomposition.
 
-Practical suggestions
----------------------
+Example: Visualizing cells with PaCMAP
+---------------------------------------
 
-- Use PaCMAP on a subset of cells if you have millions of cells — it scales
-  better when run on representative subsets or pseudobulks.
-- Tune `n_neighbors` depending on whether you want to emphasize local
-  neighborhoods (smaller values) vs. global structure (larger values).
-- If visualizing CP factor loadings for LR pairs, consider reducing to a
-  per-pair score first (e.g., weight * factor_value) and running PaCMAP on the
-  LR-pair matrix rather than per-cell data.
+The following example is adapted from `figureA2c_d.py`, which shows PaCMAP visualizations
+of CCC-RISE results on BALF COVID-19 data. The figure displays cells colored by cell type
+and disease condition to explore how different cell populations and experimental conditions
+are distributed in the PaCMAP embedding space.
 
-Example (conceptual)
----------------------
+After running `run_ccc_rise_workflow` with `doEmbedding=True` (the default), the
+PaCMAP coordinates are automatically computed and stored in `adata.obsm["PaCMAP"]`.
+You can then visualize cells colored by metadata labels:
 
-1. Extract per-cell projections from RISE: `B = adata.obsm['sc_B']`
-2. Optionally subsample or pseudobulk to reduce noise.
-3. Run PaCMAP on `B` with `n_components=2` and plot colored by condition or
-   cell type.
+.. code-block:: python
 
-Notes and TODOs
-----------------
+    import matplotlib.pyplot as plt
+    from cellcommunicationpf2.figures.commonFuncs.plotPaCMAP import plot_labels_pacmap
+    import seaborn as sns
 
-- TODO: include a short notebook demonstrating PaCMAP on the `BALF-COVID19` example data.
-- The repository intentionally leaves PaCMAP out of the core workflow —
-  embedding choices are downstream visualization steps and depend on user
-  objectives.
+    # After running run_ccc_rise_workflow, PaCMAP coordinates are in adata.obsm["PaCMAP"]
+    # Create a figure with subplots
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+
+    # Color by cell type
+    palette = sns.color_palette("Set3").as_hex()
+    plot_labels_pacmap(adata, labelType="cell_type", ax=axes[0], color_key=palette)
+    axes[0].set_title("Cells colored by cell type")
+
+    # Color by condition
+    condition_palette = sns.color_palette("Set2", n_colors=3).as_hex()
+    plot_labels_pacmap(adata, labelType="condition", ax=axes[1], color_key=condition_palette)
+    axes[1].set_title("Cells colored by condition")
+
+    # Color by sample (uses default colormap)
+    plot_labels_pacmap(adata, labelType="sample", ax=axes[2])
+    axes[2].set_title("Cells colored by sample")
+
+    plt.tight_layout()
+    plt.show()
+
+
+Note: The repository intentionally leaves PaCMAP out of the core workflow —
+embedding choices are downstream visualization steps and depend on user objectives.

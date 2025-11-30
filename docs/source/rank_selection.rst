@@ -100,7 +100,7 @@ interaction tensor:
         run_fms_r2x_analysis,
     )
 
-    # Load ligand-receptor pairs
+    # Load ligand–receptor pairs
     lr_pairs = import_ligand_receptor_pairs()
 
     # Select a RISE rank based on Step 1 results
