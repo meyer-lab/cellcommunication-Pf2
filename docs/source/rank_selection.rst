@@ -6,32 +6,17 @@ This page explains how to choose the two main ranks used in the CCC‑RISE workf
 - The RISE / PARAFAC2 rank (number of latent cell eigen-states)
 - The CP rank (number of communication components / factors)
 
-Overview
---------
-
-Choosing a rank is somewhat nuanced and we don't have a one-size-fits-all rule. The codebase provides two metrics
-to guide this choice:
-
-- R²X (R2X): the fraction of variance in the interaction tensor explained by a
-  CP decomposition. Higher R²X generally indicates better reconstruction.
-- FMS (Factor Match Score): a stability metric that compares factor solutions
-  from bootstrap/resampled data to a reference decomposition. Higher FMS means
-  more stable, reproducible components.
-
-Key ideas
+Key idea
 ---------
 
 - R²X tends to increase with CP rank: adding components lets the model explain
   more variance (but risks overfitting and producing components with little
   biological meaning).
-- FMS tends to decrease as CP rank increases because more components are
-  harder to estimate stably; bootstrapped runs will often place small
-  components in different modes.
 
 Rules of thumb
 --------------
 
-The project team has found the following workflow helpful when selecting ranks:
+We have found the following workflow helpful when selecting ranks:
 
 1. Pick a range of candidate RISE ranks (e.g. test multiple values). For each
    RISE rank, compute the projected expression matrices and the interaction
@@ -41,40 +26,164 @@ The project team has found the following workflow helpful when selecting ranks:
 3. Inspect the trade-off: look for an elbow in R²X growth and a region where
    FMS remains reasonably high.
 
-Suggested placeholders
-----------------------
+Example: Finding Optimal Ranks
+--------------------------------
 
-- Typical RISE rank candidates: TODO: provide a recommended numeric range (e.g. 10–50).
-- Typical CP ranks to test: TODO: provide a recommended numeric range (e.g. 2–12).
+The following example demonstrates how to systematically test different rank combinations
+to find optimal parameters for your dataset.
 
-Leave these placeholders for lab-specific recommendations.
+Step 1: Test RISE Ranks
+^^^^^^^^^^^^^^^^^^^^^^^
 
-Picking individual components with R²X
--------------------------------------
+First, test different RISE ranks to find a stable decomposition. This evaluates the
+stability of the PARAFAC2 decomposition across different ranks:
 
-R²X measures variance explained by the whole CP decomposition. It is not a
-component-level p-value. If you want to know whether a particular component is
-well supported, combine R²X trends with:
+.. code-block:: python
 
-- the magnitude of the component weight (larger weights explain more variance),
-- stability across bootstraps (component appears consistently and has high FMS),
-- biological interpretability (do the top cell states and ligand-receptor pairs
-  make sense together?).
+    import matplotlib.pyplot as plt
+    from cellcommunicationpf2.import_data import (
+        import_balf_covid,
+        add_cond_idxs,
+    )
+    from cellcommunicationpf2.figures.commonFuncs.plotGeneral import plot_fms_r2x_diff_ranks
 
-When results are surprising
---------------------------
+    # Load and prepare data
+    adata = import_balf_covid(gene_threshold=0.01, normalize=True)
+    adata = add_cond_idxs(adata, condition_key="sample")
 
-If you get unexpectedly low FMS or components that look biologically implausible:
+    # Test a range of RISE ranks
+    rise_ranks = list(range(5, 41, 5))  # [5, 10, 15, 20, 25, 30, 35, 40]
+    runs = 3  # Number of bootstrap runs for stability assessment
 
-- Re-check preprocessing (normalization, gene filtering) — small changes here
-  can strongly affect results. See the preprocessing page.
-- Increase the number of bootstrap runs for FMS to get a more stable estimate.
-- Consider lowering the CP rank and inspecting the larger components first.
-- If you still think the methods or results are wrong, open an issue in the
-  repository and attach a minimal reproducible example.
+    # Create figure
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
 
-Further reading
----------------
+    # Plot FMS and R2X across RISE ranks
+    plot_fms_r2x_diff_ranks(
+        adata,
+        condition_name="sample",
+        ax1=ax1,
+        ax2=ax2,
+        ranksList=rise_ranks,
+        runs=runs
+    )
 
-See :doc:`preprocessing` and :doc:`scoring_methods` for more details that affect
-rank behavior.
+    ax1.set_title("FMS vs RISE Rank")
+    ax1.set_xlabel("RISE Rank")
+    ax1.set_ylabel("Factor Match Score")
+    ax1.set_ylim(0, 1)
+
+    ax2.set_title("R²X vs RISE Rank")
+    ax2.set_xlabel("RISE Rank")
+    ax2.set_ylabel("R²X (Variance Explained)")
+
+    plt.tight_layout()
+    plt.show()
+
+Look for RISE ranks where FMS remains high (typically > 0.7) and R²X shows
+reasonable variance explained. Common choices are in the range 10–50 depending
+on dataset size.
+
+Step 2: Test CP Ranks
+^^^^^^^^^^^^^^^^^^^^^
+
+Once you've selected a RISE rank, test different CP ranks on the resulting
+interaction tensor:
+
+.. code-block:: python
+
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    from cellcommunicationpf2.import_data import import_ligand_receptor_pairs
+    from cellcommunicationpf2.tensor import (
+        calculate_interaction_tensor,
+        run_fms_r2x_analysis,
+    )
+
+    # Load ligand-receptor pairs
+    lr_pairs = import_ligand_receptor_pairs()
+
+    # Select a RISE rank based on Step 1 results
+    selected_rise_rank = 35  # Example: choose based on Step 1 analysis
+
+    # Calculate interaction tensor using the selected RISE rank
+    print("Computing interaction tensor...")
+    interaction_tensor = calculate_interaction_tensor(
+        adata,
+        lr_pairs,
+        rise_rank=selected_rise_rank
+    )
+    print(f"Interaction tensor shape: {interaction_tensor.shape}")
+
+    # Test a range of CP ranks
+    cp_ranks = list(range(2, 15, 2))  # [2, 4, 6, 8, 10, 12, 14]
+    runs = 3  # Number of bootstrap runs
+
+    # Run FMS and R2X analysis
+    print("Testing CP ranks...")
+    results_df = run_fms_r2x_analysis(
+        interaction_tensor,
+        rank_list=cp_ranks,
+        runs=runs,
+        svd_init="svd"
+    )
+
+    # Visualize results
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+
+    sns.lineplot(data=results_df, x="Component", y="FMS", ax=ax1, label="FMS")
+    ax1.set_title("FMS vs CP Rank")
+    ax1.set_xlabel("CP Rank")
+    ax1.set_ylabel("Factor Match Score")
+    ax1.set_ylim(0, 1)
+    ax1.legend()
+
+    sns.lineplot(data=results_df, x="Component", y="R2X", ax=ax2, color="orange", label="R²X")
+    ax2.set_title("R²X vs CP Rank")
+    ax2.set_xlabel("CP Rank")
+    ax2.set_ylabel("R²X (Variance Explained)")
+    ax2.set_ylim(0, results_df["R2X"].max() + 0.02)
+    ax2.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+    # Print summary
+    print("\nSummary by CP Rank:")
+    summary = results_df.groupby("Component")[["FMS", "R2X"]].mean()
+    print(summary)
+
+Step 3: Select Optimal Ranks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Based on the plots:
+
+1. **RISE rank**: Choose a rank where FMS is high (typically > 0.7) and R²X
+   shows good variance explained. Avoid ranks where FMS drops significantly.
+
+2. **CP rank**: Look for an "elbow" in the R²X curve where additional components
+   provide diminishing returns. Choose a rank where:
+   - R²X shows good variance explained without overfitting
+   - The rank is interpretable (not too many components to analyze)
+
+Example interpretation:
+- If R²X plateaus around rank 8 and FMS drops below 0.6 after rank 10,
+  a CP rank of 8–10 might be optimal.
+- If FMS remains high (> 0.7) up to rank 12, you can safely use higher ranks
+  for more detailed analysis.
+
+Typical Rank Ranges
+-------------------
+
+Based on common usage patterns:
+
+- **RISE rank candidates**: Typically 10–50, depending on dataset size and complexity.
+  Smaller datasets (fewer cells/conditions) may use 10–25, while larger datasets
+  may benefit from 25–50.
+
+- **CP ranks to test**: Typically 2–15. Higher ranks provide more granular
+  patterns but may be harder to interpret.
+
+These ranges are starting points; adjust based on your specific dataset characteristics
+and the stability metrics (FMS and R²X) you observe.
+
