@@ -1,3 +1,3 @@
-# cellcommunication-pf2
+# Tracing cell communication programs across conditions at single cell resolution with CCC-RISE
 
-Fully single-cell analysis of cell-to-cell communication.
+Analysis code for XXX et al.
