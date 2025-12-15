@@ -32,9 +32,6 @@ factor = "cellcommunicationpf2.imports:factorSave"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.rye]
-managed = true
-
 [dependency-groups]
 dev = [
     "pytest>=8.0",
