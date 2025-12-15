@@ -41,6 +41,11 @@ dev = [
     "pytest-cov>=6.0",
     "pyright>=1.1",
 ]
+docs = [
+    "sphinx>=7.0",
+    "sphinx-rtd-theme>=2.0",
+    "nbsphinx>=0.9",
+]
 
 [tool.hatch.metadata]
 allow-direct-references = true
