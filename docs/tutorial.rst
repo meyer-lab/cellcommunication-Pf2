@@ -116,7 +116,7 @@ Test different RISE ranks to find the optimal balance between model complexity a
         ax1=ax[0], 
         ax2=ax[1], 
         ranksList=rise_ranks, 
-        runs=1
+        runs=e
     )
     
     ax[0].set_title('RISE: Factor Match Score (FMS)')
@@ -160,7 +160,7 @@ First, calculate the interaction tensor using a selected RISE rank, then test di
     df = run_fms_r2x_analysis(
         interaction_tensor, 
         rank_list=rank_list, 
-        runs=1,
+        runs=3,
         svd_init="random"
     )
     

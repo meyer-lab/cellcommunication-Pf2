@@ -52,7 +52,7 @@ print("\n=== RISE Rank Selection ===")
 print("Running RISE FMS/R2X analysis...")
 # Use actual RISE rank selection with plot_fms_r2x_diff_ranks
 rise_ranks = list(range(5, 41, 5))
-runs = 1
+runs = 3
 
 fig, ax = plt.subplots(1, 2, figsize=(12, 4))
 
@@ -86,7 +86,7 @@ print(f"Interaction tensor shape: {interaction_tensor.shape}")
 
 # Run actual CPD FMS/R2X analysis
 rank_list = list(range(1, 11, 2))
-runs = 1
+runs = 3
 print(f"Testing CPD ranks: {rank_list}, {runs} runs...")
 df = run_fms_r2x_analysis(
     interaction_tensor,
