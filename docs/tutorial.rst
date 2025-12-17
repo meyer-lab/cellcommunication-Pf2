@@ -22,8 +22,27 @@ Your AnnData object must meet the following requirements:
 
 2. **Preprocessing**: Your AnnData object must be preprocessed (doublets removed, genes filtered, normalized, and log-transformed) before running CCC-RISE. Standard preprocessing functions can assist with gene filtering, normalization, and assigning ``condition_unique_idxs``.
 
-Using prepare_dataset
+Ligand-Receptor Pairs
 ^^^^^^^^^^^^^^^^^^^^^
+
+CCC-RISE requires a DataFrame of ligand-receptor pairs to analyze cell-cell communication. This can be obtained from resources like CellChat or other ligand-receptor databases.
+
+**Required DataFrame Format**:
+
+- Must contain columns named ``ligand`` and ``receptor``
+- Gene names should match those in your AnnData object (typically uppercase)
+- For protein complexes, subunits should be separated by ``&`` (e.g., ``CD74&CD44``)
+- Example structure::
+
+    ligand     receptor
+    CCL19      CCR7
+    PTN        PTPRZ1
+    CD74&CD44  CD44
+
+The package includes a default function ``import_ligand_receptor_pairs()`` that loads a curated database from CellChat, but you can provide your own DataFrame following this format.
+
+Import and Prepare the Dataset
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The ``prepare_dataset`` function assists with preprocessing your data. Parameters:
 
@@ -42,26 +61,7 @@ The function performs the following steps:
 - Creates ``condition_unique_idxs`` column in ``X.obs`` with 0-indexed condition assignments
 - Pre-calculates gene means and stores in ``X.var["means"]``
 
-Ligand-Receptor Pairs
-^^^^^^^^^^^^^^^^^^^^^
-
-CCC-RISE requires a DataFrame of ligand-receptor pairs to analyze cell-cell communication. This can be obtained from resources like LIANA, CellPhoneDB, or other ligand-receptor databases.
-
-**Required DataFrame Format**:
-
-- Must contain columns named ``ligand`` and ``receptor``
-- Gene names should match those in your AnnData object (typically uppercase)
-- For protein complexes, subunits should be separated by ``&`` (e.g., ``CD74&CD44``)
-- Example structure::
-
-    ligand     receptor
-    CCL19      CCR7
-    PTN        PTPRZ1
-    CD74&CD44  CD44
-
-The package includes a default function ``import_ligand_receptor_pairs()`` that loads a curated database, but you can provide your own DataFrame following this format.
-
-**Import and Prepare the Dataset**
+**Example Code**:
 
 Import your dataset as an AnnData object with preprocessed data::
 
@@ -208,7 +208,7 @@ Based on the rank selection analysis above, choose appropriate RISE and CPD rank
         rise_rank=rise_rank,
         cp_rank=cp_rank,
         lr_pairs=lr_pairs,
-        condition_column="condition_unique_idxs",
+        condition_column="condition_column",
         n_iter_max=10000,
         tol=1e-9,
         random_state=42,
@@ -303,7 +303,6 @@ Create visualizations for each of the four factor types::
         normalize=True     # Normalize each component
     )
     ax.set_title("Factor A: Condition")
-    plt.tight_layout()
     plt.show()
     
     # Factor B: Sender cell eigenstates
@@ -326,7 +325,7 @@ Create visualizations for each of the four factor types::
         X, 
         ax, 
         trim=True,      # Show only top L-R pairs
-        weight=0.06     # Threshold for inclusion
+        weight=0.08     # Threshold for inclusion
     )
     ax.set_title("Factor D: LR Pairs")
     plt.tight_layout()
@@ -463,23 +462,27 @@ This visualization reveals whether a component is broadly active across all cell
 
 **Analyze Top LR Pairs per Component**
 
-Identify the most important ligand-receptor pairs for a specific component::
+Visualize the most important ligand-receptor pairs for a specific component::
 
-    import numpy as np
+    from cellcommunicationpf2.figures.commonFuncs.plotFactors import plot_lr_factors_partial
+    import matplotlib.pyplot as plt
     
     cmp = 6
-    lr_factor = X.uns["D"][:, cmp-1]
-    lr_names = X.uns["lr_pair_names"]
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
     
-    # Get top 10 LR pairs
-    top_indices = np.argsort(np.abs(lr_factor))[-10:][::-1]
+    # Plot top 10 LR pairs
+    plot_lr_factors_partial(X, cmp, ax[0], geneAmount=10, top=True)
+    ax[0].set_title(f"Component {cmp}: Top 10 LR Pairs")
     
-    print(f"\nTop 10 LR pairs for Component {cmp}:")
-    for i, idx in enumerate(top_indices, 1):
-        print(f"{i}. {lr_names[idx]}: {lr_factor[idx]:.4f}")
+    # Plot bottom 10 LR pairs
+    plot_lr_factors_partial(X, cmp, ax[1], geneAmount=10, top=False)
+    ax[1].set_title(f"Component {cmp}: Bottom 10 LR Pairs")
+    
+    plt.tight_layout()
+    plt.show()
 
 .. image:: _static/tutorial_images/step7_top_lr_pairs.png
-   :width: 600px
+   :width: 800px
    :align: center
 
 

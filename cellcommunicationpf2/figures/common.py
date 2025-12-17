@@ -4,6 +4,7 @@ This file contains functions that are used in multiple figures.
 
 import sys
 import time
+from pathlib import Path
 from string import ascii_letters
 
 import matplotlib
@@ -76,8 +77,13 @@ def genFigure():
     ff = makeFigure()
 
     if ff is not None:
+        # Find project root (where pyproject.toml is located)
+        project_root = Path(__file__).parent.parent.parent
+        output_dir = project_root / "output"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
         ff.savefig(
-            f"./output/{nameOut}.svg",
+            output_dir / f"{nameOut}.svg",
             dpi=300,
             bbox_inches="tight",
             pad_inches=0,

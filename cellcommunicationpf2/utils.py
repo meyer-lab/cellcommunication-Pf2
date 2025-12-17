@@ -261,5 +261,11 @@ def average_product_matrix_ccc(df):
     col_groups = np.arange(n_cols) // col_group_size
     row_groups = np.clip(row_groups, 0, 9)
     col_groups = np.clip(col_groups, 0, 9)
+    
+    # Group rows
     df_grouped = df.groupby(row_groups).mean()
+    
+    # Group columns by transposing, grouping, then transposing back
+    df_grouped = df_grouped.T.groupby(col_groups).mean().T
+    
     return df_grouped

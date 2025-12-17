@@ -6,8 +6,8 @@ matplotlib.use("Agg")  # Non-interactive backend
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-import pandas as pd
 from pathlib import Path
+import anndata
 
 # Create output directory
 output_dir = Path(__file__).parent / "_static" / "tutorial_images"
@@ -28,6 +28,7 @@ from cellcommunicationpf2.figures.commonFuncs.plotFactors import (
     plot_condition_factors,
     plot_eigenstate_factors,
     plot_lr_factors,
+    plot_lr_factors_partial,
 )
 from cellcommunicationpf2.figures.commonFuncs.plotPaCMAP import (
     plot_wc_pacmap,
@@ -111,21 +112,8 @@ plt.savefig(output_dir / "step2_cpd_fms_r2x.png", dpi=150, bbox_inches="tight")
 plt.close()
 
 print("\n=== Running CCC-RISE Factorization ===")
-rise_rank = 35
-cp_rank = 8
-print(f"Running with rise_rank={rise_rank}, cp_rank={cp_rank}...")
-X, r2x = run_ccc_rise_workflow(
-    adata=X,
-    rise_rank=rise_rank,
-    cp_rank=cp_rank,
-    lr_pairs=lr_pairs,
-    condition_column="condition_unique_idxs",
-    doEmbedding=True,
-    random_state=42,
-    n_iter_max=100,
-    tol=1e-3,
-)
-print(f"Variance Explained (R²X): {r2x:.4f}")
+
+X = anndata.read_h5ad("/opt/andrew/ccc/bal_covid19.h5ad")
 
 # Figure 3: Individual Factor Visualizations
 print("Generating Figure 3: Individual factor visualizations...")
@@ -147,7 +135,8 @@ plot_condition_factors(
     normalize=True
 )
 ax.set_title("Factor A: Condition")
-plt.tight_layout()
+# Take off legend
+ax.get_legend().remove()
 plt.savefig(output_dir / "step3_factor_a.png", dpi=150, bbox_inches="tight")
 plt.close()
 
@@ -169,7 +158,7 @@ plt.close()
 
 # Factor D: Ligand-receptor pairs
 fig, ax = plt.subplots(figsize=(6, 8))
-plot_lr_factors(X, ax, trim=True, weight=0.06)
+plot_lr_factors(X, ax, trim=True, weight=0.08)
 ax.set_title("Factor D: LR Pairs")
 plt.tight_layout()
 plt.savefig(output_dir / "step3_factor_d.png", dpi=150, bbox_inches="tight")
@@ -238,19 +227,20 @@ if "celltype" in X.obs.columns:
     plt.savefig(output_dir / "step9_violin_weights.png", dpi=150, bbox_inches="tight")
     plt.close()
 
-# Figure 7: Top LR Pairs (generated but shown in step7_top_lr_pairs.png)
-print("Generating top LR pairs analysis...")
+# Figure 7: Top and Bottom LR Pairs for Component 6
+print("Generating Figure 7: Top and bottom LR pairs for component 6...")
 cmp = 6
-if "D" in X.uns and "lr_pair_names" in X.uns:
-    lr_factor = X.uns["D"][:, cmp-1]
-    lr_names = X.uns["lr_pair_names"]
-    
-    # Get top 10 LR pairs
-    top_indices = np.argsort(np.abs(lr_factor))[-10:][::-1]
-    
-    print(f"\nTop 10 LR pairs for Component {cmp}:")
-    for i, idx in enumerate(top_indices, 1):
-        print(f"{i}. {lr_names[idx]}: {lr_factor[idx]:.4f}")
+fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+
+plot_lr_factors_partial(X, cmp, ax[0], geneAmount=10, top=True)
+ax[0].set_title(f"Component {cmp}: Top 10 LR Pairs")
+
+plot_lr_factors_partial(X, cmp, ax[1], geneAmount=10, top=False)
+ax[1].set_title(f"Component {cmp}: Bottom 10 LR Pairs")
+
+plt.tight_layout()
+plt.savefig(output_dir / "step7_top_lr_pairs.png", dpi=150, bbox_inches="tight")
+plt.close()
 
 # Figure 10: Expression Product Heatmap for Component 6
 print("Generating Figure 10: Expression product heatmap...")
@@ -280,45 +270,5 @@ if ligand in X.var_names and receptor in X.var_names and "celltype" in X.obs.col
         ax.set_title("CCL19-CCR7 Interaction")
         ax.set_xticks([])
         ax.set_yticks([])
-        plt.tight_layout()
         plt.savefig(output_dir / "step10_expression_product.png", dpi=150, bbox_inches="tight")
         plt.close()
-
-# Figure 11: Cell Type Comparison
-print("Generating Figure 11: Cell type comparison...")
-if ligand in X.var_names and receptor in X.var_names and "celltype" in X.obs.columns:
-    if "mDC" in X.obs["celltype"].cat.categories and "B" in X.obs["celltype"].cat.categories:
-        fig, ax = plt.subplots(1, 2, figsize=(12, 6))
-        
-        # mDC -> mDC communication
-        X_mdc_receiver = X[X.obs["celltype"] == "mDC"]
-        X_mdc_receiver = X_mdc_receiver[np.argsort(X_mdc_receiver.obsm["rc_C"][:, ccc_rise_cmp-1])]
-        
-        df = expression_product_matrix(X_mdc_sender, X_mdc_receiver, ligand, receptor)
-        df = average_product_matrix_ccc(df)
-        sns.heatmap(df, ax=ax[0], cmap="viridis", vmax=0.12)
-        ax[0].set_xlabel("Receiver mDCs")
-        ax[0].set_ylabel("Sender mDCs")
-        ax[0].set_title("CCL19-CCR7 Interaction")
-        ax[0].set_xticks([])
-        ax[0].set_yticks([])
-        
-        # mDC -> B cell communication
-        X_b_receiver = X[X.obs["celltype"] == "B"]
-        X_b_receiver = X_b_receiver[np.argsort(X_b_receiver.obsm["rc_C"][:, ccc_rise_cmp-1])]
-        
-        df = expression_product_matrix(X_mdc_sender, X_b_receiver, ligand, receptor)
-        df = average_product_matrix_ccc(df)
-        sns.heatmap(df, ax=ax[1], cmap="viridis", vmax=0.12)
-        ax[1].set_xlabel("Receiver B cells")
-        ax[1].set_ylabel("Sender mDCs")
-        ax[1].set_title("CCL19-CCR7 Interaction")
-        ax[1].set_xticks([])
-        ax[1].set_yticks([])
-        
-        plt.tight_layout()
-        plt.savefig(output_dir / "step11_celltype_comparison.png", dpi=150, bbox_inches="tight")
-        plt.close()
-
-print(f"\nAll figures saved to {output_dir}")
-print("Done!")
