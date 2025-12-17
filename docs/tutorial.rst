@@ -13,7 +13,8 @@ To add CCC-RISE to your Python package, add the following line to your ``require
 Preprocessing the Dataset
 --------------------------
 
-**Input Requirements**
+Input Requirements
+^^^^^^^^^^^^^^^^^^
 
 Your AnnData object must meet the following requirements:
 
@@ -21,25 +22,8 @@ Your AnnData object must meet the following requirements:
 
 2. **Preprocessing**: Your AnnData object must be preprocessed (doublets removed, genes filtered, normalized, and log-transformed) before running CCC-RISE. Standard preprocessing functions can assist with gene filtering, normalization, and assigning ``condition_unique_idxs``.
 
-3. **Ligand-Receptor Pairs**: CCC-RISE requires a DataFrame of ligand-receptor pairs to analyze cell-cell communication. This can be obtained from resources like LIANA, CellPhoneDB, or other ligand-receptor databases.
-
-   **Required DataFrame Format**:
-   
-   - Must contain columns named ``ligand`` and ``receptor``
-   - Gene names should match those in your AnnData object (typically uppercase)
-   - For protein complexes, subunits should be separated by ``&`` (e.g., ``CD74&CD44``)
-   - Example structure::
-   
-       ligand     receptor
-       CCL19      CCR7
-       PTN        PTPRZ1
-       CD74&CD44  CD44
-   
-   The package includes a default function ``import_ligand_receptor_pairs()`` that loads a curated database, but you can provide your own DataFrame following this format.
-   
-  
-
-**Using prepare_dataset**
+Using prepare_dataset
+^^^^^^^^^^^^^^^^^^^^^
 
 The ``prepare_dataset`` function assists with preprocessing your data. Parameters:
 
@@ -57,6 +41,25 @@ The function performs the following steps:
 - Applies log₁₀((1000 × normalized_value) + 1) transformation (or deviance transformation if specified)
 - Creates ``condition_unique_idxs`` column in ``X.obs`` with 0-indexed condition assignments
 - Pre-calculates gene means and stores in ``X.var["means"]``
+
+Ligand-Receptor Pairs
+^^^^^^^^^^^^^^^^^^^^^
+
+CCC-RISE requires a DataFrame of ligand-receptor pairs to analyze cell-cell communication. This can be obtained from resources like LIANA, CellPhoneDB, or other ligand-receptor databases.
+
+**Required DataFrame Format**:
+
+- Must contain columns named ``ligand`` and ``receptor``
+- Gene names should match those in your AnnData object (typically uppercase)
+- For protein complexes, subunits should be separated by ``&`` (e.g., ``CD74&CD44``)
+- Example structure::
+
+    ligand     receptor
+    CCL19      CCR7
+    PTN        PTPRZ1
+    CD74&CD44  CD44
+
+The package includes a default function ``import_ligand_receptor_pairs()`` that loads a curated database, but you can provide your own DataFrame following this format.
 
 **Import and Prepare the Dataset**
 
@@ -92,7 +95,7 @@ RISE Rank Selection
 
 **What is RISE?**
 
-RISE uses PARAFAC2 decomposition to identify latent communication modes directly from the scRNA-seq expression matrix. The RISE rank determines how many latent patterns are extracted before computing cell-cell communication scores.
+RISE (Reduction and Insight in Single-cell Exploration) is an unsupervised, tensor-based computational method designed for the integrative analysis of single-cell RNA sequencing (scRNA-seq) data across multiple experimental conditions, such as drug treatments, patient cohorts, or time points. Built upon the PARAFAC2 tensor decomposition framework, RISE preserves the inherent three-dimensional structure of multi-condition single-cell data—conditions × cells × genes—instead of flattening it into a conventional two-dimensional matrix. The RISE rank determines how many latent patterns are extracted before computing cell-cell communication scores.
 
 **Evaluate RISE Ranks**
 
@@ -104,7 +107,7 @@ Test different RISE ranks to find the optimal balance between model complexity a
     # Create figure with two subplots
     fig, ax = plt.subplots(1, 2, figsize=(12, 4))
     
-    rise_ranks = list(range(5, 31, 5))
+    rise_ranks = list(range(5, 41, 5))
     
     # Plot FMS and R2X for different RISE ranks
     plot_fms_r2x_diff_ranks(
@@ -113,7 +116,7 @@ Test different RISE ranks to find the optimal balance between model complexity a
         ax1=ax[0], 
         ax2=ax[1], 
         ranksList=rise_ranks, 
-        runs=3
+        runs=1
     )
     
     ax[0].set_title('RISE: Factor Match Score (FMS)')
@@ -153,29 +156,24 @@ First, calculate the interaction tensor using a selected RISE rank, then test di
     interaction_tensor = calculate_interaction_tensor(X, lr_pairs, rise_rank=rise_rank)
     
     # Test CPD ranks
-    cpd_ranks = list(range(1, 21, 2))
-    cpd_results = run_fms_r2x_analysis(
+    rank_list = list(range(1, 11, 2))
+    df = run_fms_r2x_analysis(
         interaction_tensor, 
-        rank_list=cpd_ranks, 
-        runs=3,
+        rank_list=rank_list, 
+        runs=1,
         svd_init="random"
     )
     
     # Plot CPD FMS and R2X
     fig, ax = plt.subplots(1, 2, figsize=(12, 4))
     
-    sns.lineplot(data=cpd_results, x='Component', y='FMS', ax=ax[0], marker='o')
-    ax[0].set_xlabel('CPD Rank')
-    ax[0].set_ylabel('Factor Match Score (FMS)')
-    ax[0].set_title(f'CPD: Factor Stability (RISE rank={rise_rank})')
-    ax[0].axhline(y=0.6, color='r', linestyle='--', label='Stability Threshold')
+    sns.lineplot(data=df, x="Component", y="FMS", ax=ax[0], label="FMS")
     ax[0].set_ylim(0, 1)
-    ax[0].legend()
+    ax[0].set_xlabel('CPD Rank')
     
-    sns.lineplot(data=cpd_results, x='Component', y='R2X', ax=ax[1], marker='o', color='orange')
+    sns.lineplot(data=df, x="Component", y="R2X", ax=ax[1], color="orange", label="R2X")
+    ax[1].set_ylim(0, np.max(df["R2X"]) + 0.02)
     ax[1].set_xlabel('CPD Rank')
-    ax[1].set_ylabel('R²X (Variance Explained)')
-    ax[1].set_title(f'CPD: Variance Explained (RISE rank={rise_rank})')
     
     plt.tight_layout()
     plt.show()
@@ -188,13 +186,8 @@ First, calculate the interaction tensor using a selected RISE rank, then test di
 
 - **R²X**: Monitor how much of the interaction tensor's variance is explained. Look for an elbow point where additional components provide minimal improvement.
 - **FMS**: Ensure components are stable (FMS > 0.6). Lower FMS indicates components may vary significantly with different initializations.
-- **Recommendation**: Select the CPD rank where both FMS is high (>0.6) and R²X shows an elbow. Typically 5-15 components capture most meaningful communication patterns.
+- **Recommendation**: Select the CPD rank where both FMS is high (>0.6) and R²X shows an elbow. Typically 5-20 components capture most meaningful communication patterns.
 
-**Summary: Two-Step Rank Selection**
-
-1. **First**: Select RISE rank based on expression data (typically 20-40)
-2. **Second**: Select CPD rank based on interaction tensor (typically 5-15)
-3. **Use both R²X and FMS** at each step to balance model fit with component stability
 
 Running the Factorization
 --------------------------
