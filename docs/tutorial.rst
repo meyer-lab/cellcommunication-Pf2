@@ -274,7 +274,7 @@ The factorization produces four interpretable factor matrices:
 
 **Visualize All Four Factors**
 
-Create a comprehensive visualization showing all four factor types::
+Create visualizations for each of the four factor types::
 
     from cellcommunicationpf2.figures.commonFuncs.plotFactors import (
         plot_condition_factors,
@@ -282,9 +282,6 @@ Create a comprehensive visualization showing all four factor types::
         plot_lr_factors
     )
     import matplotlib.pyplot as plt
-    
-    # Create figure with 4 subplots
-    fig, ax = plt.subplots(1, 4, figsize=(20, 8))
     
     # Prepare condition grouping (if you have multiple conditions per group)
     condition_column = "sample"  # or your condition column name
@@ -296,38 +293,59 @@ Create a comprehensive visualization showing all four factor types::
     ).set_index(condition_column)[group_col]
     
     # Factor A: Condition factors
+    fig, ax = plt.subplots(figsize=(6, 8))
     plot_condition_factors(
         X,
-        ax[0],
+        ax,
         cond=condition_column,
         cond_group_labels=sample_to_group,
         group_cond=True,   # Sort by condition groups
         normalize=True     # Normalize each component
     )
-    ax[0].set_title("Factor A: Condition")
+    ax.set_title("Factor A: Condition")
+    plt.tight_layout()
+    plt.show()
     
     # Factor B: Sender cell eigenstates
-    plot_eigenstate_factors(X, ax[1], factor_type="B")
-    ax[1].set_title("Factor B: Sender Cell Eigenstate")
+    fig, ax = plt.subplots(figsize=(6, 8))
+    plot_eigenstate_factors(X, ax, factor_type="B")
+    ax.set_title("Factor B: Sender Cell Eigenstate")
+    plt.tight_layout()
+    plt.show()
     
     # Factor C: Receiver cell eigenstates
-    plot_eigenstate_factors(X, ax[2], factor_type="C")
-    ax[2].set_title("Factor C: Receiver Cell Eigenstate")
+    fig, ax = plt.subplots(figsize=(6, 8))
+    plot_eigenstate_factors(X, ax, factor_type="C")
+    ax.set_title("Factor C: Receiver Cell Eigenstate")
+    plt.tight_layout()
+    plt.show()
     
     # Factor D: Ligand-receptor pairs
+    fig, ax = plt.subplots(figsize=(6, 8))
     plot_lr_factors(
         X, 
-        ax[3], 
+        ax, 
         trim=True,      # Show only top L-R pairs
         weight=0.06     # Threshold for inclusion
     )
-    ax[3].set_title("Factor D: LR Pairs")
-    
+    ax.set_title("Factor D: LR Pairs")
     plt.tight_layout()
     plt.show()
 
-.. image:: _static/tutorial_images/step3_all_factors.png
-   :width: 800px
+.. image:: _static/tutorial_images/step3_factor_a.png
+   :width: 500px
+   :align: center
+
+.. image:: _static/tutorial_images/step3_factor_b.png
+   :width: 500px
+   :align: center
+
+.. image:: _static/tutorial_images/step3_factor_c.png
+   :width: 500px
+   :align: center
+
+.. image:: _static/tutorial_images/step3_factor_d.png
+   :width: 500px
    :align: center
 
 **Understanding Each Factor**
@@ -340,167 +358,15 @@ Create a comprehensive visualization showing all four factor types::
 
 - **Factor D (LR Pairs)**: Shows which ligand-receptor interactions drive each component. Only top-weighted pairs are displayed for clarity.
 
-**Visualize Individual Condition Factors**
-
-For a detailed view of condition factors across components::
-
-    fig, ax = plt.subplots(figsize=(10, 6))
-    
-    plot_condition_factors(
-        X,
-        ax,
-        cond=condition_column,
-        cond_group_labels=sample_to_group,
-        group_cond=True,
-        normalize=True
-    )
-    ax.set_xlabel("Component", fontsize=12)
-    ax.set_ylabel("Condition/Sample", fontsize=12)
-    ax.set_title("Condition Factor Contributions Across Components", fontsize=14)
-    plt.tight_layout()
-    plt.show()
-
-.. image:: _static/tutorial_images/step4_condition_factors_detailed.png
-   :width: 600px
-   :align: center
-
 **Visualize Cell Projections with PaCMAP**
 
 Explore how individual cells are positioned in the latent communication space::
 
+    from cellcommunicationpf2.figures.commonFuncs.plotPaCMAP import plot_labels_pacmap
     import matplotlib.pyplot as plt
     import seaborn as sns
     
-    # Plot PaCMAP embedding colored by cell type
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-    
-    # Color by cell type
-    scatter1 = axes[0].scatter(
-        X.obsm["PaCMAP"][:, 0],
-        X.obsm["PaCMAP"][:, 1],
-        c=X.obs["cell_type"].cat.codes,
-        cmap="tab20",
-        s=1,
-        alpha=0.5
-    )
-    axes[0].set_title("PaCMAP: Colored by Cell Type")
-    axes[0].set_xlabel("PaCMAP 1")
-    axes[0].set_ylabel("PaCMAP 2")
-    
-    # Color by condition
-    scatter2 = axes[1].scatter(
-        X.obsm["PaCMAP"][:, 0],
-        X.obsm["PaCMAP"][:, 1],
-        c=X.obs["condition"].cat.codes,
-        cmap="Set1",
-        s=1,
-        alpha=0.5
-    )
-    axes[1].set_title("PaCMAP: Colored by Condition")
-    axes[1].set_xlabel("PaCMAP 1")
-    axes[1].set_ylabel("PaCMAP 2")
-    
-    plt.tight_layout()
-    plt.show()
-
-.. image:: _static/tutorial_images/step5_pacmap_embedding.png
-   :width: 700px
-   :align: center
-
-**Visualize Specific Component Loadings**
-
-Examine which cells have high loadings in a specific component::
-
-    # Select a component to visualize
-    component = 0  # 0-indexed
-    
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-    
-    # Sender cell loadings for this component
-    scatter1 = axes[0].scatter(
-        X.obsm["PaCMAP"][:, 0],
-        X.obsm["PaCMAP"][:, 1],
-        c=X.obsm["sc_B"][:, component],
-        cmap="viridis",
-        s=2,
-        alpha=0.6
-    )
-    axes[0].set_title(f"Component {component}: Sender Cell Loadings")
-    plt.colorbar(scatter1, ax=axes[0], label="Loading")
-    
-    # Receiver cell loadings for this component
-    scatter2 = axes[1].scatter(
-        X.obsm["PaCMAP"][:, 0],
-        X.obsm["PaCMAP"][:, 1],
-        c=X.obsm["rc_C"][:, component],
-        cmap="plasma",
-        s=2,
-        alpha=0.6
-    )
-    axes[1].set_title(f"Component {component}: Receiver Cell Loadings")
-    plt.colorbar(scatter2, ax=axes[1], label="Loading")
-    
-    plt.tight_layout()
-    plt.show()
-
-.. image:: _static/tutorial_images/step6_component_loadings.png
-   :width: 700px
-   :align: center
-
-Advanced Component Visualizations
-----------------------------------
-
-**PaCMAP Plots with Built-in Functions**
-
-Use specialized plotting functions to visualize component weightings across all components::
-
-    from cellcommunicationpf2.figures.commonFuncs.plotPaCMAP import (
-        plot_wc_pacmap,
-        plot_labels_pacmap
-    )
-    import matplotlib.pyplot as plt
-    
-    # Get the number of components
-    cp_rank = X.uns["A"].shape[1]
-    
-    # Create grid for all components
-    fig, axes = plt.subplots(2, cp_rank, figsize=(4*cp_rank, 8))
-    
-    # Plot sender cell weightings for each component
-    for i in range(cp_rank):
-        plot_wc_pacmap(
-            X, 
-            i + 1,  # Component number (1-indexed)
-            axes[0, i], 
-            factor_matrix="B",  # Sender cells
-            cbarMax=0.3
-        )
-        axes[0, i].set_title(f"Component {i+1}: Sender Cells")
-    
-    # Plot receiver cell weightings for each component
-    for i in range(cp_rank):
-        plot_wc_pacmap(
-            X, 
-            i + 1,  # Component number (1-indexed)
-            axes[1, i], 
-            factor_matrix="C",  # Receiver cells
-            cbarMax=0.3
-        )
-        axes[1, i].set_title(f"Component {i+1}: Receiver Cells")
-    
-    plt.tight_layout()
-    plt.show()
-
-.. image:: _static/tutorial_images/step7_all_component_weightings.png
-   :width: 800px
-   :align: center
-
-**Visualize Cell Type and Condition Labels**
-
-Create clean PaCMAP visualizations with categorical labels::
-
-    import seaborn as sns
-    
+    # Create figure with 3 subplots
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
     
     # Plot colored by cell type
@@ -523,9 +389,43 @@ Create clean PaCMAP visualizations with categorical labels::
     plt.tight_layout()
     plt.show()
 
-.. image:: _static/tutorial_images/step8_categorical_labels.png
+.. image:: _static/tutorial_images/step5_pacmap_embedding.png
    :width: 800px
    :align: center
+
+Interpreting a Component
+-------------------------
+
+Once you've identified components of interest, dig deeper into the specific cell types and ligand-receptor pairs driving the communication patterns.
+
+**Visualize Specific Component Loadings**
+
+Use specialized plotting functions to visualize component weightings for a specific component::
+
+    from cellcommunicationpf2.figures.commonFuncs.plotPaCMAP import plot_wc_pacmap
+    import matplotlib.pyplot as plt
+    
+    # Select component to visualize
+    component = 6
+    
+    # Create figure with 2 subplots
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+    
+    # Plot sender cell weightings
+    plot_wc_pacmap(X, component, ax[0], factor_matrix="B", cbarMax=0.3)
+    ax[0].set_title(f"Cmp.{component} Sender Cells")
+    
+    # Plot receiver cell weightings
+    plot_wc_pacmap(X, component, ax[1], factor_matrix="C", cbarMax=0.3)
+    ax[1].set_title(f"Cmp.{component} Receiver Cells")
+    
+    plt.tight_layout()
+    plt.show()
+
+.. image:: _static/tutorial_images/step7_all_component_weightings.png
+   :width: 800px
+   :align: center
+
 
 **Violin Plots of Component Weights by Cell Type**
 
@@ -535,22 +435,22 @@ Examine the distribution of component weights for specific cell types::
     import pandas as pd
     
     # Select a component and cell type of interest
-    component = 5  # 0-indexed
+    component = 6 
     cell_type = "mDC"
     
     # Filter cells by cell type
     X_celltype = X[X.obs["celltype"] == cell_type]
     
     # Extract sender cell weights for this component
-    sender_weights = X_celltype.obsm["sc_B"][:, component]
+    sender_weights = X_celltype.obsm["sc_B"][:, component-1]
     
     # Create violin plot
     fig, ax = plt.subplots(figsize=(6, 6))
     sns.violinplot(data=sender_weights, ax=ax)
     ax.set_ylim(-0.1, max(sender_weights) + 0.1)
     ax.set_xlabel(f"{cell_type} Weight Distribution")
-    ax.set_ylabel(f"Sender Cell Component {component+1} Association")
-    ax.set_title(f"Distribution of Component {component+1} Weights in {cell_type}")
+    ax.set_ylabel(f"Sender Cell Component {component} Association")
+    ax.set_title(f"Distribution of Component {component} Weights in {cell_type}")
     plt.tight_layout()
     plt.show()
 
@@ -560,121 +460,14 @@ Examine the distribution of component weights for specific cell types::
 
 This visualization reveals whether a component is broadly active across all cells of a type or concentrated in a subset.
 
-Interpreting a Component
--------------------------
-
-Once you've identified components of interest, dig deeper into the specific cell types and ligand-receptor pairs driving the communication patterns.
-
-**Expression Product Heatmaps**
-
-Visualize the ligand-receptor expression products between sender and receiver cell populations to validate predicted interactions::
-
-    from cellcommunicationpf2.utils import (
-        expression_product_matrix,
-        average_product_matrix_ccc
-    )
-    import numpy as np
-    
-    # Select a component and L-R pair of interest
-    component = 5  # 0-indexed
-    ligand = "CCL19"
-    receptor = "CCR7"
-    
-    # Filter and sort sender cells by component weight
-    sender_celltype = "mDC"
-    X_sender = X[X.obs["celltype"] == sender_celltype]
-    X_sender = X_sender[np.argsort(-X_sender.obsm["sc_B"][:, component])]
-    
-    # Filter and sort receiver cells by component weight
-    receiver_celltype = "mDC"
-    X_receiver = X[X.obs["celltype"] == receiver_celltype]
-    X_receiver = X_receiver[np.argsort(-X_receiver.obsm["rc_C"][:, component])]
-    
-    # Calculate expression product matrix
-    df = expression_product_matrix(X_sender, X_receiver, ligand, receptor)
-    df = average_product_matrix_ccc(df)
-    
-    # Create heatmap
-    fig, ax = plt.subplots(figsize=(8, 8))
-    sns.heatmap(df, ax=ax, cmap="viridis", vmax=0.12)
-    ax.set_xlabel(f"Receiver {receiver_celltype}s")
-    ax.set_ylabel(f"Sender {sender_celltype}s")
-    ax.set_title(f"{ligand}-{receptor} Interaction in Component {component+1}")
-    ax.set_xticks([])
-    ax.set_yticks([])
-    plt.tight_layout()
-    plt.show()
-
-.. image:: _static/tutorial_images/step10_expression_product.png
-   :width: 600px
-   :align: center
-
-This heatmap shows the product of ligand expression (in senders) and receptor expression (in receivers), revealing which cell pairs have the highest potential for this specific interaction.
-
-**Compare Communication Across Cell Types**
-
-Investigate how the same L-R pair functions between different cell type combinations::
-
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-    
-    # Same sender, different receiver (e.g., mDC to mDC)
-    X_sender = X[X.obs["celltype"] == "mDC"]
-    X_sender = X_sender[np.argsort(-X_sender.obsm["sc_B"][:, component])]
-    
-    X_receiver_mdc = X[X.obs["celltype"] == "mDC"]
-    X_receiver_mdc = X_receiver_mdc[np.argsort(-X_receiver_mdc.obsm["rc_C"][:, component])]
-    
-    X_receiver_b = X[X.obs["celltype"] == "B"]
-    X_receiver_b = X_receiver_b[np.argsort(-X_receiver_b.obsm["rc_C"][:, component])]
-    
-    # mDC -> mDC communication
-    df1 = expression_product_matrix(X_sender, X_receiver_mdc, ligand, receptor)
-    df1 = average_product_matrix_ccc(df1)
-    sns.heatmap(df1, ax=axes[0], cmap="viridis", vmax=0.12)
-    axes[0].set_xlabel("Receiver mDCs")
-    axes[0].set_ylabel("Sender mDCs")
-    axes[0].set_title(f"{ligand}-{receptor}: mDC→mDC")
-    axes[0].set_xticks([])
-    axes[0].set_yticks([])
-    
-    # mDC -> B cell communication
-    df2 = expression_product_matrix(X_sender, X_receiver_b, ligand, receptor)
-    df2 = average_product_matrix_ccc(df2)
-    sns.heatmap(df2, ax=axes[1], cmap="viridis", vmax=0.12)
-    axes[1].set_xlabel("Receiver B cells")
-    axes[1].set_ylabel("Sender mDCs")
-    axes[1].set_title(f"{ligand}-{receptor}: mDC→B")
-    axes[1].set_xticks([])
-    axes[1].set_yticks([])
-    
-    plt.tight_layout()
-    plt.show()
-
-.. image:: _static/tutorial_images/step11_celltype_comparison.png
-   :width: 700px
-   :align: center
-
-**Summary of Component Interpretation**
-
-For each component of interest:
-
-1. **Examine Factor A**: Which conditions/samples show high activity?
-2. **Check Factors B and C**: Which latent cell states (eigenstates) are involved as senders and receivers?
-3. **Inspect Factor D**: Which L-R pairs have high weights?
-4. **Validate with expression products**: Confirm that top-weighted L-R pairs show coordinated expression in the predicted sender-receiver cell populations
-5. **Compare across cell types**: Understand whether communication is cell type-specific or broadly active
-
-.. image:: _static/tutorial_images/step6_communication_heatmap.png
-   :width: 600px
-   :align: center
-
-**Communication Heatmap**: This visualization shows the communication scores between sender cells (rows) and receiver cells (columns) for a specific ligand-receptor pair.
 
 **Analyze Top LR Pairs per Component**
 
 Identify the most important ligand-receptor pairs for a specific component::
 
-    cmp = 5
+    import numpy as np
+    
+    cmp = 6
     lr_factor = X.uns["D"][:, cmp-1]
     lr_names = X.uns["lr_pair_names"]
     
@@ -688,3 +481,51 @@ Identify the most important ligand-receptor pairs for a specific component::
 .. image:: _static/tutorial_images/step7_top_lr_pairs.png
    :width: 600px
    :align: center
+
+
+**Expression Product Heatmaps**
+
+Visualize the ligand-receptor expression products between sender and receiver cell populations to validate predicted interactions::
+
+    from cellcommunicationpf2.utils import (
+        expression_product_matrix,
+        average_product_matrix_ccc
+    )
+    import numpy as np
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    
+    # Select component and L-R pair of interest
+    ccc_rise_cmp = 6
+    ligand = "CCL19"
+    receptor = "CCR7"
+    
+    # Filter and sort sender cells by component weight
+    X_mdc_sender = X[X.obs["celltype"] == "mDC"]
+    X_mdc_sender = X_mdc_sender[np.argsort(-X_mdc_sender.obsm["sc_B"][:, ccc_rise_cmp-1])]
+    
+    # Filter and sort receiver cells by component weight
+    X_mdc_receiver = X[X.obs["celltype"] == "mDC"]
+    X_mdc_receiver = X_mdc_receiver[np.argsort(X_mdc_receiver.obsm["rc_C"][:, ccc_rise_cmp-1])]
+    
+    # Calculate expression product matrix for mDC -> mDC
+    df = expression_product_matrix(X_mdc_sender, X_mdc_receiver, ligand, receptor)
+    df = average_product_matrix_ccc(df)
+    
+    # Create heatmap
+    fig, ax = plt.subplots(figsize=(6, 6))
+    sns.heatmap(df, ax=ax, cmap="viridis", vmax=0.12)
+    ax.set_xlabel("Receiver mDCs")
+    ax.set_ylabel("Sender mDCs")
+    ax.set_title("CCL19-CCR7 Interaction")
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.tight_layout()
+    plt.show()
+
+.. image:: _static/tutorial_images/step10_expression_product.png
+   :width: 600px
+   :align: center
+
+This heatmap shows the product of ligand expression (in senders) and receptor expression (in receivers), revealing which cell pairs have the highest potential for this specific interaction.
+
