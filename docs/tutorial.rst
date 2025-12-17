@@ -112,7 +112,7 @@ Test different RISE ranks to find the optimal balance between model complexity a
     # Plot FMS and R2X for different RISE ranks
     plot_fms_r2x_diff_ranks(
         X, 
-        condition_column="condition_unique_idxs",
+        condition_name="condition_unique_idxs",
         ax1=ax[0], 
         ax2=ax[1], 
         ranksList=rise_ranks, 
@@ -412,11 +412,11 @@ Use specialized plotting functions to visualize component weightings for a speci
     fig, ax = plt.subplots(1, 2, figsize=(12, 6))
     
     # Plot sender cell weightings
-    plot_wc_pacmap(X, component, ax[0], factor_matrix="B", cbarMax=0.3)
+    plot_wc_pacmap(X, component-1, ax[0], factor_matrix="B", cbarMax=0.3)
     ax[0].set_title(f"Cmp.{component} Sender Cells")
     
     # Plot receiver cell weightings
-    plot_wc_pacmap(X, component, ax[1], factor_matrix="C", cbarMax=0.3)
+    plot_wc_pacmap(X, component-1, ax[1], factor_matrix="C", cbarMax=0.3)
     ax[1].set_title(f"Cmp.{component} Receiver Cells")
     
     plt.tight_layout()
