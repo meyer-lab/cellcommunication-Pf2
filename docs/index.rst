@@ -18,6 +18,7 @@ CCC-RISE does not require prior cell-type labels or clustering, reducing bias an
 
    tutorial
    api
+   references
 
 Indices and tables
 ==================

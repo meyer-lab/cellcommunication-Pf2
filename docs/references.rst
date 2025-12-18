@@ -22,10 +22,4 @@ CCC-RISE combines CP (CANDECOMP/PARAFAC) decomposition with PARAFAC2 to analyze 
 
 Roald, M., Schenker, C., Calhoun, V.D., Adali, T., Bro, R., Cohen, J.E., & Acar, E. (2022). An AO-ADMM approach to constraining PARAFAC2 on all modes. *SIAM Journal on Mathematics of Data Science*, 4(3), 1191-1222. DOI: `10.1137/21M1450033 <https://doi.org/10.1137/21M1450033>`_
 
-Cell-Cell Communication Resources
-----------------------------------
-
-CCC-RISE utilizes ligand-receptor databases to identify intercellular communication patterns.
-
-Dimitrov, D., Türei, D., Garrido-Rodriguez, M., Burmedi, P.L., Nagai, J.S., Boys, C., Flores, R.O.R., Kim, H., Szalai, B., Costa, I.G., Valdeolivas, A., Dugourd, A., & Saez-Rodriguez, J. (2022). Comparison of methods and resources for cell-cell communication inference from single-cell RNA-Seq data. *Nature Communications*, 13, 3224. DOI: `10.1038/s41467-022-30755-0 <https://doi.org/10.1038/s41467-022-30755-0>`_
 
