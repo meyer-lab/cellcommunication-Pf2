@@ -162,6 +162,8 @@ plotnine==0.15.0
     # via liana
 pre-commit==4.2.0
     # via liana
+pyarrow==23.0.0
+    # via cellcommunicationpf2
 pyct==0.5.0
     # via datashader
 pynndescent==0.5.13
