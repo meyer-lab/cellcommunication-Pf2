@@ -21,6 +21,10 @@ dependencies = [
     "parafac2 @ git+https://github.com/meyer-lab/parafac2.git@main",
     "zstandard>=0.23.0",
     "pyarrow>=15.0.0",
+    # Optimal Transport for rank selection
+    "jax[cuda12]>=0.4.20",
+    "ott-jax>=0.4.6",
+    "kneed>=0.8.5",
 ]
 
 readme = "README.md"
@@ -67,4 +71,9 @@ select = [
     "I",
     # Unused arguments
     "ARG",
+]
+
+[tool.rye]
+dev-dependencies = [
+    "pytest>=9.0.2",
 ]
