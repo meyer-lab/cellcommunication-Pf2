@@ -1,5 +1,5 @@
 """
-Figure A3z: XXX
+Figure A3za: XXX
 """
 
 import anndata
@@ -29,9 +29,6 @@ def makeFigure():
         X_epi_sender = X[X.obs["celltype"] == "Epithelial"]
         X_epi_sender = add_obs_cmp_label(X_epi_sender, cmp=ccc_rise_cmp, pos=i, top_perc=10, type="sender")
         X_epi_sender = add_obs_cmp_unique_one(X_epi_sender, cmp=ccc_rise_cmp)
-  
-        # Make ["Label"] categorical codes (Cmp5 is 0 for Top Perc, 1 for Others)
-        cmp_label = X_epi_sender.obs["Label"].astype("category").cat.codes
 
         method_test = ["t-test", "wilcoxon"]
         
@@ -52,8 +49,11 @@ def makeFigure():
             ax[axs].set_xlabel(method)
             ax[axs].set_ylabel("Gene")
             axs += 1
+    
+    ax[0].set_title("Top 10 perc vs all other cells: t-test")
+    ax[1].set_title("Top 10 perc vs all other cells: Wilcoxon")
+    ax[2].set_title("Bottom 10 perc vs all other cells: t-test")
+    ax[3].set_title("Bottom 10 perc vs all other cells: Wilcoxon")
         
-
-
     return f
 
