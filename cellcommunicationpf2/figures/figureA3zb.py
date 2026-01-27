@@ -32,11 +32,11 @@ def makeFigure():
     X_epi_sender_bottom = add_obs_cmp_label(X_epi_sender, cmp=ccc_rise_cmp, pos=False, top_perc=10, type="sender")
     X_epi_sender_bottom = add_obs_cmp_unique_one(X_epi_sender_bottom, cmp=ccc_rise_cmp)
     X_epi_sender_bottom = X_epi_sender_bottom[X_epi_sender_bottom.obs["Label"].isin(["Cmp5"])]
-    X_epi_sender_bottom.obs["Label"] = "Cmp5_Bottom"
+    X_epi_sender_bottom.obs["Label"] = "NoLabel"
     
     combined_X = anndata.concat([X_epi_sender_top, X_epi_sender_bottom])
     
-    method_test = ["t-test", "wilcoxon"]
+    method_test = ["logreg", "wilcoxon"]
     axs = 0
     for method in method_test:
         sc.tl.rank_genes_groups(combined_X, "Label", method=method)
@@ -51,9 +51,18 @@ def makeFigure():
             y=top_genes_top,
             ax=ax[axs],
         )
-        ax[axs].set_xlabel(method)
+        ax[axs].set_xlabel(f"Score: {method}")
         ax[axs].set_ylabel("Gene")
-        
+        axs += 1
+
+    X_epi_sender_top.obs["Label"] = "NoLabel"
+    X_epi_sender_bottom.obs["Label"] = "Cmp5_Bottom"
+    combined_X = anndata.concat([X_epi_sender_bottom, X_epi_sender_top])
+    
+    for method in method_test:
+        sc.tl.rank_genes_groups(combined_X, "Label", method=method)
+        results = combined_X.uns["rank_genes_groups"]
+        top_n = 20
         top_idx_bottom = np.argsort(results['scores']['Cmp5_Bottom'])[-top_n:][::-1]
         top_genes_bottom = results['names']['Cmp5_Bottom'][top_idx_bottom]
         top_scores_bottom = results['scores']['Cmp5_Bottom'][top_idx_bottom]
@@ -61,15 +70,15 @@ def makeFigure():
         sns.barplot(
             x=top_scores_bottom,
             y=top_genes_bottom,
-            ax=ax[axs+2],
+            ax=ax[axs],
         )
-        ax[axs+2].set_xlabel(method)
-        ax[axs+2].set_ylabel("Gene")
+        ax[axs].set_xlabel(f"Score: {method}")
+        ax[axs].set_ylabel("Gene")
         axs += 1
 
-    ax[0].set_title("Top 10 perc vs Bot 10 perc: t-test")
+    ax[0].set_title("Top 10 perc vs Bot 10 perc: logreg")
     ax[1].set_title("Top 10 perc vs Bot 10 perc: Wilcoxon")
-    ax[2].set_title("Bottom 10 perc vs Top 10 perc: t-test")
+    ax[2].set_title("Bottom 10 perc vs Top 10 perc: logreg")
     ax[3].set_title("Bottom 10 perc vs Top 10 perc: Wilcoxon")
 
         
